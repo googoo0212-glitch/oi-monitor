@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>OI 실시간 모니터</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<style>
+:root{--bg:#071113;--pn:#0c1b1e;--pn2:#10252a;--ln:#1b3439;--fg:#e6f4f1;--mu:#86a6a3;--mint:#5eead4;--up:#4ade80;--dn:#f87171;--am:#fbbf24;--gold:#e9c46a;--silver:#b8c4d6}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:Pretendard,"Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;font-variant-numeric:tabular-nums}
+.wrap{max-width:1200px;margin:0 auto;padding:16px;display:flex;flex-direction:column;gap:12px}
+.pn{background:var(--pn);border:1px solid var(--ln);border-radius:12px;padding:14px 16px;min-width:0}
+.k{font-size:12px;color:var(--mu)}
+.big{font-size:clamp(26px,4vw,38px);font-weight:600;margin-top:4px}
+.mid{font-size:22px;font-weight:600;margin-top:4px}
+.up{color:var(--up)}.dn{color:var(--dn)}.am{color:var(--am)}.mint{color:var(--mint)}
+.top{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.title{font-size:16px;font-weight:600}
+.live{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--mu)}
+.live i{width:8px;height:8px;border-radius:50%;background:var(--up);box-shadow:0 0 0 0 rgba(74,222,128,.6);animation:p 2s infinite}
+.live.off i{background:var(--dn);animation:none}
+@keyframes p{0%{box-shadow:0 0 0 0 rgba(74,222,128,.6)}70%{box-shadow:0 0 0 8px rgba(74,222,128,0)}100%{box-shadow:0 0 0 0 rgba(74,222,128,0)}}
+.counts{display:flex;gap:6px;flex-wrap:wrap}
+.cnt{border-radius:999px;padding:3px 10px;font-size:12px;background:var(--pn2);color:var(--mu)}
+.cnt.dn{background:rgba(248,113,113,.14);color:var(--dn)}.cnt.am{background:rgba(251,191,36,.14);color:var(--am)}.cnt.up{background:rgba(74,222,128,.12);color:var(--up)}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,22rem),1fr));gap:12px}
+.ph{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:8px}
+.note{font-size:11px;color:var(--mu)}
+.chart{position:relative;min-height:220px}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,17rem),1fr));gap:10px}
+.ac{background:var(--pn);border:1px solid var(--ln);border-left:4px solid var(--ln);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.ac.s-dn{border-left-color:var(--dn)}.ac.s-am{border-left-color:var(--am)}.ac.s-up{border-left-color:rgba(74,222,128,.6)}
+.ahd{display:flex;align-items:center;gap:8px}
+.an{font-weight:600}
+.tag{font-size:11px;border-radius:999px;padding:1px 8px;background:var(--pn2);color:var(--mu)}
+.pill{margin-left:auto;font-size:11px;font-weight:600;border-radius:999px;padding:2px 10px}
+.pill.dn{background:rgba(248,113,113,.15);color:var(--dn)}.pill.am{background:rgba(251,191,36,.15);color:var(--am)}.pill.up{background:rgba(74,222,128,.12);color:var(--up)}
+.nr{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.nr>div{background:var(--pn2);border-radius:8px;padding:6px 10px}
+.nr .v{font-size:19px;font-weight:600}
+.nr .hot .v{color:var(--dn)}.nr .warm .v{color:var(--am)}
+.tip{position:absolute;pointer-events:none;background:var(--pn2);border:1px solid var(--ln);border-radius:8px;padding:6px 10px;font-size:12px;display:none;white-space:nowrap;z-index:2}
+.msg{font-size:12px;color:var(--mu)}
+.fund{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,9rem),1fr));gap:8px;margin-bottom:10px}
+.fund>div{background:var(--pn2);border-radius:8px;padding:8px 10px}
+.fund .v{font-size:18px;font-weight:600;margin-top:2px}
+.err{color:var(--am);font-size:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <section class="pn top">
+    <div>
+      <div class="title">OI 실시간 모니터</div>
+      <div class="k" id="pos-date">—</div>
+    </div>
+    <div class="counts" id="counts"></div>
+    <span class="live" id="live"><i></i><span id="live-t">연결 중…</span></span>
+  </section>
+
+  <section class="grid2">
+    <div class="pn"><div class="ph"><span class="k">금 · Hyperliquid xyz:GOLD</span><span class="note" id="xau-chg">—</span></div><div class="big" id="xau-px">—</div><div class="chart" id="c-xau"></div></div>
+    <div class="pn"><div class="ph"><span class="k">은 · Hyperliquid xyz:SILVER</span><span class="note" id="xag-chg">—</span></div><div class="big" id="xag-px">—</div><div class="chart" id="c-xag"></div></div>
+  </section>
+
+  <section>
+    <div class="ph" style="margin:4px 2px 8px"><span class="title">계정별 위험</span><span class="note">5초마다 현재가로 다시 계산 · 위/아래로 처음 닿는 SL·TP·청산가까지</span></div>
+    <div class="cards" id="cards"></div>
+  </section>
+
+  <section class="pn">
+    <div class="ph"><span class="title">Variational 펀딩 추이</span><span class="note" id="fund-t">30분마다 GitHub Actions가 기록 · 연율</span></div>
+    <div class="fund" id="fund-now"></div>
+    <div class="chart" id="c-fund"></div>
+    <div class="msg" id="fund-msg"></div>
+  </section>
+</div>
+
+<script>
+const HL = 'https://api.hyperliquid.xyz/info';
+const SYM = {XAU: 'xyz:GOLD', XAG: 'xyz:SILVER'};
+const TH = {XAU: {warn: .045, danger: .025}, XAG: {warn: .065, danger: .04}};
+const C = {up: '#4ade80', dn: '#f87171', am: '#fbbf24', mint: '#5eead4', mu: '#86a6a3', ln: '#1b3439', fg: '#e6f4f1', pn: '#0c1b1e', silver: '#b8c4d6', gold: '#e9c46a'};
+const GROUP = {C: '금 C', S: '은 S', D: '금 D', H: '은 S · 개인'};
+const pct = d3.format('.1%'), pct2 = d3.format('+.2%');
+const fpx = (a, v) => a === 'XAG' ? '$' + (+v).toFixed(3) : '$' + d3.format(',.1f')(+v);
+const el = (t, c, x) => { const e = document.createElement(t); if (c) e.className = c; if (x != null) e.textContent = x; return e; };
+const sc = s => s === '위험' ? 'dn' : s === '주의' ? 'am' : 'up';
+
+let price = {}, candles = {XAU: [], XAG: []}, positions = [], open24 = {};
+
+async function post(body) {
+  const r = await fetch(HL, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)});
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+  return r.json();
+}
+
+async function loadMids() {
+  const m = await post({type: 'allMids', dex: 'xyz'});
+  for (const a of ['XAU', 'XAG']) { const v = +m[SYM[a]]; if (v) price[a] = v; }
+}
+
+async function loadCandles() {
+  const end = Date.now(), start = end - 24 * 3600e3;
+  for (const a of ['XAU', 'XAG']) {
+    const rows = await post({type: 'candleSnapshot', req: {coin: SYM[a], interval: '15m', startTime: start, endTime: end}});
+    candles[a] = rows.map(r => ({t: +r.t, o: +r.o, h: +r.h, l: +r.l, c: +r.c}));
+    if (candles[a].length) open24[a] = candles[a][0].o;
+  }
+}
+
+function drawCandles(a) {
+  const box = document.getElementById('c-' + a.toLowerCase());
+  const rows = candles[a].slice();
+  if (!rows.length) return;
+  if (price[a]) { const last = rows[rows.length - 1]; last.c = price[a]; last.h = Math.max(last.h, price[a]); last.l = Math.min(last.l, price[a]); }
+  box.textContent = '';
+  const W = box.clientWidth || 360, H = 220, m = {t: 8, r: 64, b: 20, l: 4};
+  const lo = d3.min(rows, d => d.l), hi = d3.max(rows, d => d.h), pad = (hi - lo) * .1 || hi * .001;
+  const y = d3.scaleLinear([lo - pad, hi + pad], [H - m.b, m.t]);
+  const x = d3.scaleBand(rows.map(d => d.t), [m.l, W - m.r]).padding(.25);
+  const svg = d3.select(box).append('svg').attr('width', '100%').attr('viewBox', `0 0 ${W} ${H}`).attr('height', H);
+  y.ticks(4).forEach(t => {
+    svg.append('line').attr('x1', m.l).attr('x2', W - m.r).attr('y1', y(t)).attr('y2', y(t)).attr('stroke', C.ln);
+    svg.append('text').attr('x', W - m.r + 6).attr('y', y(t)).attr('dominant-baseline', 'middle').attr('font-size', 11).attr('fill', C.mu).text(fpx(a, t));
+  });
+  const g = svg.append('g').selectAll('g').data(rows).join('g');
+  g.append('line').attr('x1', d => x(d.t) + x.bandwidth() / 2).attr('x2', d => x(d.t) + x.bandwidth() / 2).attr('y1', d => y(d.h)).attr('y2', d => y(d.l)).attr('stroke', d => d.c >= d.o ? C.up : C.dn);
+  g.append('rect').attr('x', d => x(d.t)).attr('width', x.bandwidth()).attr('y', d => y(Math.max(d.o, d.c))).attr('height', d => Math.max(1, Math.abs(y(d.o) - y(d.c)))).attr('rx', 1).attr('fill', d => d.c >= d.o ? C.up : C.dn);
+  const last = rows[rows.length - 1];
+  svg.append('line').attr('x1', m.l).attr('x2', W - m.r).attr('y1', y(last.c)).attr('y2', y(last.c)).attr('stroke', C.mint).attr('stroke-dasharray', '2 3');
+  svg.append('rect').attr('x', W - m.r + 2).attr('y', y(last.c) - 9).attr('width', m.r - 4).attr('height', 18).attr('rx', 4).attr('fill', C.mint);
+  svg.append('text').attr('x', W - m.r + 6).attr('y', y(last.c)).attr('dominant-baseline', 'middle').attr('font-size', 11).attr('font-weight', 700).attr('fill', C.pn).text(fpx(a, last.c));
+  [0, Math.floor(rows.length / 2)].forEach(i => svg.append('text').attr('x', x(rows[i].t)).attr('y', H - 4).attr('font-size', 10).attr('fill', C.mu).text(d3.timeFormat('%H:%M')(new Date(rows[i].t))));
+}
+
+function accountRisk() {
+  const acc = d3.group(positions.filter(p => /^XA[UG]/.test(p.instrument)), p => p.account);
+  const out = [];
+  for (const [account, legs] of acc) {
+    const a = legs[0].instrument.slice(0, 3), px = price[a];
+    if (!px) continue;
+    const up = [], down = [];
+    legs.forEach(l => {
+      if (l.side === 'long') { down.push({lv: +l.plan_sl, k: 'SL'}, {lv: +l.liq, k: '청산'}); up.push({lv: +l.plan_tp, k: 'TP'}); }
+      else { up.push({lv: +l.plan_sl, k: 'SL'}, {lv: +l.liq, k: '청산'}); down.push({lv: +l.plan_tp, k: 'TP'}); }
+    });
+    const u = up.reduce((p, q) => q.lv < p.lv ? q : p), d = down.reduce((p, q) => q.lv > p.lv ? q : p);
+    const ud = (u.lv - px) / px, dd = (px - d.lv) / px, nearest = Math.min(ud, dd);
+    const liqFirst = u.k === '청산' || d.k === '청산';
+    const status = liqFirst || nearest < TH[a].danger ? '위험' : nearest < TH[a].warn ? '주의' : '안전';
+    out.push({account, group: legs[0].group, a, px, u, d, ud, dd, nearest, liqFirst, status, est: legs.some(l => l.liq_estimated)});
+  }
+  return out.sort((p, q) => (p.liqFirst === q.liqFirst ? p.nearest - q.nearest : p.liqFirst ? -1 : 1));
+}
+
+function drawRisk() {
+  const rows = accountRisk();
+  const cnt = document.getElementById('counts'); cnt.textContent = '';
+  [['위험', 'dn'], ['주의', 'am'], ['안전', 'up']].forEach(([s, c]) => { const n = rows.filter(r => r.status === s).length; cnt.appendChild(el('span', 'cnt ' + (n ? c : ''), `${s} ${n}`)); });
+  const box = document.getElementById('cards'); box.textContent = '';
+  rows.forEach(r => {
+    const c = el('div', 'ac s-' + sc(r.status));
+    const h = el('div', 'ahd'); h.append(el('span', 'an', r.account), el('span', 'tag', GROUP[r.group] || r.group), el('span', 'pill ' + sc(r.status), r.status)); c.appendChild(h);
+    const nr = el('div', 'nr');
+    [['▲ 위로', r.ud, r.u], ['▼ 아래로', r.dd, r.d]].forEach(([lbl, dist, ev]) => {
+      const s = el('div', ev.k === '청산' || dist < TH[r.a].danger ? 'hot' : dist < TH[r.a].warn ? 'warm' : '');
+      s.append(el('div', 'k', lbl), el('div', 'v', pct(dist)), el('div', 'k', `${ev.k} ${fpx(r.a, ev.lv)}`));
+      nr.appendChild(s);
+    });
+    c.appendChild(nr);
+    if (r.liqFirst) c.appendChild(el('div', 'msg dn', '⚠ 청산가가 SL보다 먼저 옴 → 스왑 격리증거금 보강'));
+    if (r.est) c.appendChild(el('div', 'msg', '청산가는 추정치'));
+    box.appendChild(c);
+  });
+}
+
+function drawPrices() {
+  for (const a of ['XAU', 'XAG']) {
+    if (!price[a]) continue;
+    document.getElementById(a.toLowerCase() + '-px').textContent = fpx(a, price[a]);
+    if (open24[a]) { const ch = price[a] / open24[a] - 1, e = document.getElementById(a.toLowerCase() + '-chg'); e.textContent = '24h ' + pct2(ch); e.className = 'note ' + (ch >= 0 ? 'up' : 'dn'); }
+    drawCandles(a);
+  }
+}
+
+async function tick() {
+  const live = document.getElementById('live');
+  try {
+    await loadMids();
+    live.className = 'live'; document.getElementById('live-t').textContent = '실시간 · ' + new Date().toLocaleTimeString('ko-KR');
+    drawPrices(); drawRisk();
+  } catch (e) {
+    live.className = 'live off'; document.getElementById('live-t').textContent = '가격 연결 실패 (' + e.message + ')';
+  }
+}
+
+async function loadFunding() {
+  const msg = document.getElementById('fund-msg');
+  let rows = [];
+  try { rows = await (await fetch('data/funding.json?' + Date.now())).json(); } catch (e) { msg.textContent = '펀딩 기록을 불러오지 못했어요.'; return; }
+  if (!rows.length) { msg.textContent = '아직 기록이 없어요. Actions가 처음 돌고 나면 여기 쌓여요.'; return; }
+  rows.forEach(r => r.t = new Date(r.time_utc));
+  const pick = tk => rows.filter(r => r.ticker === tk);
+  const find = re => [...new Set(rows.map(r => r.ticker))].find(t => re.test(t));
+  const has = t => rows.some(r => r.ticker === t);
+  const xagP = has('XAG-PERP') ? 'XAG-PERP' : find(/^XAG.*PERP/i), xauP = has('XAU-PERP') ? 'XAU-PERP' : find(/^XAU-PERP/i), xagS = has('XAG-SWAP') ? 'XAG-SWAP' : find(/^XAG.*SWAP/i), xauS = has('XAU-SWAP') ? 'XAU-SWAP' : find(/^XAU-SWAP/i);
+  const lastOf = tk => tk ? pick(tk).at(-1) : null;
+  const perpApr = r => r ? (r.perp_next_apr ?? r.perp_last_apr) : null;
+  const lxP = lastOf(xagP), luP = lastOf(xauP), lxS = lastOf(xagS), luS = lastOf(xauS);
+  const now = document.getElementById('fund-now'); now.textContent = '';
+  const tile = (k, v, cls) => { const d = el('div'); d.append(el('div', 'k', k), el('div', 'v ' + (cls || ''), v == null ? '—' : pct2(v))); now.appendChild(d); };
+  tile('은 퍼프 (숏 수령)', perpApr(lxP), 'mint');
+  tile('금 퍼프', perpApr(luP));
+  const sNet = lxP && lxS ? perpApr(lxP) - lxS.swap_long_apr : null;
+  const cNet = luP && luS ? luS.swap_short_apr - perpApr(luP) : null;
+  tile('은 S 순펀딩', sNet, sNet >= 0 ? 'up' : 'dn');
+  tile('금 C 순펀딩', cNet, cNet >= 0 ? 'up' : 'dn');
+  document.getElementById('fund-t').textContent = `마지막 기록 ${d3.timeFormat('%m/%d %H:%M')(rows.at(-1).t)} · 30분마다 · 연율`;
+
+  const series = [[xagP, '은 퍼프', C.mint], [xauP, '금 퍼프', C.gold]].filter(s => s[0]).map(([tk, name, color]) => ({name, color, pts: pick(tk).map(r => ({t: r.t, v: perpApr(r)})).filter(p => p.v != null)}));
+  const box = document.getElementById('c-fund'); box.textContent = '';
+  const all = series.flatMap(s => s.pts);
+  if (all.length < 2) { msg.textContent = '기록이 2개 이상 쌓이면 추이가 그려져요.'; return; }
+  msg.textContent = '';
+  const W = box.clientWidth || 600, H = 220, m = {t: 10, r: 56, b: 22, l: 4};
+  const x = d3.scaleTime(d3.extent(all, p => p.t), [m.l, W - m.r]);
+  const [lo, hi] = d3.extent(all, p => p.v), pad = Math.max((hi - lo) * .15, .01);
+  const y = d3.scaleLinear([Math.min(0, lo - pad), hi + pad], [H - m.b, m.t]);
+  const svg = d3.select(box).append('svg').attr('width', '100%').attr('viewBox', `0 0 ${W} ${H}`).attr('height', H);
+  y.ticks(4).forEach(t => { svg.append('line').attr('x1', m.l).attr('x2', W - m.r).attr('y1', y(t)).attr('y2', y(t)).attr('stroke', t === 0 ? C.mu : C.ln); svg.append('text').attr('x', W - m.r + 6).attr('y', y(t)).attr('dominant-baseline', 'middle').attr('font-size', 11).attr('fill', C.mu).text(d3.format('.0%')(t)); });
+  x.ticks(4).forEach(t => svg.append('text').attr('x', x(t)).attr('y', H - 4).attr('font-size', 10).attr('fill', C.mu).attr('text-anchor', 'middle').text(d3.timeFormat('%m/%d %H시')(t)));
+  series.forEach(s => {
+    svg.append('path').datum(s.pts).attr('fill', 'none').attr('stroke', s.color).attr('stroke-width', 2).attr('stroke-linejoin', 'round').attr('d', d3.line().x(p => x(p.t)).y(p => y(p.v)).curve(d3.curveStepAfter));
+    const l = s.pts.at(-1); svg.append('text').attr('x', x(l.t) - 4).attr('y', y(l.v) - 8).attr('text-anchor', 'end').attr('font-size', 11).attr('fill', s.color).text(`${s.name} ${pct2(l.v)}`);
+  });
+}
+
+async function init() {
+  try {
+    const p = await (await fetch('data/positions.json?' + Date.now())).json();
+    positions = p.positions || [];
+    document.getElementById('pos-date').textContent = `포지션 기준: ${p.updated || '—'} · 가격은 하이퍼리퀴드 실시간`;
+  } catch (e) { document.getElementById('pos-date').textContent = 'positions.json을 못 읽었어요'; }
+  try { await loadCandles(); } catch (e) { /* 차트 없이도 동작 */ }
+  await tick();
+  loadFunding();
+  setInterval(tick, 5000);
+  setInterval(() => loadCandles().then(drawPrices).catch(() => {}), 60000);
+  setInterval(loadFunding, 10 * 60000);
+  let w = innerWidth; addEventListener('resize', () => { if (Math.abs(innerWidth - w) > 20) { w = innerWidth; drawPrices(); loadFunding(); } });
+}
+init();
+</script>
+</body>
+</html>

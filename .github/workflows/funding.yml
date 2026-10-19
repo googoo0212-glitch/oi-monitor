@@ -1,0 +1,36 @@
+name: record-funding
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"   # 30분마다 (GitHub 사정으로 5~15분 늦을 수 있음)
+  workflow_dispatch: {}       # Actions 탭에서 수동 실행 버튼
+
+permissions:
+  contents: write
+
+concurrency:
+  group: record-funding
+  cancel-in-progress: false
+
+jobs:
+  record:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Fetch funding
+        run: python scripts/record_funding.py
+      - name: Commit data
+        run: |
+          git config user.name "funding-bot"
+          git config user.email "funding-bot@users.noreply.github.com"
+          git add data/funding.csv data/funding.json
+          if git diff --cached --quiet; then
+            echo "no changes"
+          else
+            git commit -m "funding $(date -u +%Y-%m-%dT%H:%MZ)"
+            git pull --rebase
+            git push
+          fi
