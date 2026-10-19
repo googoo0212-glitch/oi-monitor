@@ -1,0 +1,7 @@
+{
+ "_설명": "near = 이 거리 안으로 들어오면 '근접' 알림, imminent = '임박' 알림. 0.015 = 1.5%. repeat_minutes = 같은 단계면 몇 분마다 다시 알릴지.",
+ "XAU": {"near": 0.015, "imminent": 0.007},
+ "XAG": {"near": 0.025, "imminent": 0.012},
+ "repeat_minutes": 60,
+ "funding": {"change_pp": 0.03, "watch": ["XAG-PERP", "XAU-PERP"]}
+}

@@ -75,6 +75,13 @@ body{margin:0;background:var(--bg);color:var(--fg);font-family:Pretendard,"Apple
     <div class="chart" id="c-fund"></div>
     <div class="msg" id="fund-msg"></div>
   </section>
+  <section class="pn" id="pf">
+    <div class="ph"><span class="title">내 포지션 전체 펀딩</span><span class="note" id="pf-t">지금 보유 포지션 × 기록된 펀딩률 · 하루 기준 달러</span></div>
+    <div class="fund" id="pf-now"></div>
+    <div class="chart" id="c-pf"></div>
+    <div class="tw" style="overflow-x:auto;margin-top:8px"><table id="pf-table" style="width:100%;border-collapse:collapse;font-size:12px"></table></div>
+    <div class="msg" id="pf-msg"></div>
+  </section>
 </div>
 
 <script>
@@ -202,6 +209,7 @@ async function loadFunding() {
   try { rows = await (await fetch('data/funding.json?' + Date.now())).json(); } catch (e) { msg.textContent = '펀딩 기록을 불러오지 못했어요.'; return; }
   if (!rows.length) { msg.textContent = '아직 기록이 없어요. Actions가 처음 돌고 나면 여기 쌓여요.'; return; }
   rows.forEach(r => r.t = new Date(r.time_utc));
+  drawPortfolioFunding(rows);
   const pick = tk => rows.filter(r => r.ticker === tk);
   const find = re => [...new Set(rows.map(r => r.ticker))].find(t => re.test(t));
   const has = t => rows.some(r => r.ticker === t);
@@ -235,6 +243,66 @@ async function loadFunding() {
     svg.append('path').datum(s.pts).attr('fill', 'none').attr('stroke', s.color).attr('stroke-width', 2).attr('stroke-linejoin', 'round').attr('d', d3.line().x(p => x(p.t)).y(p => y(p.v)).curve(d3.curveStepAfter));
     const l = s.pts.at(-1); svg.append('text').attr('x', x(l.t) - 4).attr('y', y(l.v) - 8).attr('text-anchor', 'end').attr('font-size', 11).attr('fill', s.color).text(`${s.name} ${pct2(l.v)}`);
   });
+}
+
+function legRate(leg, r) {
+  // +는 받는 돈, −는 내는 돈 (연율)
+  if (r.swap_long_apr != null || r.swap_short_apr != null) return leg.side === 'long' ? -(r.swap_long_apr || 0) : (r.swap_short_apr || 0);
+  const a = r.perp_next_apr ?? r.perp_last_apr ?? 0;
+  return leg.side === 'long' ? -a : a;
+}
+
+function drawPortfolioFunding(rows) {
+  const msg = document.getElementById('pf-msg');
+  if (!rows.length || !positions.length) { msg.textContent = '펀딩 기록이 쌓이면 계산돼요.'; return; }
+  const times = [...new Set(rows.map(r => r.time_utc))].sort();
+  const at = d3.group(rows, r => r.time_utc);
+  const last = new Map();
+  const series = [];
+  const byAcctNow = new Map();
+  times.forEach(t => {
+    (at.get(t) || []).forEach(r => last.set(r.ticker, r));
+    let tot = 0, missing = 0;
+    positions.forEach(leg => {
+      const r = last.get(leg.instrument);
+      if (!r) { missing++; return; }
+      const v = (+leg.qty) * (+r.mark_price || 0) * legRate(leg, r) / 365;
+      tot += v;
+      if (t === times.at(-1)) byAcctNow.set(leg.account, (byAcctNow.get(leg.account) || 0) + v);
+    });
+    series.push({t: new Date(t), v: tot, missing});
+  });
+  // 누적 (기록 간격만큼 적분)
+  let cum = 0;
+  for (let i = 1; i < series.length; i++) cum += series[i - 1].v * (series[i].t - series[i - 1].t) / 864e5;
+  const now = series.at(-1);
+  const box = document.getElementById('pf-now'); box.textContent = '';
+  const tile = (k, v, f) => { const d = el('div'); d.append(el('div', 'k', k), el('div', 'v ' + (v >= 0 ? 'up' : 'dn'), f(v))); box.appendChild(d); };
+  const usd = v => (v >= 0 ? '+$' : '−$') + Math.abs(v).toFixed(2);
+  tile('지금 하루 펀딩', now.v, usd);
+  tile('한 달 환산', now.v * 30, usd);
+  tile('기록 시작 후 누적(추정)', cum, usd);
+  msg.textContent = now.missing ? `${now.missing}개 다리는 아직 펀딩 기록이 없어 0으로 계산했어요 (다음 기록부터 포함).` : '스왑은 수요일에 3배로 정산되지만 여기선 하루 평균으로 계산해요.';
+  // 계정별 표
+  const tb = document.getElementById('pf-table'); tb.textContent = '';
+  const hd = el('tr'); ['계정', '하루', '한 달'].forEach((t, i) => { const th = el('th', null, t); th.style.cssText = 'text-align:' + (i ? 'right' : 'left') + ';color:var(--mu);font-weight:500;padding:5px 8px;border-bottom:1px solid var(--ln)'; hd.appendChild(th); }); tb.appendChild(hd);
+  [...byAcctNow].sort((a, b) => b[1] - a[1]).forEach(([a, v]) => {
+    const tr = el('tr');
+    [[a, 'left', ''], [usd(v), 'right', v >= 0 ? 'up' : 'dn'], [usd(v * 30), 'right', v >= 0 ? 'up' : 'dn']].forEach(([t, al, c]) => { const td = el('td', c, t); td.style.cssText = 'text-align:' + al + ';padding:5px 8px;border-bottom:1px solid var(--ln)'; tr.appendChild(td); });
+    tb.appendChild(tr);
+  });
+  // 차트
+  const c = document.getElementById('c-pf'); c.textContent = '';
+  if (series.length < 2) return;
+  const W = c.clientWidth || 600, H = 200, m = {t: 10, r: 60, b: 22, l: 4};
+  const x = d3.scaleTime(d3.extent(series, s => s.t), [m.l, W - m.r]);
+  const [lo, hi] = d3.extent(series, s => s.v), pad = Math.max((hi - lo) * .2, .5);
+  const y = d3.scaleLinear([Math.min(0, lo - pad), Math.max(0, hi + pad)], [H - m.b, m.t]);
+  const svg = d3.select(c).append('svg').attr('width', '100%').attr('viewBox', `0 0 ${W} ${H}`).attr('height', H);
+  y.ticks(4).forEach(t => { svg.append('line').attr('x1', m.l).attr('x2', W - m.r).attr('y1', y(t)).attr('y2', y(t)).attr('stroke', t === 0 ? C.mu : C.ln); svg.append('text').attr('x', W - m.r + 6).attr('y', y(t)).attr('dominant-baseline', 'middle').attr('font-size', 11).attr('fill', C.mu).text('$' + t.toFixed(t % 1 ? 1 : 0)); });
+  x.ticks(4).forEach(t => svg.append('text').attr('x', x(t)).attr('y', H - 4).attr('font-size', 10).attr('fill', C.mu).attr('text-anchor', 'middle').text(d3.timeFormat('%m/%d %H시')(t)));
+  svg.append('path').datum(series).attr('fill', 'none').attr('stroke', C.mint).attr('stroke-width', 2).attr('d', d3.line().x(s => x(s.t)).y(s => y(s.v)).curve(d3.curveStepAfter));
+  svg.append('text').attr('x', x(now.t) - 4).attr('y', y(now.v) - 8).attr('text-anchor', 'end').attr('font-size', 11).attr('fill', C.mint).text(`하루 ${usd(now.v)}`);
 }
 
 async function init() {
