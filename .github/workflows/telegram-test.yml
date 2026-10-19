@@ -1,0 +1,27 @@
+name: telegram-test
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Send test message
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          cd scripts
+          python -c "
+          import os, sys
+          from common import telegram, hl_prices
+          if not os.environ.get('TELEGRAM_BOT_TOKEN') or not os.environ.get('TELEGRAM_CHAT_ID'):
+              sys.exit('Secrets TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID 가 비어 있어요')
+          p = hl_prices()
+          telegram('✅ OI 모니터 연결 확인\n금 {:,.1f} · 은 {:,.3f}\n이제 SL/TP 근접·펀딩 변화 때 알림이 와요.'.format(p['XAU'], p['XAG']))
+          "
