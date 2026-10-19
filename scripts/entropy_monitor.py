@@ -227,13 +227,22 @@ def analyze(cfg, market, accts):
             k = 1 if ll["liq_dist"] < cfg["liq_near"] else 0
             ko = lambda s_: "롱" if s_ == "long" else "숏"
             # Entropy는 strict isolated: 마진 '추가'만 되고 '제거'는 안 됨 (포지션을 줄여야 빠짐)
-            fee = wl["ntl"] * 2 * cfg.get("taker_fee", 0.00009)
             msg = (f"{c} 마진 보충: {la['label']} {c} {ko(ll['side'])} 청산거리 {ll['liq_dist']:.1%} → {target:.0%} 만들려면 ${need:,.0f} 추가\n"
-                   f"① {la['label']} 여유잔고 ${la['free']:,.0f}" + (" (부족하면 다른 지갑에서 입금)" if la["free"] < need else "") +
+                   f"① {la['label']} 여유잔고 ${la['free']:,.0f}" + (" (부족)" if la["free"] < need else "") +
                    f"에서 {c} {ko(ll['side'])} 마진에 ${need:,.0f} 추가 — 거래 없음, 수수료 0")
-            if avail > 50:
-                msg += (f"\n② 예비금이 모자라면: {wa['label']} {c} {ko(wl['side'])}(이익 ${avail:,.0f})을 닫고 같은 수량 재진입 → 풀린 이익을 {la['label']}로 전송"
-                        f" (수수료 약 ${fee:,.1f}, 재진입 후 {c} SL/TP 다시 맞추기)")
+            # 이익 꺼낼 포지션: 같은 지갑의 수익 포지션이 있으면 그걸로(전송 불필요), 없으면 다른 지갑의 같은 종목
+            same = [l for l in la["legs"] if l is not ll and l["upnl"] > 50]
+            if same:
+                src_a, src_l, xfer = la, max(same, key=lambda l: l["upnl"]), ""
+            else:
+                src_a, src_l, xfer = wa, wl, f" → {la['label']}로 전송"
+            if src_l["upnl"] > 50 and la["free"] < need:
+                fee = src_l["ntl"] * 2 * cfg.get("taker_fee", 0.00009)
+                msg += (f"\n② 여유잔고가 없으면: {src_a['label']} {src_l['coin']} {ko(src_l['side'])}(이익 ${src_l['upnl']:,.0f})을 닫고 같은 수량 재진입"
+                        f"{xfer} → 풀린 이익으로 ① 진행 (수수료 약 ${fee:,.1f}, 재진입한 종목 SL/TP 다시 맞추기)")
+                if src_l["upnl"] < need:
+                    got = ll["liq_dist"] + src_l["upnl"] / ll["ntl"]
+                    msg += f"\n  (이익 ${src_l['upnl']:,.0f}만 넣으면 청산거리 {got:.0%}까지 회복)"
             al.append((f"recycle:{c}", k, msg))
 
     # 8) SL/TP 점검 — 마진을 넣고 빼면 청산가가 움직여서 SL이 청산가 밖으로 밀릴 수 있음

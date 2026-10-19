@@ -310,7 +310,9 @@ function drawTotals(accts) {
       const ko = s => s === 'long' ? '롱' : '숏';
       const cls = lo.l.dist < CFG.liq_imminent ? 'dnbox' : lo.l.dist < CFG.liq_near ? 'warnbox' : 'msg';
       let t = `${c}: ${lo.a.label} ${ko(lo.l.side)} 청산거리 ${pct(lo.l.dist)} → ${pct0(target)} 만들려면 마진 ${usd(need)} 추가 (여유잔고 ${usd(lo.a.free)}, 수수료 0)`;
-      if (lo.a.free < need && hi.l.upnl > 50) t += ` · 모자라면 ${hi.a.label} ${ko(hi.l.side)}(이익 ${usd(hi.l.upnl)}) 닫고 재진입해서 이익 옮기기`;
+      const same = lo.a.legs.filter(l => l !== lo.l && l.upnl > 50).sort((p, q) => q.upnl - p.upnl)[0];
+      const src = same ? {a: lo.a, l: same, x: ''} : {a: hi.a, l: hi.l, x: ` → ${lo.a.label}로 전송`};
+      if (lo.a.free < need && src.l.upnl > 50) t += ` · 잔고 없으면 ${src.a.label} ${src.l.coin} ${ko(src.l.side)}(이익 ${usd(src.l.upnl)}) 닫고 재진입${src.x} → 그 돈으로 추가`;
       if (need < 1) t = `${c}: 두 포지션 모두 청산거리 ${pct0(target)} 이상 · 재분배 필요 없음`;
       msgs.append(el('div', cls, t));
     });
