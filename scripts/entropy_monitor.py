@@ -195,7 +195,7 @@ def analyze(cfg, market, accts):
             amt = min(need, avail)
             short = need - amt
             msg = (f"{c} 마진 재분배: {la['label']} {c} {ko(ll['side'])} 청산거리 {ll['liq_dist']:.1%} → {target:.0%} 만들려면 ${need:,.0f} 필요\n"
-                   f"① {wa['label']} {c} {ko(wl['side'])} 이익 ${amt:,.0f} 빼기(마진 제거가 막혀 있으면 이 포지션을 닫고 같은 크기로 바로 재진입) → ② {la['label']}로 전송 → ③ {la['label']} {c} {ko(ll['side'])} 마진에 추가")
+                   f"① {wa['label']} {c} {ko(wl['side'])} 격리마진에서 ${amt:,.0f} 제거(연필 → 제거) → ② {la['label']}로 전송 → ③ {la['label']} {c} {ko(ll['side'])} 마진에 추가")
             if short > 1:
                 msg += f"\n(이익이 ${short:,.0f} 모자람 → {la['label']} 여유잔고 ${la['free']:,.0f}에서 보충)"
             al.append((f"recycle:{c}", k, msg))

@@ -72,7 +72,7 @@ button{border:1px solid var(--ln);background:var(--pn2);color:var(--fg);border-r
     <details id="setup">
       <summary>계정 주소 설정 (이 브라우저에만 저장, 레포에는 안 올라감)</summary>
       <div id="addr-fields"></div>
-      <button id="save">저장</button> <span class="msg" id="save-msg"></span>
+      <button id="save">저장</button> <button id="copy-link">폰용 링크 복사</button> <span class="msg" id="save-msg" style="word-break:break-all"></span>
     </details>
   </section>
 
@@ -120,7 +120,19 @@ let CFG = {accounts: {A: {label: 'A', legs: {DRAM: 'long', EWY: 'short'}}, B: {l
 let market = {}, candles = {DRAM: [], EWY: []};
 
 function store(k, v) { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) { return null; } }
-const addrs = () => { try { return JSON.parse(store('entropy_addrs') || '{}'); } catch (e) { return {}; } };
+// 주소: URL 뒤 #A=0x…&B=0x… 가 있으면 그걸 쓰고(이 기기에도 저장), 없으면 브라우저에 저장된 값.
+// # 뒤 내용은 서버로 전송되지 않아서 레포·Pages 로그에 안 남아요.
+function hashAddrs() {
+  const o = {};
+  new URLSearchParams(location.hash.slice(1)).forEach((v, k) => { if (/^0x[0-9a-fA-F]{40}$/.test(v)) o[k] = v; });
+  return o;
+}
+const addrs = () => {
+  const h = hashAddrs();
+  if (Object.keys(h).length) { store('entropy_addrs', JSON.stringify(h)); return h; }
+  try { return JSON.parse(store('entropy_addrs') || '{}'); } catch (e) { return {}; }
+};
+const addrLink = o => location.origin + location.pathname + '#' + new URLSearchParams(o).toString();
 
 async function post(body) {
   const r = await fetch(HL, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)});
@@ -143,8 +155,14 @@ document.getElementById('save').onclick = () => {
   const o = {};
   for (const k of Object.keys(CFG.accounts)) { const v = document.getElementById('addr-' + k).value.trim(); if (v) o[k] = v; }
   store('entropy_addrs', JSON.stringify(o));
-  document.getElementById('save-msg').textContent = '저장됨';
+  history.replaceState(null, '', addrLink(o));
+  document.getElementById('save-msg').textContent = '저장됨 · 지금 주소창 링크를 북마크하면 다른 기기에서도 자동으로 떠요';
   tick();
+};
+document.getElementById('copy-link').onclick = async () => {
+  const link = addrLink(addrs()), m = document.getElementById('save-msg');
+  try { await navigator.clipboard.writeText(link); m.textContent = '링크 복사됨 → 폰으로 보내서 열고 홈 화면에 추가하세요'; }
+  catch (e) { m.textContent = link; }
 };
 
 // ---------- 시장
