@@ -1,0 +1,38 @@
+name: entropy-alerts
+
+on:
+  schedule:
+    - cron: "2,12,22,32,42,52 * * * *"   # 10분마다 (GitHub 사정으로 몇 분 늦을 수 있음)
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: entropy-alerts
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Check Entropy positions
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.ENTROPY_TELEGRAM_BOT_TOKEN || secrets.TELEGRAM_BOT_TOKEN }}   # Entropy 전용 봇 우선
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          ENTROPY_ACCOUNTS: ${{ secrets.ENTROPY_ACCOUNTS }}
+        run: python scripts/entropy_monitor.py
+      - name: Save alert state
+        run: |
+          git config user.name "alert-bot"
+          git config user.email "alert-bot@users.noreply.github.com"
+          git add data/entropy_alert_state.json
+          if ! git diff --cached --quiet; then
+            git commit -m "entropy alert state $(date -u +%H:%MZ)"
+            git pull --rebase
+            git push
+          fi
