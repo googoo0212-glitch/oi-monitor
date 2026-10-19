@@ -89,7 +89,7 @@ button{border:1px solid var(--ln);background:var(--pn2);color:var(--fg);border-r
   </section>
 
   <section>
-    <div class="ph" style="margin:4px 2px 8px"><span class="title">계정별</span><span class="note">격리: 포지션마다 따로 청산 → 같은 종목 반대 포지션(다른 계정)의 이익을 빼서 손실 포지션 마진에 넣어 청산거리 유지</span></div>
+    <div class="ph" style="margin:4px 2px 8px"><span class="title">계정별</span><span class="note">격리(마진 추가만 가능): 포지션마다 따로 청산 → 손실 포지션에 예비금으로 마진 보충해서 청산거리 유지</span></div>
     <div class="cards" id="cards"><div class="pn msg">위 '계정 주소 설정'에서 A/B 지갑 주소를 넣으면 포지션이 보여요.</div></div>
   </section>
 
@@ -222,7 +222,7 @@ function drawMarket() {
 }
 
 // ---------- 계정
-function analyze(key, raw) {
+function analyze(key, raw, orders) {
   const acfg = CFG.accounts[key], av = +raw.marginSummary.accountValue, maint = +raw.crossMaintenanceMarginUsed;
   const legs = raw.assetPositions.map(a => a.position).filter(p => +p.szi !== 0).map(p => {
     const coin = p.coin.split(':').pop(), szi = +p.szi, mark = market[coin] ? market[coin].mark : +p.entryPx;
@@ -231,6 +231,13 @@ function analyze(key, raw) {
     return {coin, side, szi, ntl: Math.abs(szi) * mark, entry: +p.entryPx, mark, upnl: +p.unrealizedPnl, liq, dist,
       lev: p.leverage ? `${p.leverage.type === 'cross' ? '교차' : '격리'} ${p.leverage.value}x` : '', cross: p.leverage && p.leverage.type === 'cross',
       fund: p.cumFunding ? -(+p.cumFunding.sinceOpen) : null, margin: +(p.marginUsed || 0)};
+  });
+  legs.forEach(l => {  // SL/TP: 롱이면 현재가 아래 트리거 = SL, 위 = TP (숏은 반대)
+    const tr = (orders || []).filter(o => o.isTrigger && o.coin.split(':').pop() === l.coin).map(o => +o.triggerPx);
+    const below = tr.filter(x => x < l.mark), above = tr.filter(x => x > l.mark);
+    const bmax = below.length ? Math.max(...below) : null, amin = above.length ? Math.min(...above) : null;
+    [l.sl, l.tp] = l.side === 'long' ? [bmax, amin] : [amin, bmax];
+    l.slBad = l.sl != null && l.liq && (l.side === 'long' ? l.sl <= l.liq : l.sl >= l.liq);
   });
   const gross = d3.sum(legs, l => l.ntl), allCross = legs.length > 0 && legs.every(l => l.cross);
   const buf = allCross ? (av - maint) / (gross / legs.length) : null;
@@ -261,18 +268,20 @@ function drawAccounts(accts) {
     c.append(nr);
     if (a.legs.length) {
       const tw = el('div', 'tw'), t = el('table'), hr = el('tr');
-      ['포지션', '명목', '격리마진', '진입', '현재', '청산가', '거리', '미실현', '받은 펀딩'].forEach(x => hr.append(el('th', null, x)));
+      ['포지션', '명목', '격리마진', '진입', '현재', '청산가', '거리', 'SL / TP', '미실현', '받은 펀딩'].forEach(x => hr.append(el('th', null, x)));
       t.append(hr);
       a.legs.forEach(l => {
         const r = el('tr'), first = el('td');
         first.append(el('span', l.side === 'long' ? 'L' : 'S', (l.side === 'long' ? '롱 ' : '숏 ') + l.coin), el('span', 'k', ' ' + l.lev));
         r.append(first, el('td', null, usd(l.ntl)), el('td', null, l.cross ? '교차' : usd(l.margin)), el('td', null, l.entry.toFixed(3)), el('td', null, l.mark.toFixed(3)),
           el('td', null, l.liq ? l.liq.toFixed(3) : '—'), el('td', !l.cross && l.dist != null && l.dist < CFG.liq_near ? 'am' : null, l.dist == null ? '—' : pct(l.dist)),
+          el('td', l.slBad || l.sl == null ? 'dn' : null, `${l.sl == null ? '없음' : l.sl.toFixed(3)} / ${l.tp == null ? '—' : l.tp.toFixed(3)}`),
           el('td', l.upnl >= 0 ? 'up' : 'dn', susd(l.upnl)), el('td', l.fund >= 0 ? 'up' : 'dn', l.fund == null ? '—' : susd(l.fund)));
         t.append(r);
       });
       tw.append(t); c.append(tw);
     }
+    a.legs.filter(l => l.slBad).forEach(l => c.append(el('div', 'dnbox', `${l.coin} SL ${l.sl.toFixed(3)}이 청산가 ${l.liq.toFixed(3)} 밖 → 청산이 먼저 옴. 아래 권장값으로 옮기기`)));
     if (a.missing.length) c.append(el('div', 'dnbox', '포지션 없음/방향 다름: ' + a.missing.join(', ') + ' → 청산·체결 확인'));
     if (a.imb != null && a.imb > CFG.leg_imbalance) c.append(el('div', 'warnbox', `두 포지션 크기 차이 ${pct0(a.imb)} → 1:1로 다시 맞추기`));
     
@@ -300,10 +309,21 @@ function drawTotals(accts) {
       const lo = legs[0], hi = legs[legs.length - 1], need = Math.max(0, lo.l.ntl * (target - lo.l.dist)), take = Math.min(need, Math.max(0, hi.l.upnl));
       const ko = s => s === 'long' ? '롱' : '숏';
       const cls = lo.l.dist < CFG.liq_imminent ? 'dnbox' : lo.l.dist < CFG.liq_near ? 'warnbox' : 'msg';
-      let t = `${c}: ${lo.a.label} ${ko(lo.l.side)} 청산거리 ${pct(lo.l.dist)} → ${pct0(target)} 만들려면 ${usd(need)} · ${hi.a.label} ${ko(hi.l.side)} 이익 ${usd(take)} 빼서 옮기기`;
-      if (need - take > 1) t += ` (+ 여유잔고에서 ${usd(need - take)})`;
+      let t = `${c}: ${lo.a.label} ${ko(lo.l.side)} 청산거리 ${pct(lo.l.dist)} → ${pct0(target)} 만들려면 마진 ${usd(need)} 추가 (여유잔고 ${usd(lo.a.free)}, 수수료 0)`;
+      if (lo.a.free < need && hi.l.upnl > 50) t += ` · 모자라면 ${hi.a.label} ${ko(hi.l.side)}(이익 ${usd(hi.l.upnl)}) 닫고 재진입해서 이익 옮기기`;
       if (need < 1) t = `${c}: 두 포지션 모두 청산거리 ${pct0(target)} 이상 · 재분배 필요 없음`;
       msgs.append(el('div', cls, t));
+    });
+    const gap = CFG.sl_gap || .02;
+    COINS.forEach(c => {
+      const L = accts.flatMap(a => a.legs.filter(l => l.coin === c && l.side === 'long' && l.liq).map(l => ({a, l})))[0];
+      const S = accts.flatMap(a => a.legs.filter(l => l.coin === c && l.side === 'short' && l.liq).map(l => ({a, l})))[0];
+      if (!L || !S) return;
+      const up = S.l.liq * (1 - gap), down = L.l.liq * (1 + gap);
+      const off = (x, y) => x == null || y == null || Math.abs(x - y) / y > .002;
+      const bad = L.l.slBad || S.l.slBad, mis = off(L.l.tp, S.l.sl) || off(S.l.tp, L.l.sl);
+      msgs.append(el('div', bad ? 'dnbox' : mis ? 'warnbox' : 'msg',
+        `${c} 권장 SL/TP (청산가 ${pct0(gap)} 안쪽, 미러): 위 ${up.toFixed(3)} = ${S.a.label} 숏 SL · ${L.a.label} 롱 TP / 아래 ${down.toFixed(3)} = ${L.a.label} 롱 SL · ${S.a.label} 숏 TP` + (bad ? ' · ⚠ SL이 청산가 밖' : mis ? ' · 미러 어긋남' : '')));
     });
   } else if (accts.length === 2) {
     const [hi, lo] = accts.slice().sort((p, q) => q.av - p.av), gap = (hi.av - lo.av) / ((hi.av + lo.av) / 2);
@@ -367,7 +387,11 @@ async function tick() {
   try {
     await loadMarket(); drawMarket();
     const a = addrs(), accts = [];
-    for (const k of Object.keys(CFG.accounts)) if (a[k]) accts.push(analyze(k, await post({type: 'clearinghouseState', user: a[k], dex: DEX})));
+    for (const k of Object.keys(CFG.accounts)) if (a[k]) {
+      let orders = [];
+      try { orders = await post({type: 'frontendOpenOrders', user: a[k], dex: DEX}); } catch (e) {}
+      accts.push(analyze(k, await post({type: 'clearinghouseState', user: a[k], dex: DEX}), Array.isArray(orders) ? orders : []));
+    }
     if (accts.length) { drawAccounts(accts); drawTotals(accts); }
     live.className = 'live'; document.getElementById('live-t').textContent = '실시간 · ' + new Date().toLocaleTimeString('ko-KR');
   } catch (e) {

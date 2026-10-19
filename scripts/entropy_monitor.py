@@ -46,6 +46,27 @@ def fetch_account(addr, dex):
     return _post({"type": "clearinghouseState", "user": addr, "dex": dex})
 
 
+def fetch_triggers(addr, dex):
+    """걸려 있는 SL/TP(트리거 주문) 목록. 실패하면 None (알림 생략)."""
+    try:
+        rows = _post({"type": "frontendOpenOrders", "user": addr, "dex": dex})
+    except Exception as e:
+        print("frontendOpenOrders 실패:", e)
+        return None
+    if not isinstance(rows, list):
+        return None
+    out = []
+    for o in rows:
+        if not isinstance(o, dict) or not o.get("isTrigger"):
+            continue
+        try:
+            out.append({"coin": o.get("coin", "").split(":")[-1], "px": float(o.get("triggerPx")),
+                        "sz": float(o.get("sz") or 0), "type": o.get("orderType", "")})
+        except (TypeError, ValueError):
+            pass
+    return out
+
+
 def fetch_funding_24h(addr, coins):
     """최근 24시간 받은(+)/낸(-) 펀딩 합계 (USDC)."""
     start = int((time.time() - 86400) * 1000)
@@ -63,7 +84,7 @@ def fetch_funding_24h(addr, coins):
 
 
 # ---------------------------------------------------------------- 계산
-def analyze_account(key, cfg, raw, market):
+def analyze_account(key, cfg, raw, market, triggers=None):
     acfg = cfg["accounts"][key]
     ms = raw.get("marginSummary", {})
     av = float(ms.get("accountValue") or 0)
@@ -89,6 +110,19 @@ def analyze_account(key, cfg, raw, market):
             "lev": (p.get("leverage") or {}).get("value"),
             "margin": float(p.get("marginUsed") or 0),
         })
+    # 포지션별 SL/TP: 롱이면 현재가 아래 트리거 = SL, 위 = TP (숏은 반대)
+    for l in legs:
+        l["sl"] = l["tp"] = None
+        if triggers is None:
+            l["orders_known"] = False
+            continue
+        l["orders_known"] = True
+        below = [t["px"] for t in triggers if t["coin"] == l["coin"] and t["px"] < l["mark"]]
+        above = [t["px"] for t in triggers if t["coin"] == l["coin"] and t["px"] > l["mark"]]
+        if l["side"] == "long":
+            l["sl"], l["tp"] = (max(below) if below else None), (min(above) if above else None)
+        else:
+            l["sl"], l["tp"] = (min(above) if above else None), (max(below) if below else None)
     gross = sum(l["ntl"] for l in legs)
     all_cross = bool(legs) and all(l["lev_type"] == "cross" for l in legs)
     mean_leg = gross / len(legs) if legs else 0
@@ -192,15 +226,46 @@ def analyze(cfg, market, accts):
             recycle.append(r)
             k = 1 if ll["liq_dist"] < cfg["liq_near"] else 0
             ko = lambda s_: "롱" if s_ == "long" else "숏"
-            amt = min(need, avail)
-            short = need - amt
-            msg = (f"{c} 마진 재분배: {la['label']} {c} {ko(ll['side'])} 청산거리 {ll['liq_dist']:.1%} → {target:.0%} 만들려면 ${need:,.0f} 필요\n"
-                   f"① {wa['label']} {c} {ko(wl['side'])} 격리마진에서 ${amt:,.0f} 제거(연필 → 제거) → ② {la['label']}로 전송 → ③ {la['label']} {c} {ko(ll['side'])} 마진에 추가")
-            if short > 1:
-                msg += f"\n(이익이 ${short:,.0f} 모자람 → {la['label']} 여유잔고 ${la['free']:,.0f}에서 보충)"
+            # Entropy는 strict isolated: 마진 '추가'만 되고 '제거'는 안 됨 (포지션을 줄여야 빠짐)
+            fee = wl["ntl"] * 2 * cfg.get("taker_fee", 0.00009)
+            msg = (f"{c} 마진 보충: {la['label']} {c} {ko(ll['side'])} 청산거리 {ll['liq_dist']:.1%} → {target:.0%} 만들려면 ${need:,.0f} 추가\n"
+                   f"① {la['label']} 여유잔고 ${la['free']:,.0f}" + (" (부족하면 다른 지갑에서 입금)" if la["free"] < need else "") +
+                   f"에서 {c} {ko(ll['side'])} 마진에 ${need:,.0f} 추가 — 거래 없음, 수수료 0")
+            if avail > 50:
+                msg += (f"\n② 예비금이 모자라면: {wa['label']} {c} {ko(wl['side'])}(이익 ${avail:,.0f})을 닫고 같은 수량 재진입 → 풀린 이익을 {la['label']}로 전송"
+                        f" (수수료 약 ${fee:,.1f}, 재진입 후 {c} SL/TP 다시 맞추기)")
             al.append((f"recycle:{c}", k, msg))
 
-    summary = {"net": net, "rebalance": reb, "recycle": recycle,
+    # 8) SL/TP 점검 — 마진을 넣고 빼면 청산가가 움직여서 SL이 청산가 밖으로 밀릴 수 있음
+    gap = cfg.get("sl_gap", 0.02)
+    sltp = {}
+    for c in coins:
+        lg = [(a, l) for a in accts for l in a["legs"] if l["coin"] == c and l.get("orders_known")]
+        lo = [(a, l) for a, l in lg if l["side"] == "long" and l["liq"]]
+        sh = [(a, l) for a, l in lg if l["side"] == "short" and l["liq"]]
+        if not lo or not sh:
+            continue
+        (la, ll), (sa, sl_) = lo[0], sh[0]
+        down = round(ll["liq"] * (1 + gap), 3)   # 롱 SL = 숏 TP
+        up = round(sl_["liq"] * (1 - gap), 3)    # 숏 SL = 롱 TP
+        sltp[c] = {"up": up, "down": down}
+        probs = []
+        if ll["sl"] is None or sl_["sl"] is None:
+            probs.append("SL 없음")
+        else:
+            if ll["sl"] <= ll["liq"]:
+                probs.append(f"{la['label']} 롱 SL {ll['sl']:,.3f}이 청산가 {ll['liq']:,.3f} 아래 → 청산이 먼저 옴")
+            if sl_["sl"] >= sl_["liq"]:
+                probs.append(f"{sa['label']} 숏 SL {sl_['sl']:,.3f}이 청산가 {sl_['liq']:,.3f} 위 → 청산이 먼저 옴")
+        mis = lambda x, y: x is None or y is None or abs(x - y) / y > 0.002
+        if not probs and (mis(ll["tp"], sl_["sl"]) or mis(sl_["tp"], ll["sl"])):
+            probs.append("미러 어긋남 (한쪽 SL과 반대쪽 TP 가격이 다름)")
+        danger = any("먼저" in p for p in probs)
+        msg = (f"{c} SL/TP 점검: " + "; ".join(probs) +
+               f"\n권장 → 위 {up:,.3f} ({sa['label']} 숏 SL = {la['label']} 롱 TP) · 아래 {down:,.3f} ({la['label']} 롱 SL = {sa['label']} 숏 TP)")
+        al.append((f"sltp:{c}", (2 if danger else 1) if probs else 0, msg if probs else f"{c} SL/TP 정상"))
+
+    summary = {"net": net, "rebalance": reb, "recycle": recycle, "sltp": sltp,
                "total_oi": sum(a["gross"] for a in accts),
                "total_equity": sum(a["equity"] for a in accts),
                "total_upnl": sum(a["upnl"] for a in accts)}
@@ -254,7 +319,8 @@ def collect(cfg):
         if key not in addrs:
             print(f"{key}: 주소 없음 → 건너뜀")
             continue
-        accts.append(analyze_account(key, cfg, fetch_account(addrs[key], cfg["dex"]), market))
+        accts.append(analyze_account(key, cfg, fetch_account(addrs[key], cfg["dex"]), market,
+                                     fetch_triggers(addrs[key], cfg["dex"])))
     return addrs, market, accts
 
 
