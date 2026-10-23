@@ -296,6 +296,9 @@ def dispatch(alerts, state, cfg, now):
     return out
 
 
+CFG_NEAR = [0.11]
+
+
 def daily_summary(market, accts, summary, fund24):
     ts = datetime.now(KST).strftime("%m/%d %H:%M")
     d, e = market.get("DRAM", {}), market.get("EWY", {})
@@ -308,6 +311,14 @@ def daily_summary(market, accts, summary, fund24):
         fs = f" · 펀딩24h {usd(f)}" if f is not None else ""
         sb = f" · 스프레드여유 {a['spread_buf']:.0%}" if a["spread_buf"] is not None else ""
         lines.append(f"- {a['label']}: ${a['equity']:,.0f} · 총노출 {a['lev_gross'] or 0:.1f}x{sb}{fs}")
+        for l in a["legs"]:
+            if l["liq_dist"] is None or l["lev_type"] == "cross":
+                continue
+            ko = "롱" if l["side"] == "long" else "숏"
+            # 청산거리가 liq_near(주의 알림)까지 줄어드는 가격
+            k = CFG_NEAR[0]
+            trig = l["liq"] / (1 - k) if l["side"] == "long" else l["liq"] / (1 + k)
+            lines.append(f"   {l['coin']} {ko} 청산거리 {l['liq_dist']:.1%} · 알림가 {trig:,.2f}")
     return "\n".join(lines)
 
 
@@ -357,6 +368,7 @@ def main():
         record(cfg, market, accts)
         return
     state = load_json("entropy_alert_state.json", {}) or {}
+    CFG_NEAR[0] = cfg.get("liq_near", 0.11)
     alerts, summary = analyze(cfg, market, accts)
     now = time.time()
     out = dispatch(alerts, state, cfg, now)
