@@ -70,6 +70,7 @@ a{color:var(--mint)}
       <div><div class="k">총 자산</div><div class="big" id="h-eq">—</div><div class="k">Entropy 실시간 + Variational 기록값</div></div>
       <div><div class="k">평균 레버리지 (OI÷자산)</div><div class="big" id="h-lev">—</div><div class="k">계정 합계 기준</div></div>
       <div><div class="k">가장 가까운 청산</div><div class="big" id="h-risk">—</div><div class="k" id="h-risk-sub">—</div></div>
+      <div><div class="k">Variational 누적 포인트</div><div class="big" id="h-pts">—</div><div class="k" id="h-pts-sub">—</div></div>
     </div>
   </section>
 
@@ -80,14 +81,21 @@ a{color:var(--mint)}
         <button type="button" data-k="risk" aria-pressed="true">위험한 순</button>
         <button type="button" data-k="oi" aria-pressed="false">OI 큰 순</button>
         <button type="button" data-k="eff" aria-pressed="false">효율 좋은 순</button>
-        <button type="button" data-k="pts" aria-pressed="false">포인트 순</button>
+        <button type="button" data-k="pts" aria-pressed="false">지난주 포인트 순</button>
+        <button type="button" data-k="cum" aria-pressed="false">누적 포인트 순</button>
       </div>
     </div>
     <div class="tw"><table id="lb">
-      <thead><tr><th class="l">#</th><th class="l">계정</th><th class="l">프로젝트 · 구조</th><th>자산</th><th>OI</th><th>레버리지</th><th>청산까지</th><th>지난주 포인트</th><th>OI $1k당</th></tr></thead>
+      <thead><tr><th class="l">#</th><th class="l">계정</th><th class="l">프로젝트 · 구조</th><th>자산</th><th>OI</th><th>레버리지</th><th>청산까지</th><th>지난주 포인트</th><th>OI $1k당</th><th>누적 포인트</th><th>누적 가치</th></tr></thead>
       <tbody></tbody>
     </table></div>
-    <div class="msg" id="lb-msg" style="margin-top:8px">청산까지 = 가장 가까운 다리가 청산가까지 남은 가격 거리. 효율 = 지난주 포인트 ÷ OI($1k)</div>
+    <div class="msg" id="lb-msg" style="margin-top:8px">청산까지 = 가장 가까운 다리가 청산가까지 남은 가격 거리. 효율 = 지난주 포인트 ÷ OI($1k) · 누적 가치 = 누적 포인트 × 포인트당 가격 · 포지션 없는 계정은 OI 0으로 표시</div>
+  </section>
+
+  <section class="pn">
+    <div class="ph"><span class="title">Variational 주간 포인트</span><span class="note" id="wk-t"></span></div>
+    <div id="wk-chart" role="img" aria-label="Variational 주간 포인트 막대그래프"></div>
+    <div class="msg" id="wk-msg" style="margin-top:6px"></div>
   </section>
 
   <section>
@@ -194,7 +202,7 @@ async function loadVariational() {
     varMarks = {}; f.forEach(r => { varMarks[r.ticker] = r; });
   } catch (e) { varMarks = {}; }
   try { points = await (await fetch('data/points.json?' + Date.now())).json(); } catch (e) { points = {}; }
-  renderVariational(); renderBoard(); renderHero();
+  renderVariational(); renderWeeks(); renderBoard(); renderHero();
 }
 
 function varAccounts() {
@@ -208,6 +216,25 @@ function varAccounts() {
     });
     return {name, legs: L, oi: d3.sum(L, l => l.value), equity: points.balances ? points.balances[name] : null, structure: legs[0].group};
   });
+}
+
+function renderWeeks() {
+  const W = points.weeks || [], box = document.getElementById('wk-chart'); box.textContent = '';
+  if (!W.length) return;
+  const w = Math.max(320, box.clientWidth || 800), h = 200, m = {t: 10, r: 8, b: 26, l: 34};
+  const x = d3.scaleBand().domain(W.map(d => d.start)).range([m.l, w - m.r]).padding(0.2);
+  const y = d3.scaleLinear().domain([0, d3.max(W, d => d.points) * 1.1]).nice().range([h - m.b, m.t]);
+  const svg = d3.select(box).append('svg').attr('viewBox', `0 0 ${w} ${h}`).attr('width', '100%');
+  svg.append('g').attr('transform', `translate(${m.l},0)`).call(d3.axisLeft(y).ticks(4).tickSize(-(w - m.l - m.r))).call(g => { g.select('.domain').remove(); g.selectAll('line').attr('stroke', '#1b3439'); g.selectAll('text').attr('fill', '#86a6a3'); });
+  const ticks = W.filter((d, i) => i % Math.ceil(W.length / 8) === 0).map(d => d.start);
+  svg.append('g').attr('transform', `translate(0,${h - m.b})`).call(d3.axisBottom(x).tickValues(ticks).tickFormat(s => s.slice(5).replace('-', '/'))).call(g => { g.select('.domain').attr('stroke', '#1b3439'); g.selectAll('line').remove(); g.selectAll('text').attr('fill', '#86a6a3'); });
+  svg.selectAll('rect.b').data(W).join('rect').attr('class', 'b').attr('x', d => x(d.start)).attr('width', x.bandwidth()).attr('y', d => y(d.points)).attr('height', d => y(0) - y(d.points)).attr('rx', 2)
+    .attr('fill', d => d.check ? '#fbbf24' : '#5eead4').attr('opacity', d => d.src === 'ledger' ? 0.6 : 0.9)
+    .append('title').text(d => `${d.start} ~ ${d.end}\n포인트 ${d.points.toFixed(3)}` + (d.oi ? `\nOI $${d3.format(',')(d.oi)}` : '') + (d.pnl != null ? `\nPnL ${usd0(d.pnl)}` : '') + (d.note ? '\n' + d.note : ''));
+  const tot = d3.sum(W, d => d.points), pnl = d3.sum(W, d => d.pnl || 0);
+  document.getElementById('wk-t').textContent = `${W.length}주 · 합계 ${tot.toFixed(1)} + 기존 ${points.basePoints} · PnL 합계 ${usd0(pnl)}`;
+  const chk = W.filter(d => d.check);
+  document.getElementById('wk-msg').textContent = '막대에 마우스를 올리면 주간 OI·PnL이 보여요.' + (chk.length ? ' 노란 막대는 엑셀의 주간 합계와 계정별 합이 달라 확인이 필요한 주: ' + chk.map(d => `${d.start.slice(5)} (${d.check})`).join(', ') : '');
 }
 
 function renderVariational() {
@@ -226,14 +253,16 @@ function renderVariational() {
 function boardRows() {
   const rows = [];
   Object.keys(entState).forEach(n => { const s = entState[n]; rows.push({name: n, proj: 'Entropy', struct: s.structure || '', equity: s.equity, oi: s.oi, risk: d3.min(s.legs, l => l.dist), pts: (points.entropy || {})[n]}); });
-  varAccounts().forEach(a => rows.push({name: a.name, proj: 'Variational', struct: a.structure || '', equity: a.equity, oi: a.oi, risk: d3.min(a.legs, l => l.dist), pts: (points.variational || {})[a.name]}));
+  const cum = points.cumulative || {}, seen = new Set();
+  varAccounts().forEach(a => { seen.add(a.name); rows.push({name: a.name, proj: 'Variational', struct: a.structure || '', equity: a.equity, oi: a.oi, risk: d3.min(a.legs, l => l.dist), pts: (points.variational || {})[a.name], cum: cum[a.name]}); });
+  Object.keys(cum).filter(n => !seen.has(n)).forEach(n => rows.push({name: n, proj: 'Variational', struct: '포지션 없음', equity: (points.lastBalances || {})[n], oi: 0, risk: null, pts: (points.variational || {})[n], cum: cum[n]}));
   rows.forEach(r => { r.lev = r.equity ? r.oi / r.equity : null; r.eff = r.pts != null && r.oi ? r.pts / (r.oi / 1000) : null; });
   return rows;
 }
 
 function renderBoard() {
   const rows = boardRows();
-  const key = {risk: r => r.risk ?? 9, oi: r => -(r.oi || 0), eff: r => -(r.eff ?? -1), pts: r => -(r.pts ?? -1)}[sortKey];
+  const key = {risk: r => r.risk ?? 9, oi: r => -(r.oi || 0), eff: r => -(r.eff ?? -1), pts: r => -(r.pts ?? -1), cum: r => -(r.cum ?? -1)}[sortKey];
   rows.sort((a, b) => key(a) - key(b));
   const tb = document.querySelector('#lb tbody'); tb.textContent = '';
   const maxOi = d3.max(rows, r => r.oi) || 1;
@@ -248,6 +277,8 @@ function renderBoard() {
     tr.appendChild(el('td', level(r.risk), pct(r.risk)));
     tr.appendChild(el('td', null, r.pts == null ? '—' : (+r.pts).toFixed(4)));
     tr.appendChild(el('td', null, r.eff == null ? '—' : r.eff.toFixed(4)));
+    tr.appendChild(el('td', null, r.cum == null ? '—' : r.cum.toFixed(2)));
+    tr.appendChild(el('td', null, r.cum == null ? '—' : usd0(r.cum * (points.pointValue || 0))));
     tb.appendChild(tr);
   });
 }
@@ -266,6 +297,11 @@ function renderHero() {
   const w = rows.filter(r => r.risk != null).sort((a, b) => a.risk - b.risk)[0];
   const e = document.getElementById('h-risk'); e.textContent = w ? pct(w.risk) : '—'; e.className = 'big ' + (w ? level(w.risk) : '');
   document.getElementById('h-risk-sub').textContent = w ? `${w.name} (${w.proj})` : '—';
+  if (points.weeks) {
+    const tot = d3.sum(points.weeks, w => w.points) + (points.basePoints || 0);
+    document.getElementById('h-pts').textContent = d3.format(',.1f')(tot);
+    document.getElementById('h-pts-sub').textContent = `포인트당 $${points.pointValue} → ${usd0(tot * points.pointValue)}`;
+  }
   document.getElementById('stamp').textContent = '마지막 갱신 ' + new Date().toLocaleTimeString('ko-KR');
 }
 
