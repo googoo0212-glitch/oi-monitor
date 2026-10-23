@@ -7,7 +7,7 @@ import urllib.request
 from datetime import datetime, timedelta, timezone
 
 URL = "https://omni-client-api.prod.ap-northeast-1.variational.io/metadata/v2/stats"
-PREFIXES = ("XAU", "XAG")
+PREFIXES = ("XAU", "XAG", "PAXG")
 KEEP_DAYS = 30
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
