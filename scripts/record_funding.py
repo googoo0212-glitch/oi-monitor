@@ -80,7 +80,10 @@ def funding_alert(hist):
         from common import load_json, telegram
     except ImportError:
         return
-    cfg = load_json("alert_config.json", {}).get("funding", {"change_pp": 0.03, "watch": ["XAG-PERP"]})
+    full = load_json("alert_config.json", {})
+    if not full.get("telegram_enabled", True):
+        return
+    cfg = full.get("funding", {"change_pp": 0.03, "watch": ["XAG-PERP"]})
     by = {}
     for r in hist:
         by.setdefault(r["ticker"], []).append(r)

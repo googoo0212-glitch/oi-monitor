@@ -29,6 +29,9 @@ def events(legs, price):
 
 def main():
     cfg = load_json("alert_config.json", {})
+    if not cfg.get("telegram_enabled", True):
+        print("알림 꺼짐 (alert_config.json telegram_enabled=false)")
+        return
     pos = load_json("positions.json", {}).get("positions", [])
     state = load_json("alert_state.json", {})
     prices = hl_prices()
