@@ -1,0 +1,946 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="풀업">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#234A38">
+<meta name="robots" content="noindex">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%23234A38'/%3E%3Crect x='14' y='22' width='72' height='8' rx='4' fill='%23D8ED8C'/%3E%3Ctext x='50' y='80' font-size='44' font-family='Arial' font-weight='700' text-anchor='middle' fill='%23F1F5EC'%3E20%3C/text%3E%3C/svg%3E">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>풀업 캘린더</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: forest-green "today" console beside a pale habit calendar; below, one journey card (20-rung ladder + cycle chart). One column on phones, today first. */
+:root {
+  --bg: #EDF0E9;
+  --surface: #FBFCF8;
+  --ink: #1D2A23;
+  --muted: #68756D;
+  --line: #DCE2D7;
+  --panel: #234A38;
+  --panel-2: #2E5946;
+  --panel-ink: #F1F5EC;
+  --panel-muted: #B2C6B7;
+  --lime: #D8ED8C;
+  --lime-ink: #1D3527;
+  --work: #EEF2EB;
+  --done: #D9E8C6;
+  --done-ink: #2F5A3E;
+  --rest: #F2EDE2;
+  --rest-ink: #8A6C42;
+  --goal: #6F83D2;
+  --warn: #C2702A;
+  --warn-bg: #F6E6D6;
+  --font-body: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  --font-num: "Barlow Semi Condensed", "IBM Plex Sans KR", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #111713; --surface: #18201B; --ink: #E2E9DF; --muted: #94A198; --line: #2A352E;
+    --panel: #1D3D2E; --panel-2: #285039; --panel-ink: #EBF1E6; --panel-muted: #A7BCAD;
+    --lime: #CBE27D; --lime-ink: #18301F; --work: #1E2822; --done: #2A3F2C; --done-ink: #CBE27D;
+    --rest: #29251E; --rest-ink: #D1B588; --goal: #95A6EE; --warn: #E7A062; --warn-bg: #3A2B1E; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #111713; --surface: #18201B; --ink: #E2E9DF; --muted: #94A198; --line: #2A352E;
+  --panel: #1D3D2E; --panel-2: #285039; --panel-ink: #EBF1E6; --panel-muted: #A7BCAD;
+  --lime: #CBE27D; --lime-ink: #18301F; --work: #1E2822; --done: #2A3F2C; --done-ink: #CBE27D;
+  --rest: #29251E; --rest-ink: #D1B588; --goal: #95A6EE; --warn: #E7A062; --warn-bg: #3A2B1E; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.55; -webkit-tap-highlight-color: transparent; }
+button { font: inherit; color: inherit; cursor: pointer; }
+button:focus-visible, textarea:focus-visible, summary:focus-visible, input:focus-visible { outline: 2px solid var(--goal); outline-offset: 2px; }
+.num { font-family: var(--font-num); font-variant-numeric: tabular-nums; }
+.wrap { max-width: 1180px; margin: 0 auto; padding-block: 20px 56px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 18px; }
+
+/* top bar */
+.top { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.brand { display: flex; align-items: baseline; gap: 10px; }
+.brand b { font-family: var(--font-num); font-size: 26px; letter-spacing: .02em; }
+.brand b em { font-style: normal; color: var(--panel-2); }
+.brand span { color: var(--muted); font-size: 13.5px; }
+.sync { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; padding: 4px 11px; border-radius: 99px; border: 1px solid var(--line); background: var(--surface); color: var(--muted); }
+.sync i { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); }
+.sync[data-s="ok"] i { background: #3E8A5B; }
+.sync[data-s="saving"] i { background: var(--goal); }
+.sync[data-s="local"] i, .sync[data-s="ro"] i, .sync[data-s="err"] i { background: var(--warn); }
+
+.main { display: grid; gap: 18px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 920px) { .main { grid-template-columns: 420px minmax(0, 1fr); align-items: start; } }
+
+/* today */
+.today { background: var(--panel); color: var(--panel-ink); border-radius: 26px; padding: 24px 22px 22px; display: grid; gap: 18px; }
+@media (min-width: 920px) { .today { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 16px); } }
+.thead { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+.thead .eb { font-size: 12px; letter-spacing: .14em; color: var(--panel-muted); text-transform: uppercase; }
+.thead h2 { margin: 2px 0 0; font-size: 27px; line-height: 1.25; letter-spacing: -.02em; }
+.thead .sub { color: var(--panel-muted); font-size: 14px; }
+.badge { flex: none; background: var(--panel-2); border-radius: 14px; padding: 6px 12px 5px; text-align: center; line-height: 1.1; }
+.badge .num { font-size: 26px; font-weight: 700; display: block; }
+.badge small { font-size: 11px; color: var(--panel-muted); }
+.backtoday { border: 1px solid var(--panel-muted); background: transparent; color: var(--panel-ink); border-radius: 99px; padding: 3px 12px; font-size: 12.5px; }
+.sets { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+.set { border: 1.5px solid rgba(255,255,255,.2); background: transparent; border-radius: 16px; padding: 12px 5px 6px; display: grid; justify-items: center; gap: 0; color: var(--panel-ink); align-content: start; transition: background .15s, border-color .15s; min-width: 0; }
+.set.nextset { border-color: var(--lime); }
+.setbtn { width: 100%; margin-top: 6px; border: 0; border-radius: 10px; padding: 8px 0; font-size: 13.5px; font-weight: 700; background: rgba(255,255,255,.12); color: var(--panel-ink); transition: transform .1s; }
+.setbtn:active { transform: scale(.95); }
+.set.nextset .setbtn { background: var(--lime); color: var(--lime-ink); }
+.set.done .setbtn { background: rgba(29,53,39,.12); color: var(--lime-ink); }
+.set.under .setbtn { background: rgba(255,255,255,.1); color: var(--warn); }
+.set .lbl { font-size: 11px; letter-spacing: .08em; color: var(--panel-muted); }
+.set .tg { font-size: 38px; font-weight: 600; line-height: 1.1; }
+.set .st { font-size: 12.5px; color: var(--panel-muted); min-height: 19px; }
+.set.done { background: var(--lime); border-color: var(--lime); color: var(--lime-ink); }
+.set.done .lbl, .set.done .st { color: var(--lime-ink); }
+.set.under { border-color: var(--warn); }
+.set.under .st { color: var(--warn); font-weight: 600; }
+.set.fut { opacity: .7; }
+.meta { display: flex; justify-content: space-between; gap: 10px; font-size: 13.5px; color: var(--panel-muted); flex-wrap: wrap; }
+.meta b { color: var(--panel-ink); font-weight: 600; }
+.cta { background: var(--lime); color: var(--lime-ink); border: 0; border-radius: 16px; padding: 16px; font-weight: 700; font-size: 17px; }
+.ghost { background: transparent; border: 1px solid rgba(255,255,255,.28); color: var(--panel-ink); border-radius: 14px; padding: 12px; font-size: 14.5px; }
+.textbtn { background: none; border: 0; padding: 0; color: var(--panel-muted); font-size: 13.5px; text-decoration: underline; text-underline-offset: 3px; justify-self: start; }
+.today details summary { cursor: pointer; color: var(--panel-muted); font-size: 14px; list-style: none; display: flex; gap: 6px; align-items: center; }
+.today details summary::-webkit-details-marker { display: none; }
+.today details summary::before { content: "▸"; font-size: 11px; transition: transform .15s; }
+.today details[open] summary::before { transform: rotate(90deg); }
+.editor { display: grid; gap: 8px; margin-top: 12px; }
+.erow { display: grid; grid-template-columns: 46px 44px 1fr 44px 54px; gap: 6px; align-items: center; }
+.erow .el { font-size: 13px; color: var(--panel-muted); }
+.erow button { height: 40px; border-radius: 12px; border: 1px solid rgba(255,255,255,.22); background: transparent; color: var(--panel-ink); font-size: 18px; }
+.erow button[disabled] { opacity: .35; cursor: default; }
+.erow .ev { text-align: center; font-size: 24px; font-weight: 600; }
+.erow .ev small { font-size: 12px; color: var(--panel-muted); font-family: var(--font-body); font-weight: 400; margin-left: 4px; }
+.erow .clr { font-size: 12.5px; }
+.toggle { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; color: var(--panel-ink); cursor: pointer; margin-top: 6px; }
+.toggle input { width: 18px; height: 18px; margin-top: 2px; accent-color: var(--lime); }
+.toggle small { display: block; color: var(--panel-muted); font-size: 12.5px; }
+.note { font-size: 14px; color: var(--panel-muted); margin: 0; }
+.timer { border-radius: 16px; background: var(--panel-2); padding: 12px 14px; display: grid; gap: 8px; }
+.timer .tt { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.timer .clock { font-size: 36px; font-weight: 600; line-height: 1; }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.chip { border: 1px solid rgba(255,255,255,.25); background: transparent; color: var(--panel-ink); border-radius: 99px; padding: 3px 11px; font-size: 13px; }
+.chip[aria-pressed="true"] { background: var(--lime); color: var(--lime-ink); border-color: var(--lime); }
+.next { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; border-top: 1px solid rgba(255,255,255,.14); padding-top: 14px; font-size: 13.5px; color: var(--panel-muted); flex-wrap: wrap; }
+.next b { color: var(--panel-ink); font-weight: 600; }
+.next .num { font-size: 17px; color: var(--panel-ink); }
+.inlineconfirm { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; font-size: 13.5px; }
+/* completed state */
+.donebox { display: grid; justify-items: center; text-align: center; gap: 6px; padding: 6px 0 2px; }
+.ring { width: 92px; height: 92px; border-radius: 50%; background: var(--lime); color: var(--lime-ink); display: grid; place-items: center; animation: pop .45s cubic-bezier(.2,1.6,.4,1); }
+.ring svg { width: 46px; height: 46px; }
+@keyframes pop { from { transform: scale(.6); opacity: .3; } to { transform: scale(1); opacity: 1; } }
+.donebox h3 { margin: 6px 0 0; font-size: 24px; letter-spacing: -.01em; }
+.donebox .tot { font-size: 15px; color: var(--panel-muted); }
+.donesets { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; margin-top: 4px; }
+.donesets span { background: var(--panel-2); border-radius: 10px; padding: 3px 10px; font-size: 18px; font-weight: 600; }
+.donesets span.u { color: var(--warn); }
+.restbox { display: grid; gap: 4px; }
+.restbox .big { font-family: var(--font-num); font-size: 64px; font-weight: 700; line-height: 1; letter-spacing: .02em; }
+
+/* cards */
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 26px; padding: 22px 20px; min-width: 0; }
+.calhead { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 12px; }
+.calhead h3 { margin: 0; font-size: 28px; font-weight: 700; }
+.nav { display: flex; gap: 6px; }
+.nav button { border: 1px solid var(--line); background: var(--surface); border-radius: 12px; min-width: 42px; height: 40px; padding: 0 12px; font-size: 15px; }
+.grid7 { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+.dow { text-align: center; font-size: 13px; color: var(--muted); padding-bottom: 2px; }
+.cell { position: relative; border: 1.5px solid transparent; border-radius: 14px; background: var(--work); padding: 8px 8px 7px; min-height: 96px; text-align: left; display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.cell .d { font-weight: 700; font-size: 16px; line-height: 1.3; }
+.cell .l, .cell .ls { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cell .ls { display: none; }
+.cell .r { font-size: 12px; letter-spacing: -.02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cell .mk { position: absolute; right: 8px; bottom: 6px; font-size: 13px; font-weight: 700; }
+.cell.isdone { background: var(--done); }
+.cell.isdone .l, .cell.isdone .ls, .cell.isdone .r, .cell.isdone .mk { color: var(--done-ink); }
+.cell.isunder { background: var(--warn-bg); }
+.cell.isunder .mk { color: var(--warn); }
+.cell.rest, .cell.missed { background: var(--rest); }
+.cell.rest .l, .cell.missed .l, .cell.rest .ls, .cell.missed .ls { color: var(--rest-ink); }
+.cell.missed .d { text-decoration: line-through; text-decoration-color: var(--rest-ink); }
+.cell.out { opacity: .4; }
+.cell.future .r { color: var(--muted); }
+.cell.blank { background: transparent; }
+.cell.is-today { border-color: var(--ink); }
+.cell.is-sel { box-shadow: 0 0 0 3px var(--lime); }
+.cell .gd { position: absolute; right: 9px; top: 11px; width: 8px; height: 8px; border-radius: 50%; background: var(--goal); }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 14px; font-size: 12.5px; color: var(--muted); align-items: center; }
+.legend i { display: inline-block; width: 11px; height: 11px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+@media (max-width: 640px) {
+  .card { padding: 16px 12px; border-radius: 20px; }
+  .calhead h3 { font-size: 23px; }
+  .grid7 { gap: 4px; }
+  .cell { min-height: 60px; padding: 6px 5px 5px; border-radius: 10px; }
+  .cell .d { font-size: 14.5px; }
+  .cell .l, .cell .r { display: none; }
+  .cell .ls { display: block; font-size: 11px; }
+  .cell .mk { right: 5px; bottom: 3px; font-size: 11px; }
+  .cell .gd { right: 6px; top: 9px; width: 6px; height: 6px; }
+  .today { padding: 20px 16px 18px; border-radius: 22px; }
+  .thead h2 { font-size: 23px; }
+  .set .tg { font-size: 31px; }
+  .set { padding: 10px 4px 5px; border-radius: 13px; }
+  .setbtn { font-size: 12.5px; padding: 8px 0; }
+  .sets { gap: 6px; }
+  .erow { grid-template-columns: 42px 42px 1fr 42px 50px; }
+}
+
+/* journey card */
+.journey { display: grid; gap: 22px; }
+.jtop { display: grid; gap: 22px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 920px) { .jtop { grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 36px; } }
+.h4 { margin: 0; font-size: 12.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.best { display: flex; align-items: baseline; gap: 10px; margin: 8px 0 12px; flex-wrap: wrap; }
+.best .v { font-family: var(--font-num); font-size: 64px; font-weight: 700; line-height: .9; }
+.best .v small { font-size: 28px; color: var(--muted); font-weight: 500; }
+.best .t { color: var(--muted); font-size: 14px; }
+.ladder { display: grid; grid-template-columns: repeat(20, minmax(0, 1fr)); gap: 3px; align-items: end; height: 60px; }
+.ladder i { display: block; border-radius: 3px; background: var(--work); border: 1px solid var(--line); }
+.ladder i.f { background: var(--panel-2); border-color: var(--panel-2); }
+.ladder i.tgt { background: var(--lime); border-color: var(--panel-2); }
+.ladscale { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); margin-top: 6px; }
+.kpis { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 18px; align-content: start; }
+.kpi .v { font-family: var(--font-num); font-size: 34px; font-weight: 600; line-height: 1; }
+.kpi .v small { font-size: 17px; color: var(--muted); font-weight: 500; }
+.kpi .k { font-size: 13px; color: var(--muted); margin-top: 4px; }
+.kpi .bar { height: 5px; border-radius: 5px; background: var(--work); margin-top: 8px; overflow: hidden; }
+.kpi .bar i { display: block; height: 100%; background: var(--panel-2); }
+.cyc { display: grid; gap: 8px; }
+.cyc .hd { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.cyc .hd span { font-size: 12.5px; color: var(--muted); }
+.cbars { display: grid; grid-template-columns: repeat(14, minmax(0, 1fr)); gap: 5px; height: 150px; align-items: end; border-bottom: 1px solid var(--line); }
+.cb { position: relative; height: 100%; display: flex; align-items: flex-end; }
+.cb .t { position: absolute; left: 0; right: 0; bottom: 0; border-radius: 5px 5px 0 0; background: var(--work); border: 1px dashed var(--line); border-bottom: 0; }
+.cb .a { position: relative; width: 100%; border-radius: 5px 5px 0 0; background: var(--panel-2); }
+.cb.now .t { border-color: var(--panel-2); border-style: solid; }
+.cb .val { position: absolute; left: 50%; transform: translateX(-50%); font-family: var(--font-num); font-size: 12px; color: var(--ink); font-weight: 600; white-space: nowrap; }
+.cxl { display: grid; grid-template-columns: repeat(14, minmax(0, 1fr)); gap: 5px; font-size: 11.5px; color: var(--muted); text-align: center; }
+.cxl .now { color: var(--ink); font-weight: 700; }
+@media (max-width: 640px) { .cbars { gap: 3px; height: 130px; } .cxl { gap: 3px; } .cb .val { font-size: 10px; } .best .v { font-size: 54px; } }
+
+/* info + data */
+.fold { background: var(--surface); border: 1px solid var(--line); border-radius: 20px; padding: 0 20px; }
+.fold > summary { cursor: pointer; padding: 16px 0; font-weight: 600; list-style: none; display: flex; justify-content: space-between; align-items: center; }
+.fold > summary::-webkit-details-marker { display: none; }
+.fold > summary::after { content: "+"; font-size: 20px; color: var(--muted); font-weight: 400; }
+.fold[open] > summary::after { content: "−"; }
+.fold .in { padding-bottom: 18px; display: grid; gap: 14px; }
+.fold p, .fold li { color: var(--muted); font-size: 14.5px; margin: 0; max-width: 66ch; }
+.fold h5 { margin: 0 0 4px; font-size: 15.5px; }
+.fold ul, .fold ol { padding-left: 18px; margin: 0; display: grid; gap: 5px; }
+.data textarea, .data input[type="password"], .data input[type="text"] { width: 100%; border-radius: 12px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); padding: 10px 12px; font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+.data textarea { min-height: 96px; resize: vertical; }
+.btnrow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.btn { border: 1px solid var(--line); background: var(--surface); border-radius: 12px; padding: 9px 14px; font-size: 14px; }
+.btn.pri { background: var(--panel); color: var(--panel-ink); border-color: var(--panel); }
+.btn[disabled] { opacity: .45; cursor: default; }
+code.snip { display: block; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; font-size: 13px; overflow-x: auto; white-space: nowrap; color: var(--ink); }
+.msg { font-size: 13.5px; color: var(--muted); white-space: pre-line; }
+.msg.err { color: var(--warn); }
+.sub-sec { border-top: 1px solid var(--line); padding-top: 14px; display: grid; gap: 10px; }
+a { color: var(--goal); }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand"><b>PULLUP <em>20</em></b><span>연속 풀업 20회까지</span></div>
+    <span class="sync" id="sync" data-s="local"><i></i><span id="syncText">불러오는 중</span></span>
+  </header>
+
+  <div class="main">
+    <section class="today" id="today" aria-live="polite"></section>
+
+    <section class="card" aria-label="캘린더">
+      <div class="calhead">
+        <h3 class="num" id="monthTitle">2026.10</h3>
+        <div class="nav">
+          <button id="prevM" aria-label="이전 달">‹</button>
+          <button id="todayBtn">오늘</button>
+          <button id="nextM" aria-label="다음 달">›</button>
+        </div>
+      </div>
+      <div class="grid7" id="dows"></div>
+      <div class="grid7" id="cal" style="margin-top:4px"></div>
+      <div class="legend">
+        <span><i style="background:var(--done)"></i>완료</span>
+        <span><i style="background:var(--warn-bg)"></i>목표 미달</span>
+        <span><i style="background:var(--work);border:1px solid var(--line)"></i>예정</span>
+        <span><i style="background:var(--rest)"></i>휴식 · 운동 못함</span>
+        <span><i style="background:var(--goal);border-radius:50%"></i>마지막 목표일</span>
+      </div>
+    </section>
+  </div>
+
+  <section class="card journey" id="journey"></section>
+
+  <details class="fold">
+    <summary>루틴 규칙 · 도움말</summary>
+    <div class="in">
+      <div><h5>기본 규칙</h5>
+        <ul>
+          <li>9/15 · 0회차 준비 기록 6·5·5·4·3, 9/16 · 1회차 7·6·5·4·3부터 시작.</li>
+          <li>5일 운동 · 1일 휴식. 운동일마다 뒤쪽 세트부터 1개씩 늘리고, 휴식 후 첫 세트를 1개 올립니다.</li>
+          <li>66회차 20·19·18·17·16이 마지막 목표. 실제로 한 세트 20회를 하면 그날 바로 달성입니다.</li>
+          <li>원본은 파벨의 Fighter Pullup Program. 세트 사이 휴식은 필요한 만큼(힘들면 5분 이상도 괜찮음).</li>
+        </ul></div>
+      <div><h5>운동을 못한 날</h5><p>날짜를 고르고 ‘운동 못함 · 다음 날로 미루기’. 그 회차가 다음 날로 넘어가고 이후 일정이 다시 계산됩니다. 미기록 날은 자동으로 결석 처리하지 않습니다.</p></div>
+      <div><h5>목표에 못 미친 날</h5><p>‘실제 횟수 수정’ 안의 ‘다음 운동일에 이번 목표 반복’을 켜면 같은 회차를 한 번 더 합니다. 팔꿈치 안쪽이나 어깨가 아프면 반복하거나 며칠 쉬세요.</p></div>
+    </div>
+  </details>
+
+  <details class="fold data" id="dataCard">
+    <summary>기록 관리 · 동기화</summary>
+    <div class="in">
+      <div class="sub-sec" id="gistSec" hidden style="border-top:0;padding-top:0">
+        <h5>PC · 폰 동기화 (GitHub Gist)</h5>
+        <div id="gistOff">
+          <ol class="msg" style="white-space:normal">
+            <li><a href="https://github.com/settings/tokens/new?scopes=gist&description=pullup-sync" target="_blank" rel="noopener">이 링크</a>에서 토큰 만들기 (gist만 체크된 상태, Expiration은 No expiration 또는 1년) → Generate token → <code>ghp_…</code> 복사</li>
+            <li>아래에 붙여넣고 ‘연결’. PC와 폰에서 한 번씩 하면 끝.</li>
+          </ol>
+          <div class="btnrow" style="margin-top:10px"><input type="password" id="gistToken" placeholder="ghp_로 시작하는 토큰" autocomplete="off" aria-label="GitHub 토큰" style="flex:1;min-width:0"><button class="btn pri" id="gistConnect">연결</button></div>
+        </div>
+        <div id="gistOn" hidden>
+          <p class="msg" id="gistInfo"></p>
+          <div class="btnrow" style="margin-top:8px"><button class="btn" id="gistSyncNow">지금 동기화</button><button class="btn" id="gistOffBtn">연결 해제</button></div>
+        </div>
+        <div class="msg" id="gistMsg"></div>
+        <p class="msg">토큰은 이 기기 브라우저에만 저장되고 페이지 코드에는 들어가지 않습니다. 기록은 비밀 Gist 하나에 저장됩니다.</p>
+      </div>
+      <div class="sub-sec" id="localNote">
+        <p class="msg" id="storeNote"></p>
+        <div class="btnrow"><button class="btn" id="copyBackup">백업 복사</button><button class="btn" id="fillPast">지난 미기록일 목표대로 채우기</button></div>
+        <div class="msg" id="dataMsg"></div>
+      </div>
+      <div class="sub-sec">
+        <h5>기록 붙여넣기 (기존 페이지 · 백업)</h5>
+        <p class="msg">예전 페이지에서 F12 → Console에 아래 명령어를 넣으면 기록이 복사됩니다.</p>
+        <code class="snip" id="snip">copy(localStorage.getItem('hyungu-pullup-20260914-v1'))</code>
+        <textarea id="importBox" placeholder="여기에 붙여넣기" aria-label="가져올 데이터"></textarea>
+        <div class="btnrow"><button class="btn" id="previewImport">미리보기</button><button class="btn pri" id="applyImport" disabled>적용</button></div>
+        <div class="msg" id="importMsg"></div>
+      </div>
+    </div>
+  </details>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  const START = "2026-09-15", FIRST = "2026-09-16", FINAL = 66;
+  const ZERO_TARGET = [6, 5, 5, 4, 3];
+  const WD = ["일", "월", "화", "수", "목", "금", "토"];
+  /*SEED*/const SEED = { seedVersion: 1, records: { "2026-09-15": [6, 5, 5, 4, 3], "2026-09-16": [7, 6, 5, 4, 3], "2026-10-21": [11, 10, 10, 9, 8] }, missed: ["2026-09-25", "2026-09-26", "2026-09-27", "2026-10-01", "2026-10-02", "2026-10-03", "2026-10-11", "2026-10-17"], repeat: [] };/*END*/
+  const $ = (s) => document.querySelector(s);
+  const lsGet = (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } };
+  const lsSet = (k, v) => { try { if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) {} };
+
+  /* ---------- dates ---------- */
+  const P = (iso) => { const [y, m, d] = iso.split("-").map(Number); return new Date(Date.UTC(y, m - 1, d)); };
+  const F = (dt) => dt.toISOString().slice(0, 10);
+  const add = (iso, n) => { const d = P(iso); d.setUTCDate(d.getUTCDate() + n); return F(d); };
+  const diff = (a, b) => Math.round((P(b) - P(a)) / 864e5);
+  const kst = () => { try { return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Seoul", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date()); } catch (e) { return F(new Date(Date.now() + 9 * 36e5)); } };
+  const longLabel = (iso) => { const d = P(iso); return `${d.getUTCMonth() + 1}월 ${d.getUTCDate()}일 ${WD[d.getUTCDay()]}요일`; };
+  const midLabel = (iso) => { const d = P(iso); return `${d.getUTCMonth() + 1}/${d.getUTCDate()} (${WD[d.getUTCDay()]})`; };
+  const shortLabel = (iso) => { const d = P(iso); return `${d.getUTCMonth() + 1}/${d.getUTCDate()}`; };
+
+  /* ---------- program ---------- */
+  function targets(s) {
+    if (s === 0) return ZERO_TARGET.slice();
+    const b = Math.floor((s - 1) / 5), k = (s - 1) % 5, a = 7 + b;
+    const t = [a, a - 1, a - 2, a - 3, a - 4];
+    for (let i = 0; i < k; i++) t[4 - i] += 1;
+    return t;
+  }
+  const sum = (a) => a.reduce((x, y) => x + (y || 0), 0);
+
+  /* ---------- state ---------- */
+  let data = { records: {}, missed: [], repeat: [], updatedAt: 0, seedVersion: 0 };
+  let S = null, today = kst(), sel = today, viewMonth = today.slice(0, 7);
+  let editOpen = false, confirmClear = false;
+
+  function compute() {
+    const missed = new Set(data.missed), repeat = new Set(data.repeat), rec = data.records;
+    const days = new Map();
+    days.set(START, { type: "zero", session: 0 });
+    let d = FIRST, next = 1, pendingRest = false, done = false, prevRepeat = false, finalDate = null, achievedDate = null, guard = 0;
+    while (!done && guard++ < 500) {
+      if (pendingRest) { days.set(d, { type: "rest" }); pendingRest = false; }
+      else if (missed.has(d)) { days.set(d, { type: "missed", session: next }); }
+      else {
+        const s = next, isRep = repeat.has(d);
+        const info = { type: "work", session: s, repeat: isRep, again: prevRepeat };
+        days.set(d, info); prevRepeat = isRep;
+        const r = rec[d];
+        if (r && r.some((x) => x >= 20)) { info.achieved = true; achievedDate = d; done = true; }
+        else if (s === FINAL && !isRep) { finalDate = d; done = true; }
+        else if (!isRep) { next++; if (s % 5 === 0) pendingRest = true; }
+      }
+      d = add(d, 1);
+    }
+    return { days, finalDate: finalDate || achievedDate, achievedDate };
+  }
+  const dayInfo = (iso) => S.days.get(iso) || null;
+  const recOf = (iso) => data.records[iso] || null;
+  const isWorkLike = (info) => info && (info.type === "work" || info.type === "zero");
+  const tOf = (info) => targets(info.session);
+  const recState = (iso, info) => {
+    const r = recOf(iso); if (!r || !isWorkLike(info)) return "none";
+    const t = tOf(info);
+    if (r.some((x, i) => x !== null && x < t[i])) return "under";
+    return r.every((x) => x !== null) ? "done" : "partial";
+  };
+
+  /* ---------- persistence ---------- */
+  const LS_KEY = "pullup-sync-cache-v1";
+  let dbRef = null, saving = false, dirty = false, readOnly = false, mode = "local", saveTimer = null;
+  function setSync(s, txt) { const el = $("#sync"); el.dataset.s = s; $("#syncText").textContent = txt; }
+  function serialize() {
+    return { app: "pullup-sync", v: 2, records: data.records, missed: [...new Set(data.missed)].sort(), repeat: [...new Set(data.repeat)].sort(), updatedAt: data.updatedAt || 0, seedVersion: data.seedVersion || 0 };
+  }
+  function normalize(raw) {
+    const out = { records: {}, missed: [], repeat: [], updatedAt: 0, seedVersion: 0 };
+    if (!raw || typeof raw !== "object") return out;
+    if (raw.records && typeof raw.records === "object") {
+      for (const [k, v] of Object.entries(raw.records)) {
+        if (/^\d{4}-\d{2}-\d{2}$/.test(k) && Array.isArray(v)) {
+          const arr = v.slice(0, 5).map((x) => (x === null || x === undefined || x === "" ? null : Math.max(0, Math.min(99, Number(x) || 0))));
+          while (arr.length < 5) arr.push(null);
+          if (arr.some((x) => x !== null)) out.records[k] = arr;
+        }
+      }
+    }
+    const isoList = (a) => (Array.isArray(a) ? a.filter((x) => /^\d{4}-\d{2}-\d{2}$/.test(x)) : []);
+    out.missed = isoList(raw.missed); out.repeat = isoList(raw.repeat);
+    out.updatedAt = Number(raw.updatedAt) || 0; out.seedVersion = Number(raw.seedVersion) || 0;
+    return out;
+  }
+  function applySeed(d) {
+    // bring in records baked into this file (old-page history) without overwriting anything recorded since
+    if ((d.seedVersion || 0) >= SEED.seedVersion) return d;
+    for (const [k, v] of Object.entries(SEED.records)) if (!d.records[k]) d.records[k] = v.slice();
+    d.missed = [...new Set([...SEED.missed, ...d.missed.filter((x) => !d.records[x])])];
+    d.seedVersion = SEED.seedVersion;
+    d.updatedAt = d.updatedAt || 1; // a freshly seeded device never outranks synced data
+    d._seeded = true;
+    return d;
+  }
+  const saveLocal = () => lsSet(LS_KEY, JSON.stringify(serialize()));
+  function loadLocal() { const t = lsGet(LS_KEY); if (!t) return null; try { return normalize(JSON.parse(t)); } catch (e) { return null; } }
+
+  function queueSave(delay) {
+    saveLocal();
+    if (mode === "gist") { gistQueue(); return; }
+    if (!dbRef || readOnly) return;
+    clearTimeout(saveTimer); dirty = true;
+    saveTimer = setTimeout(flush, delay || 0);
+  }
+  async function flush() {
+    if (saving) return;
+    saving = true; let retried = false;
+    while (dirty) {
+      dirty = false; setSync("saving", "저장 중");
+      try { await dbRef.set(serialize()); setSync("ok", "PC · 폰 동기화됨"); retried = false; }
+      catch (e) {
+        const c = e && e.code;
+        if (c === "invalid_argument" || c === "not_granted" || c === "revoked") { readOnly = true; setSync("ro", "보기 전용"); break; }
+        if (!retried && (c === "unavailable" || c === "resource_exhausted")) { retried = true; dirty = true; await new Promise((r) => setTimeout(r, 900 + Math.random() * 900)); continue; }
+        setSync("err", "저장 실패 · 이 기기에만 남음"); break;
+      }
+    }
+    saving = false;
+  }
+  function commit(opts) {
+    data.updatedAt = Date.now();
+    S = compute(); renderAll();
+    queueSave(opts && opts.delay);
+  }
+
+  /* ---------- GitHub Gist sync (GitHub Pages version) ---------- */
+  const GIST_FILE = "pullup-sync.json";
+  let gistBusy = false, gistDirty = false, gistTimer = null;
+  const gToken = () => lsGet("pullup-gist-token");
+  const gId = () => lsGet("pullup-gist-id");
+  async function gh(path, opts) {
+    opts = opts || {};
+    const headers = { Accept: "application/vnd.github+json", Authorization: "Bearer " + gToken(), "X-GitHub-Api-Version": "2022-11-28" };
+    if (opts.body) headers["Content-Type"] = "application/json";
+    const r = await fetch("https://api.github.com" + path, { method: opts.method || "GET", headers, body: opts.body, cache: "no-store" });
+    if (!r.ok) { const e = new Error("HTTP " + r.status); e.status = r.status; throw e; }
+    return r.json();
+  }
+  function gistErr(e) {
+    const s = e && e.status;
+    if (s === 401) return "토큰이 맞지 않거나 만료됐습니다. 토큰을 다시 만들어 연결해 주세요.";
+    if (s === 403) return "토큰에 gist 권한이 없거나 요청이 너무 많습니다. gist를 체크한 토큰인지 확인해 주세요.";
+    if (s === 404) return "동기화용 Gist를 찾지 못했습니다. 다시 연결해 주세요.";
+    return "인터넷 연결을 확인해 주세요. 기록은 이 기기에 저장돼 있고, 연결되면 다시 올라갑니다.";
+  }
+  async function gistPull() {
+    const g = await gh("/gists/" + gId());
+    const f = g.files && g.files[GIST_FILE];
+    if (!f) { const e = new Error("no file"); e.status = 404; throw e; }
+    let content = f.content;
+    if (f.truncated) content = await (await fetch(f.raw_url, { cache: "no-store" })).text();
+    const remote = normalize(JSON.parse(content));
+    if ((remote.updatedAt || 0) > (data.updatedAt || 0)) {
+      data = applySeed(remote);
+      if (data._seeded) { delete data._seeded; data.updatedAt = Date.now(); saveLocal(); S = compute(); renderAll(); await gistPush(); }
+      else { saveLocal(); S = compute(); renderAll(); }
+    } else if ((data.updatedAt || 0) > (remote.updatedAt || 0)) {
+      await gistPush();
+    }
+  }
+  const gistPush = () => gh("/gists/" + gId(), { method: "PATCH", body: JSON.stringify({ files: { [GIST_FILE]: { content: JSON.stringify(serialize()) } } }) });
+  function gistQueue() { gistDirty = true; clearTimeout(gistTimer); gistTimer = setTimeout(gistRun, 1200); setSync("saving", "동기화 대기"); }
+  async function gistRun(pullFirst) {
+    if (gistBusy) { gistDirty = true; return; }
+    gistBusy = true;
+    try {
+      setSync("saving", "동기화 중");
+      if (pullFirst) await gistPull();
+      while (gistDirty) { gistDirty = false; await gistPush(); }
+      setSync("ok", "PC · 폰 동기화됨"); $("#gistMsg").className = "msg"; $("#gistMsg").textContent = "";
+      $("#gistInfo").textContent = `연결됨 · 마지막 동기화 ${new Date().toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })}`;
+    } catch (e) {
+      setSync("err", "동기화 실패 · 이 기기엔 저장됨");
+      $("#gistMsg").className = "msg err"; $("#gistMsg").textContent = gistErr(e);
+      if (e.status === 404) { lsSet("pullup-gist-id", null); renderGist(); }
+    }
+    gistBusy = false;
+  }
+  async function gistConnect(token) {
+    lsSet("pullup-gist-token", token);
+    const msg = $("#gistMsg"); msg.className = "msg"; msg.textContent = "연결 중…";
+    try {
+      const list = await gh("/gists?per_page=100");
+      const found = list.find((g) => g.files && g.files[GIST_FILE]);
+      if (found) {
+        lsSet("pullup-gist-id", found.id);
+        // joining an existing sync: keep every recorded day from both sides, schedule marks from the synced copy
+        const g = await gh("/gists/" + found.id), f = g.files[GIST_FILE];
+        let content = f.content; if (f.truncated) content = await (await fetch(f.raw_url, { cache: "no-store" })).text();
+        const remote = applySeed(normalize(JSON.parse(content)));
+        data = { records: Object.assign({}, data.records, remote.records), missed: remote.missed, repeat: remote.repeat, seedVersion: Math.max(remote.seedVersion, data.seedVersion || 0), updatedAt: Date.now() };
+        saveLocal(); S = compute(); renderAll();
+        mode = "gist"; renderGist(); gistDirty = true; await gistRun(false);
+        msg.textContent = "기존 동기화 기록을 찾아서 합쳤습니다.";
+      }
+      else {
+        const c = await gh("/gists", { method: "POST", body: JSON.stringify({ description: "Pullup 20 calendar sync", public: false, files: { [GIST_FILE]: { content: JSON.stringify(serialize()) } } }) });
+        lsSet("pullup-gist-id", c.id); mode = "gist"; renderGist(); setSync("ok", "PC · 폰 동기화됨");
+        msg.textContent = "연결 완료. 다른 기기에서도 같은 토큰으로 연결하면 이 기록이 보입니다.";
+      }
+    } catch (e) {
+      lsSet("pullup-gist-token", null); lsSet("pullup-gist-id", null); mode = "local";
+      msg.className = "msg err"; msg.textContent = gistErr(e); renderGist(); setSync("ok", "이 기기에 저장됨");
+    }
+  }
+  function renderGist() {
+    const on = !!(gToken() && gId());
+    $("#gistOff").hidden = on; $("#gistOn").hidden = !on;
+    if (on && !$("#gistInfo").textContent) $("#gistInfo").textContent = "연결됨";
+  }
+
+  /* ---------- actions ---------- */
+  function setRecord(iso, arr) { if (!arr || arr.every((x) => x === null)) delete data.records[iso]; else data.records[iso] = arr; }
+  const canRecord = (iso, info) => isWorkLike(info) && iso <= today;
+  function logSet(i) {
+    const info = dayInfo(sel); if (!canRecord(sel, info)) return;
+    const t = tOf(info), r = (recOf(sel) || [null, null, null, null, null]).slice();
+    if (r[i] !== null) { editOpen = true; renderToday(); return; }
+    r[i] = t[i]; setRecord(sel, r); commit();
+    if (r.some((x) => x === null)) startTimer(); else stopTimer();
+  }
+  function fillRemaining() {
+    const info = dayInfo(sel); if (!canRecord(sel, info)) return;
+    const t = tOf(info), r = (recOf(sel) || [null, null, null, null, null]).map((x, i) => (x === null ? t[i] : x));
+    setRecord(sel, r); stopTimer(); commit();
+  }
+  function stepSet(i, delta) {
+    const info = dayInfo(sel); if (!canRecord(sel, info)) return;
+    const t = tOf(info), r = (recOf(sel) || [null, null, null, null, null]).slice();
+    r[i] = r[i] === null ? (delta > 0 ? t[i] : t[i] - 1) : Math.max(0, Math.min(60, r[i] + delta));
+    setRecord(sel, r); commit({ delay: 500 });
+  }
+  function clearSet(i) { const r = (recOf(sel) || []).slice(); if (!r.length) return; r[i] = null; setRecord(sel, r); commit(); }
+  function clearDay() { delete data.records[sel]; data.repeat = data.repeat.filter((x) => x !== sel); confirmClear = false; commit(); }
+  function toggleMissed() {
+    const info = dayInfo(sel);
+    if (info && info.type === "missed") data.missed = data.missed.filter((x) => x !== sel);
+    else if (info && info.type === "work" && !recOf(sel)) { data.missed.push(sel); data.repeat = data.repeat.filter((x) => x !== sel); }
+    commit();
+  }
+  function toggleRepeat(on) { data.repeat = data.repeat.filter((x) => x !== sel); if (on) data.repeat.push(sel); commit(); }
+
+  /* ---------- rest timer ---------- */
+  let restSec = 120, timerEnd = 0, timerInt = null, wake = null, audioCtx = null;
+  { const v = parseInt(lsGet("pullup-rest") || "", 10); if ([60, 90, 120, 180, 300].includes(v)) restSec = v; }
+  function startTimer() {
+    timerEnd = Date.now() + restSec * 1000;
+    try { audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {}
+    try { if (navigator.wakeLock && !wake) navigator.wakeLock.request("screen").then((w) => { wake = w; }).catch(() => {}); } catch (e) {}
+    clearInterval(timerInt); timerInt = setInterval(tick, 250); tick();
+  }
+  function stopTimer() { timerEnd = 0; clearInterval(timerInt); timerInt = null; try { wake && wake.release(); } catch (e) {} wake = null; renderTimer(); }
+  function beep() {
+    if (!audioCtx) return;
+    try { [0, 0.22].forEach((t) => { const o = audioCtx.createOscillator(), g = audioCtx.createGain(); o.frequency.value = 880; g.gain.setValueAtTime(0.0001, audioCtx.currentTime + t); g.gain.exponentialRampToValueAtTime(0.25, audioCtx.currentTime + t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + t + 0.18); o.connect(g).connect(audioCtx.destination); o.start(audioCtx.currentTime + t); o.stop(audioCtx.currentTime + t + 0.2); }); } catch (e) {}
+  }
+  function tick() { const left = Math.ceil((timerEnd - Date.now()) / 1000); if (timerEnd > 0 && left <= 0) { beep(); timerEnd = -1; clearInterval(timerInt); timerInt = null; } renderTimer(); }
+  function renderTimer() {
+    const box = document.getElementById("timerBox"); if (!box) return;
+    if (!timerEnd) { box.hidden = true; return; }
+    box.hidden = false;
+    const left = Math.max(0, Math.ceil((timerEnd - Date.now()) / 1000));
+    $("#clock").textContent = timerEnd === -1 ? "다음 세트!" : `${Math.floor(left / 60)}:${String(left % 60).padStart(2, "0")}`;
+    box.querySelectorAll("[data-rest]").forEach((b) => b.setAttribute("aria-pressed", String(+b.dataset.rest === restSec)));
+  }
+
+  /* ---------- render: today ---------- */
+  const CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+  function nextWorkAfter(iso) { let d = add(iso, 1); for (let i = 0; i < 30; i++) { const inf = dayInfo(d); if (!inf) return null; if (inf.type === "work") return d; d = add(d, 1); } return null; }
+  function nextLine(fromIso) {
+    const nw = nextWorkAfter(fromIso), ni = nw && dayInfo(nw);
+    if (!ni) return "";
+    const gap = diff(fromIso, nw);
+    const when = gap === 1 ? "내일" : `${midLabel(nw)}`;
+    return `<div class="next"><span>다음 · <b>${when} ${ni.session}회차</b>${gap > 1 ? "" : ""}</span><span class="num">${tOf(ni).join(" · ")}</span></div>`;
+  }
+  function renderToday() {
+    const el = $("#today"), info = dayInfo(sel), isToday = sel === today;
+    const dayNo = diff(START, sel) + 1;
+    let eb = isToday ? "Today" : sel < today ? "지난 날" : "예정";
+    let sub = sel >= START ? `기록 ${dayNo}일째` : "기록 시작 전";
+    let badge = "";
+    if (info && info.type === "work") badge = `<div class="badge"><span class="num">${info.session}</span><small>회차${info.again ? " 반복" : ""}</small></div>`;
+    if (info && info.type === "zero") badge = `<div class="badge"><span class="num">0</span><small>준비</small></div>`;
+    const back = isToday ? "" : '<button class="backtoday" data-act="today">오늘로</button>';
+    let html = `<div class="thead"><div><div class="eb">${eb} ${back}</div><h2>${longLabel(sel)}</h2><div class="sub">${sub}</div></div>${badge}</div>`;
+
+    if (!info) {
+      const msg = sel < START ? "기록 시작 전 날짜입니다." : (S.achievedDate ? `${longLabel(S.achievedDate)}에 목표를 달성했습니다.` : "프로그램이 끝난 뒤의 날짜입니다.");
+      el.innerHTML = html + `<p class="note">${msg}</p>`; return;
+    }
+    if (info.type === "rest" || info.type === "missed") {
+      html += `<div class="restbox"><span class="big">${info.type === "rest" ? "REST" : "SKIP"}</span><p class="note">${info.type === "rest" ? "5회 운동 후 정기 휴식. 쉬는 것도 루틴이다." : `운동 못함으로 표시한 날. ${info.session}회차는 다음 날로 넘어갔어.`}</p></div>`;
+      if (info.type === "missed") html += `<button class="ghost" data-act="missed">운동 못함 취소</button>`;
+      el.innerHTML = html + nextLine(sel); return;
+    }
+
+    const t = tOf(info), r = recOf(sel) || [null, null, null, null, null];
+    const future = sel > today;
+    const recorded = r.filter((x) => x !== null).length;
+    const met = r.filter((x, i) => x !== null && x >= t[i]).length;
+    const anyUnder = r.some((x, i) => x !== null && x < t[i]);
+    const total = sum(r);
+
+    if (recorded === 5 && !editOpen) {
+      const title = info.achieved ? "20개 달성!" : anyUnder ? "오늘 운동 끝" : (isToday ? "오늘 완료" : "완료");
+      html += `<div class="donebox"><div class="ring">${CHECK}</div><h3>${title}</h3><div class="tot">총 <b class="num" style="font-size:19px;color:var(--panel-ink)">${total}</b>회 · 목표 ${sum(t)}회${anyUnder ? ` · ${5 - met}세트 미달` : ""}</div>` +
+        `<div class="donesets">${r.map((x, i) => `<span class="num${x < t[i] ? " u" : ""}">${x}</span>`).join("")}</div></div>`;
+      if (anyUnder && info.type === "work") html += `<label class="toggle"><input type="checkbox" id="repeatChk" ${info.repeat ? "checked" : ""}><span>다음 운동일에 이번 목표 반복<small>같은 회차를 한 번 더 하고 이후 일정을 하루 미룹니다.</small></span></label>`;
+      html += `<button class="textbtn" data-act="edit">횟수 수정</button>`;
+      el.innerHTML = html + nextLine(sel); return;
+    }
+
+    const nextIdx = future ? -1 : r.findIndex((x) => x === null);
+    html += `<div class="sets">` + t.map((tg, i) => {
+      const v = r[i], cls = v === null ? (i === nextIdx ? "nextset" : "") : v >= tg ? "done" : "under";
+      const btn = future ? `<span class="st num">○</span>`
+        : v === null ? `<button class="setbtn" data-set="${i}" aria-label="${i + 1}세트 ${tg}회 완료">완료</button>`
+        : `<button class="setbtn" data-set="${i}" aria-label="${i + 1}세트 ${v}회 기록됨, 수정">${v >= tg ? "✓" : v + "회"}</button>`;
+      return `<div class="set ${cls}${future ? " fut" : ""}"><span class="lbl">SET ${i + 1}</span><span class="tg num">${tg}</span>${btn}</div>`;
+    }).join("") + `</div>`;
+    html += `<div class="meta"><span>목표 <b class="num">${sum(t)}</b>회${recorded ? ` · 지금까지 <b class="num">${total}</b>회` : ""}</span><span>${future ? "아직 오지 않은 날" : recorded ? `${recorded}/5세트 완료` : "한 세트 끝날 때마다 ‘완료’"}</span></div>`;
+    html += `<div class="timer" id="timerBox" hidden><div class="tt"><span class="note">세트 사이 휴식</span><span class="clock num" id="clock">2:00</span></div><div class="chips">${[[60, "1분"], [90, "1분 30초"], [120, "2분"], [180, "3분"], [300, "5분"]].map(([s, l]) => `<button class="chip" data-rest="${s}">${l}</button>`).join("")}<button class="chip" data-act="stoptimer">닫기</button></div></div>`;
+    if (future) {
+      html += `<button class="ghost" data-act="missed">운동 못함 · 다음 날로 미루기</button>`;
+      el.innerHTML = html; renderTimer(); return;
+    }
+    html += `<details id="editDet" ${editOpen ? "open" : ""}><summary>실제 횟수 수정${info.type === "work" && !recorded ? " · 운동 못함" : ""}</summary><div class="editor">` + t.map((tg, i) => {
+      const v = r[i];
+      return `<div class="erow"><span class="el">${i + 1}세트</span><button data-step="${i}" data-d="-1" aria-label="${i + 1}세트 1회 빼기">−</button><span class="ev num">${v === null ? "–" : v}<small>/ ${tg}</small></span><button data-step="${i}" data-d="1" aria-label="${i + 1}세트 1회 더하기">+</button><button class="clr" data-clr="${i}" ${v === null ? "disabled" : ""}>비우기</button></div>`;
+    }).join("");
+    if (info.type === "work" && recorded) html += `<label class="toggle"><input type="checkbox" id="repeatChk" ${info.repeat ? "checked" : ""}><span>다음 운동일에 이번 목표 반복<small>${anyUnder ? "목표에 못 미친 세트가 있어. " : ""}같은 회차를 한 번 더 하고 이후 일정을 하루 미룹니다.</small></span></label>`;
+    if (recorded) html += confirmClear ? `<div class="inlineconfirm"><span>이 날 기록을 모두 지울까?</span><button class="chip" data-act="clearyes">지우기</button><button class="chip" data-act="clearno">취소</button></div>` : `<div><button class="chip" data-act="clearask">이 날 기록 모두 지우기</button></div>`;
+    if (info.type === "work" && !recorded) html += `<button class="ghost" data-act="missed">운동 못함 · 다음 날로 미루기</button>`;
+    if (recorded === 5) html += `<button class="chip" data-act="closeedit" style="justify-self:start">수정 끝</button>`;
+    html += `</div></details>`;
+    el.innerHTML = html + nextLine(sel);
+    renderTimer();
+  }
+
+  /* ---------- render: calendar ---------- */
+  function renderCal() {
+    const [y, m] = viewMonth.split("-").map(Number);
+    $("#monthTitle").textContent = `${y}.${String(m).padStart(2, "0")}`;
+    const first = `${y}-${String(m).padStart(2, "0")}-01`;
+    const offset = (P(first).getUTCDay() + 6) % 7;
+    let d = add(first, -offset);
+    const cells = [];
+    for (let i = 0; i < 42; i++) {
+      if (i >= 35 && d.slice(0, 7) !== viewMonth) break;
+      const inMonth = d.slice(0, 7) === viewMonth, info = dayInfo(d), r = recOf(d);
+      let cls = "cell", l = "", ls = "", rp = "", mk = "";
+      if (!inMonth) cls += " out";
+      if (d > today) cls += " future";
+      if (d === today) cls += " is-today";
+      if (d === sel) cls += " is-sel";
+      if (!info) cls += " blank";
+      else if (info.type === "rest") { cls += " rest"; l = ls = "휴식"; }
+      else if (info.type === "missed") { cls += " missed"; l = "운동 못함"; ls = "못함"; }
+      else {
+        l = info.type === "zero" ? "0회차 준비" : `${info.session}회차${info.again ? " 반복" : ""}`;
+        ls = info.type === "zero" ? "준비" : `${info.session}회${info.again ? "↻" : ""}`;
+        const t = tOf(info), st = recState(d, info);
+        rp = (r ? r.map((x) => (x === null ? "–" : x)) : t).join("·");
+        if (st === "done") { cls += " isdone"; mk = '<span class="mk">✓</span>'; }
+        else if (st === "under") { cls += " isunder"; mk = '<span class="mk">!</span>'; }
+        else if (st === "partial") mk = '<span class="mk">…</span>';
+      }
+      const isGoal = S.finalDate === d;
+      cells.push(`<button class="${cls}" data-day="${d}" aria-label="${longLabel(d)} ${l}"><span class="d num">${P(d).getUTCDate()}</span><span class="l">${l}</span><span class="ls">${ls}</span><span class="r num">${rp}</span>${mk}${isGoal ? '<span class="gd"></span>' : ""}</button>`);
+      d = add(d, 1);
+    }
+    $("#cal").innerHTML = cells.join("");
+  }
+
+  /* ---------- render: journey ---------- */
+  function renderJourney() {
+    let total = 0, best = 0, bestDay = null;
+    for (const [d, r] of Object.entries(data.records)) {
+      total += sum(r);
+      const mx = Math.max(...r.map((x) => x || 0));
+      if (mx > best || (mx === best && bestDay && d > bestDay)) { best = mx; bestDay = d; }
+    }
+    // sessions & streak
+    const bySession = {}; let curSession = 0, doneCount = 0;
+    const workDays = [];
+    for (const [d, inf] of S.days) {
+      if (inf.type === "work") {
+        if (data.records[d]) bySession[inf.session] = data.records[d];
+        if (d <= today) { curSession = inf.session; workDays.push(d); }
+      }
+      if (inf.type === "missed" && d <= today) workDays.push(d);
+    }
+    doneCount = Object.keys(bySession).length;
+    let streak = 0;
+    for (let i = workDays.length - 1; i >= 0; i--) {
+      const d = workDays[i], inf = dayInfo(d);
+      if (d === today && !data.records[d]) continue;
+      if (inf.type === "missed" || !data.records[d]) break;
+      streak++;
+    }
+    const curTarget = curSession ? targets(curSession)[0] : 7;
+    const fd = S.finalDate, ach = S.achievedDate, left = fd ? diff(today, fd) : null;
+
+    let ladder = "";
+    for (let i = 1; i <= 20; i++) {
+      const cls = i <= best ? "f" : i === curTarget ? "tgt" : "";
+      ladder += `<i class="${cls}" style="height:${30 + i * 3.5}%" title="${i}회"></i>`;
+    }
+
+    // cycles
+    const MAXC = 450; // cycle 14 target = 440
+    let bars = "", labels = "";
+    const curCycle = curSession ? Math.ceil(curSession / 5) : 1;
+    for (let c = 1; c <= 14; c++) {
+      let tt = 0, at = 0, has = 0;
+      for (let s = 5 * c - 4; s <= 5 * c; s++) { tt += sum(targets(s)); if (bySession[s]) { at += sum(bySession[s]); has++; } }
+      const now = c === curCycle;
+      bars += `<div class="cb${now ? " now" : ""}" title="${c}사이클 · 목표 ${tt}${has ? ` · 실제 ${at} (${has}/5회)` : ""}"><div class="t" style="height:${(tt / MAXC) * 100}%"></div>${has ? `<div class="a" style="height:${(at / MAXC) * 100}%"></div><span class="val" style="bottom:calc(${(Math.max(at, tt) / MAXC) * 100}% + 3px)">${at}</span>` : ""}</div>`;
+      labels += `<span class="${now ? "now" : ""}">${c}</span>`;
+    }
+
+    $("#journey").innerHTML =
+      `<div class="jtop"><div>` +
+        `<h3 class="h4">20개까지</h3>` +
+        `<div class="best"><span class="v">${best}<small> / 20</small></span><span class="t">${ach ? "목표 달성!" : `한 세트 최고${bestDay ? ` (${shortLabel(bestDay)})` : ""} · <b style="color:var(--ink)">${Math.max(0, 20 - best)}개</b> 남음`}</span></div>` +
+        `<div class="ladder" aria-label="한 세트 최고 ${best}회, 20회까지">${ladder}</div>` +
+        `<div class="ladscale"><span>1</span><span>${curTarget > best ? `<i style="display:inline-block;width:9px;height:9px;border-radius:2px;background:var(--lime);border:1px solid var(--panel-2);vertical-align:-1px"></i> 오늘 첫 세트 목표 ${curTarget}` : `오늘 첫 세트 목표 ${curTarget}`}</span><span>20</span></div>` +
+      `</div><div class="kpis">` +
+        `<div class="kpi"><div class="v">${curSession}<small> / 66</small></div><div class="k">진행 회차</div><div class="bar"><i style="width:${(curSession / 66) * 100}%"></i></div></div>` +
+        `<div class="kpi"><div class="v">${fd ? `D-${Math.max(0, left)}` : "—"}</div><div class="k">${ach ? `${shortLabel(ach)} 달성` : fd ? `완료 예정 ${midLabel(fd)}` : ""}</div></div>` +
+        `<div class="kpi"><div class="v">${total.toLocaleString("ko-KR")}<small>회</small></div><div class="k">누적 턱걸이 (기록 ${doneCount}회)</div></div>` +
+        `<div class="kpi"><div class="v">${streak}<small>회</small></div><div class="k">연속 완료 · 빠짐없이</div></div>` +
+      `</div></div>` +
+      `<div class="cyc"><div class="hd"><h3 class="h4">사이클별 총 횟수</h3><span>5회 운동 = 1사이클 · 점선은 목표 · 숫자는 실제</span></div>` +
+        `<div class="cbars">${bars}</div><div class="cxl">${labels}</div></div>`;
+  }
+
+  function renderAll() { renderToday(); renderCal(); renderJourney(); }
+
+  /* ---------- events ---------- */
+  document.addEventListener("click", (e) => {
+    const b = e.target.closest("button"); if (!b) return;
+    if (b.dataset.day) { sel = b.dataset.day; confirmClear = false; editOpen = false; if (sel.slice(0, 7) !== viewMonth) viewMonth = sel.slice(0, 7); renderToday(); renderCal(); if (window.innerWidth < 920) $("#today").scrollIntoView({ behavior: "smooth", block: "start" }); return; }
+    if (b.dataset.set !== undefined) { logSet(+b.dataset.set); return; }
+    if (b.dataset.step !== undefined) { stepSet(+b.dataset.step, +b.dataset.d); return; }
+    if (b.dataset.clr !== undefined) { clearSet(+b.dataset.clr); return; }
+    if (b.dataset.rest) { restSec = +b.dataset.rest; lsSet("pullup-rest", String(restSec)); startTimer(); return; }
+    switch (b.dataset.act) {
+      case "fill": fillRemaining(); break;
+      case "missed": toggleMissed(); break;
+      case "today": goToday(); break;
+      case "stoptimer": stopTimer(); break;
+      case "edit": editOpen = true; renderToday(); break;
+      case "closeedit": editOpen = false; renderToday(); break;
+      case "clearask": confirmClear = true; renderToday(); break;
+      case "clearno": confirmClear = false; renderToday(); break;
+      case "clearyes": clearDay(); break;
+    }
+  });
+  document.addEventListener("change", (e) => { if (e.target.id === "repeatChk") toggleRepeat(e.target.checked); });
+  document.addEventListener("toggle", (e) => { if (e.target.id === "editDet") editOpen = e.target.open; }, true);
+  function goToday() { today = kst(); sel = today; viewMonth = today.slice(0, 7); confirmClear = false; editOpen = false; renderToday(); renderCal(); }
+  $("#todayBtn").addEventListener("click", goToday);
+  $("#prevM").addEventListener("click", () => { const d = P(viewMonth + "-01"); d.setUTCMonth(d.getUTCMonth() - 1); viewMonth = F(d).slice(0, 7); renderCal(); });
+  $("#nextM").addEventListener("click", () => { const d = P(viewMonth + "-01"); d.setUTCMonth(d.getUTCMonth() + 1); viewMonth = F(d).slice(0, 7); renderCal(); });
+  $("#dows").innerHTML = ["월", "화", "수", "목", "금", "토", "일"].map((w) => `<div class="dow">${w}</div>`).join("");
+  function checkDay() { const t = kst(); if (t !== today) { const wasToday = sel === today; today = t; if (wasToday) { sel = t; viewMonth = t.slice(0, 7); } S = compute(); renderAll(); } }
+  setInterval(checkDay, 30000);
+  document.addEventListener("visibilitychange", () => { if (document.hidden) return; checkDay(); if (timerEnd > 0) tick(); if (mode === "gist") gistRun(true); });
+
+  /* ---------- import / backup ---------- */
+  let pendingImport = null;
+  const MISS_RE = /miss|skip|absent|postpone|defer|extra|못함|결석|미루/i;
+  const TARGET_RE = /target|plan|goal|schedule|목표|예정/i;
+  function normDate(k) {
+    if (typeof k !== "string") return null;
+    let m = k.match(/^(\d{4})[-./](\d{1,2})[-./](\d{1,2})(?:$|[T\s])/) || k.match(/^(\d{4})(\d{2})(\d{2})$/);
+    if (m) return `${m[1]}-${String(+m[2]).padStart(2, "0")}-${String(+m[3]).padStart(2, "0")}`;
+    m = k.match(/^(\d{1,2})[/.](\d{1,2})$/);
+    if (m && +m[1] <= 12) return `2026-${String(+m[1]).padStart(2, "0")}-${String(+m[2]).padStart(2, "0")}`;
+    return null;
+  }
+  function repsFrom(v) {
+    if (typeof v === "string") {
+      if (/^[\d\s·,./|-]+$/.test(v) && /\d/.test(v)) { const a = v.split(/[\s·,./|-]+/).filter(Boolean).map(Number); if (a.length <= 10) return a; }
+      try { const p = JSON.parse(v); if (p && typeof p === "object") return repsFrom(p); } catch (e) {}
+      return null;
+    }
+    if (Array.isArray(v)) {
+      if (v.length && v.length <= 10 && v.every((x) => x === null || x === "" || typeof x === "number" || (typeof x === "string" && /^\d+$/.test(x)))) {
+        const a = v.map((x) => (x === null || x === "" ? null : Number(x))); if (a.some((x) => x !== null)) return a;
+      }
+      return null;
+    }
+    if (v && typeof v === "object") for (const key of ["actual", "actuals", "reps", "record", "records", "done", "sets", "values", "counts", "result", "results", "log"]) if (key in v) { const r = repsFrom(v[key]); if (r) return r; }
+    return null;
+  }
+  const isMissVal = (v) => (typeof v === "string" && MISS_RE.test(v)) || (v && typeof v === "object" && !Array.isArray(v) && (v.missed === true || v.skipped === true || v.skip === true || isMissVal(v.status) || isMissVal(v.type) || isMissVal(v.state)));
+  function parseImport(text) {
+    let raw;
+    try { raw = JSON.parse(text.trim()); } catch (e) { return { error: "JSON 형식이 아닙니다. 콘솔에서 복사한 내용을 그대로 붙여넣었는지 확인해 주세요." }; }
+    if (typeof raw === "string") { try { raw = JSON.parse(raw); } catch (e) {} }
+    if (raw && raw.app === "pullup-sync") { const n = normalize(raw); return { records: n.records, missed: n.missed, repeat: n.repeat, own: true }; }
+    const records = {}, missed = new Set(), seen = new WeakSet();
+    function entry(dd, v, hint) {
+      if (TARGET_RE.test(hint || "")) return;
+      if ((v === true && MISS_RE.test(hint || "")) || isMissVal(v)) { missed.add(dd); return; }
+      const r = repsFrom(v);
+      if (r) { const a = r.slice(0, 5); while (a.length < 5) a.push(null); if (a.some((x) => x !== null && x > 0)) records[dd] = a.map((x) => (x === null ? null : Math.max(0, Math.min(60, x)))); return; }
+      if (v && typeof v === "object") walk(v, hint);
+    }
+    function walk(node, hint) {
+      if (typeof node === "string") { try { const p = JSON.parse(node); if (p && typeof p === "object") walk(p, hint); } catch (e) {} return; }
+      if (!node || typeof node !== "object" || seen.has(node)) return;
+      seen.add(node);
+      if (Array.isArray(node)) {
+        if (node.length && node.every((x) => typeof x === "string" && normDate(x))) { if (MISS_RE.test(hint || "")) node.forEach((x) => missed.add(normDate(x))); return; }
+        node.forEach((x) => { if (x && typeof x === "object" && !Array.isArray(x)) { const dd = normDate(x.date || x.day || x.iso || x.key); if (dd) { entry(dd, x, hint); return; } } walk(x, hint); });
+        return;
+      }
+      for (const [k, v] of Object.entries(node)) { const dd = normDate(k); if (dd) entry(dd, v, hint); else walk(v, k); }
+    }
+    walk(raw, "");
+    return { records, missed: [...missed].sort(), repeat: [] };
+  }
+  $("#previewImport").addEventListener("click", () => {
+    const res = parseImport($("#importBox").value || ""), msg = $("#importMsg"); msg.className = "msg";
+    if (res.error) { msg.className = "msg err"; msg.textContent = res.error; pendingImport = null; $("#applyImport").disabled = true; return; }
+    const dates = Object.keys(res.records).sort();
+    if (!dates.length && !res.missed.length) { msg.className = "msg err"; msg.textContent = "날짜별 기록을 찾지 못했습니다."; pendingImport = null; $("#applyImport").disabled = true; return; }
+    pendingImport = res; $("#applyImport").disabled = false;
+    const sample = dates.slice(-3).map((d) => `${shortLabel(d)} ${res.records[d].map((x) => (x === null ? "–" : x)).join("·")}`).join(", ");
+    msg.textContent = `찾은 내용\n· 기록 ${dates.length}일${dates.length ? ` (${shortLabel(dates[0])} ~ ${shortLabel(dates[dates.length - 1])})` : ""}${sample ? `\n· 최근: ${sample}` : ""}\n· 운동 못함 ${res.missed.length}일${res.missed.length ? `: ${res.missed.map(shortLabel).join(", ")}` : ""}\n맞으면 ‘적용’. 같은 날짜는 가져온 값으로 바뀌고, 운동 못함 목록은 가져온 목록으로 교체됩니다.`;
+  });
+  $("#applyImport").addEventListener("click", () => {
+    if (!pendingImport) return;
+    Object.assign(data.records, pendingImport.records);
+    if (pendingImport.missed.length || pendingImport.own) data.missed = pendingImport.missed.slice();
+    if (pendingImport.own) data.repeat = pendingImport.repeat.slice();
+    pendingImport = null; $("#applyImport").disabled = true; $("#importMsg").textContent = "적용했습니다. 캘린더를 확인해 보세요.";
+    commit();
+  });
+  $("#copyBackup").addEventListener("click", () => copyText(JSON.stringify(serialize()), $("#dataMsg"), "백업을 복사했습니다. 메모 앱에 붙여넣어 보관하세요."));
+  let fillArmed = false;
+  $("#fillPast").addEventListener("click", () => {
+    const list = []; for (const [d, inf] of S.days) if (isWorkLike(inf) && d < today && !data.records[d]) list.push(d);
+    const msg = $("#dataMsg");
+    if (!list.length) { msg.textContent = "채울 미기록일이 없습니다."; fillArmed = false; return; }
+    if (!fillArmed) { fillArmed = true; $("#fillPast").textContent = `${list.length}일 채우기 확인`; msg.textContent = `오늘 이전 미기록 운동일 ${list.length}일을 목표 횟수로 기록합니다. 한 번 더 누르면 적용.`; return; }
+    list.forEach((d) => { data.records[d] = tOf(dayInfo(d)); });
+    fillArmed = false; $("#fillPast").textContent = "지난 미기록일 목표대로 채우기"; msg.textContent = `${list.length}일을 채웠습니다.`; commit();
+  });
+  function copyText(text, msgEl, ok) {
+    const fallback = () => { const ta = $("#importBox"); ta.value = text; ta.focus(); ta.select(); msgEl.textContent = "자동 복사가 막혀서 아래 입력칸에 넣어두었습니다. 직접 복사해 주세요."; };
+    try { navigator.clipboard.writeText(text).then(() => { msgEl.textContent = ok; }, fallback); } catch (e) { fallback(); }
+  }
+  $("#gistConnect").addEventListener("click", () => { const t = ($("#gistToken").value || "").trim(); if (!t) { $("#gistMsg").className = "msg err"; $("#gistMsg").textContent = "토큰을 붙여넣어 주세요."; return; } $("#gistToken").value = ""; gistConnect(t); });
+  $("#gistSyncNow").addEventListener("click", () => gistRun(true));
+  $("#gistOffBtn").addEventListener("click", () => { lsSet("pullup-gist-token", null); lsSet("pullup-gist-id", null); mode = "local"; $("#gistInfo").textContent = ""; renderGist(); setSync("ok", "이 기기에 저장됨"); $("#gistMsg").textContent = "연결을 해제했습니다. 기록은 이 기기에 남아 있습니다."; });
+
+  /* ---------- boot ---------- */
+  const cached = loadLocal();
+  const HOSTED = !!(window.claude && typeof window.claude.use === "function");
+  if (HOSTED) {
+    if (cached) data = cached;
+  } else {
+    data = applySeed(cached || { records: {}, missed: [], repeat: [], updatedAt: 0, seedVersion: 0 });
+    delete data._seeded; saveLocal();
+  }
+  S = compute(); renderAll();
+
+  if (!HOSTED) {
+    $("#gistSec").hidden = false;
+    $("#storeNote").textContent = "기록은 이 기기 브라우저에 저장됩니다. iPhone은 홈 화면에 추가해서 열고, 동기화를 안 쓴다면 가끔 백업을 복사해 두세요.";
+    renderGist();
+    if (gToken() && gId()) { mode = "gist"; gistRun(true); } else setSync("ok", "이 기기에 저장됨");
+    try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {}); } catch (e) {}
+    return;
+  }
+  $("#storeNote").textContent = "기록은 이 페이지에 저장돼서 PC와 폰 어디서 열어도 같습니다.";
+  setSync("local", "연결 중");
+  (async () => {
+    const db = await window.claude.use("db").catch(() => null);
+    if (!db) { setSync("local", "이 기기에만 저장"); return; }
+    let user = null; try { user = await window.claude.use("user"); } catch (e) {}
+    try { const c = user ? await user.can("data.write") : null; if (c === false) readOnly = true; } catch (e) {}
+    mode = "db"; dbRef = db.doc("pullup/state");
+    dbRef.onSnapshot((snap) => {
+      if (saving || dirty) return;
+      if (snap.exists) { data = normalize(snap.data()); saveLocal(); S = compute(); renderAll(); }
+      setSync(readOnly ? "ro" : "ok", readOnly ? "보기 전용" : "PC · 폰 동기화됨");
+    }, () => setSync("err", "연결 끊김 · 새로고침 해주세요"));
+  })();
+})();
+</script>
+
+</body>
+</html>
