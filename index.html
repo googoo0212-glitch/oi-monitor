@@ -3,395 +3,288 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>OI 파밍 통합 현황</title>
+<title>Variational OI</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
 <style>
-:root{--bg:#071113;--pn:#0c1b1e;--pn2:#10252a;--ln:#1b3439;--fg:#e6f4f1;--mu:#86a6a3;--mint:#5eead4;--up:#4ade80;--dn:#f87171;--am:#fbbf24;--ent:#a78bfa;--var:#5eead4}
+:root{--bg:#071113;--pn:#0c1b1e;--pn2:#10252a;--ln:#1b3439;--fg:#e6f4f1;--fg2:#b9cfcb;--mu:#86a6a3;--mint:#5eead4;--up:#4ade80;--dn:#f87171;--am:#fbbf24;--or:#fb923c}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--fg);font-family:Pretendard,"Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;font-variant-numeric:tabular-nums;font-size:14px}
-.wrap{max-width:1200px;margin:0 auto;padding:16px;display:flex;flex-direction:column;gap:12px}
-.pn{background:var(--pn);border:1px solid var(--ln);border-radius:12px;padding:14px 16px;min-width:0}
-.top{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
-.title{font-size:16px;font-weight:600}
-.k{font-size:12px;color:var(--mu)}
-.big{font-size:clamp(22px,3.6vw,30px);font-weight:600;margin-top:4px}
-.hero{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,10rem),1fr));gap:0}
-.hero>div{padding:4px 14px;border-left:1px solid var(--ln)}
-.hero>div:first-child{border-left:0;padding-left:0}
-.up{color:var(--up)}.dn{color:var(--dn)}.am{color:var(--am)}.mu{color:var(--mu)}
-.ph{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:10px}
-.note{font-size:12px;color:var(--mu)}
-.tw{overflow-x:auto}
-table{width:100%;border-collapse:collapse;font-size:13px}
-th{text-align:right;color:var(--mu);font-weight:500;padding:6px 8px;border-bottom:1px solid var(--ln);white-space:nowrap;cursor:pointer;user-select:none}
-th:first-child,td:first-child,th.l,td.l{text-align:left}
-td{padding:7px 8px;border-bottom:1px solid var(--ln);white-space:nowrap;text-align:right}
-th[aria-sort="descending"]::after{content:" ↓"}th[aria-sort="ascending"]::after{content:" ↑"}
-.tag{display:inline-block;font-size:11px;border-radius:999px;padding:1px 8px;background:var(--pn2)}
-.tag.ent{color:var(--ent)}.tag.var{color:var(--var)}
-.rank{display:inline-block;width:1.6em;color:var(--mu)}
-.meter{display:inline-block;width:56px;height:6px;border-radius:3px;background:var(--pn2);vertical-align:middle;margin-left:6px;position:relative;overflow:hidden}
-.meter i{position:absolute;left:0;top:0;bottom:0;border-radius:3px}
-.seg{display:flex;gap:6px;flex-wrap:wrap}
-.seg button,.btn{background:var(--pn2);color:var(--fg);border:1px solid var(--ln);border-radius:999px;padding:4px 12px;font:inherit;font-size:12px;cursor:pointer}
-.seg button[aria-pressed="true"]{border-color:var(--mint);color:var(--mint)}
-.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,19rem),1fr));gap:10px}
-.ac{background:var(--pn);border:1px solid var(--ln);border-left:4px solid var(--ln);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
-.ac.s-dn{border-left-color:var(--dn)}.ac.s-am{border-left-color:var(--am)}.ac.s-up{border-left-color:rgba(74,222,128,.6)}
-.ahd{display:flex;align-items:center;gap:8px}
-.an{font-weight:600}
-.pill{margin-left:auto;font-size:11px;font-weight:600;border-radius:999px;padding:2px 10px}
-.pill.dn{background:rgba(248,113,113,.15);color:var(--dn)}.pill.am{background:rgba(251,191,36,.15);color:var(--am)}.pill.up{background:rgba(74,222,128,.12);color:var(--up)}
-.legs{display:flex;flex-direction:column;gap:4px;font-size:12px}
-.legs div{display:flex;justify-content:space-between;gap:8px}
-.msg{font-size:12px;color:var(--mu)}
-details summary{cursor:pointer;color:var(--mu);font-size:13px}
-.setup{display:flex;flex-direction:column;gap:8px;margin-top:10px}
-.setup .row{display:flex;gap:6px;flex-wrap:wrap}
-.setup input{background:var(--pn2);color:var(--fg);border:1px solid var(--ln);border-radius:8px;padding:6px 8px;font:inherit;font-size:12px;min-width:0}
-.setup input.addr{flex:1 1 20rem;font-family:ui-monospace,Menlo,monospace}
-.setup input.lbl{width:7rem}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:Pretendard,"Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;font-variant-numeric:tabular-nums;font-size:15px;-webkit-text-size-adjust:100%}
 a{color:var(--mint)}
+.wrap{max-width:900px;margin:0 auto;padding:16px;display:flex;flex-direction:column;gap:14px}
+.pn{background:var(--pn);border:1px solid var(--ln);border-radius:16px;padding:16px 18px;min-width:0}
+.k{font-size:13px;color:var(--mu)}
+.top{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.title{font-size:20px;font-weight:700}
+.nav{display:inline-block;border:1px solid var(--ln);background:var(--pn2);border-radius:999px;padding:7px 14px;font-size:14px;text-decoration:none;color:var(--fg)}
+.live{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--mu)}
+.live i{width:9px;height:9px;border-radius:50%;background:var(--up)}
+.live.off i{background:var(--dn)}
+/* 지금 할 일 */
+.todo{border-left:6px solid var(--up);padding:18px 20px}
+.todo.s-am{border-left-color:var(--am)}.todo.s-or{border-left-color:var(--or)}.todo.s-dn{border-left-color:var(--dn)}
+.todo h2{margin:0;font-size:22px;line-height:1.35}
+.todo .do{margin-top:12px;display:flex;flex-direction:column;gap:8px}
+.todo .do div{font-size:18px;font-weight:600;background:var(--pn2);border-radius:10px;padding:10px 14px}
+.todo .why{margin-top:10px;font-size:14px;color:var(--fg2);line-height:1.5}
+/* 숫자 타일 */
+.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+@media (max-width:600px){.tiles{grid-template-columns:1fr 1fr}}
+.tile{background:var(--pn);border:1px solid var(--ln);border-radius:16px;padding:14px 16px;min-width:0}
+.tile .v{font-size:26px;font-weight:700;margin-top:4px;white-space:nowrap}
+/* 짝 카드 */
+.pair{display:flex;flex-direction:column;gap:12px;border-left:6px solid var(--up)}
+.pair.s-am{border-left-color:var(--am)}.pair.s-or{border-left-color:var(--or)}.pair.s-dn{border-left-color:var(--dn)}
+.ph{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.ph .n{font-size:18px;font-weight:700}
+.chip{font-size:14px;font-weight:700;border-radius:999px;padding:3px 12px;margin-left:auto}
+.chip.up{background:rgba(74,222,128,.13);color:var(--up)}.chip.am{background:rgba(251,191,36,.15);color:var(--am)}.chip.or{background:rgba(251,146,60,.16);color:var(--or)}.chip.dn{background:rgba(248,113,113,.16);color:var(--dn)}
+.big{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+.big .now{font-size:30px;font-weight:700}
+.big .mv{font-size:18px;font-weight:600}
+.left{font-size:15px;color:var(--fg2)}
+.left b{color:var(--fg)}
+.gauge svg{display:block;width:100%;height:auto}
+.accts{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,15rem),1fr));gap:10px}
+.acct{background:var(--pn2);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:6px}
+.acct .h{display:flex;justify-content:space-between;align-items:baseline;gap:6px}
+.acct .nm{font-weight:700;font-size:16px}
+.acct .pl{font-size:16px;font-weight:700}
+.meter{height:8px;border-radius:4px;background:#0a1416;position:relative;overflow:hidden}
+.meter i{position:absolute;left:0;top:0;bottom:0;border-radius:4px}
+.meter b{position:absolute;top:0;bottom:0;width:2px;background:var(--am)}
+.up{color:var(--up)}.dn{color:var(--dn)}.am{color:var(--am)}.or{color:var(--or)}.mu{color:var(--mu)}
+.chart svg{display:block;width:100%;height:auto}
+.foot{font-size:13px;color:var(--mu);line-height:1.6}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <section class="pn top">
+
+  <section class="top">
     <div>
-      <div class="title">OI 파밍 통합 현황</div>
-      <div class="k" id="stamp">불러오는 중…</div>
+      <div class="title">Variational OI</div>
+      <span class="live" id="live"><i></i><span id="live-t">가격 불러오는 중…</span></span>
     </div>
-    <div class="seg"><a class="btn" href="gold.html">금·은 차트 · 펀딩 기록 →</a> <a class="btn" href="entropy.html">Entropy 상세 →</a></div>
+    <a class="nav" href="entropy.html">Entropy 보기 →</a>
   </section>
+
+  <section class="pn todo" id="todo"><h2>불러오는 중…</h2></section>
+
+  <section class="tiles" id="tiles"></section>
+
+  <div id="pairs" style="display:flex;flex-direction:column;gap:14px"></div>
 
   <section class="pn">
-    <div class="hero">
-      <div><div class="k">총 OI</div><div class="big" id="h-oi">—</div><div class="k" id="h-oi-sub">—</div></div>
-      <div><div class="k">총 자산</div><div class="big" id="h-eq">—</div><div class="k">Entropy 실시간 + Variational 기록값</div></div>
-      <div><div class="k">평균 레버리지 (OI÷자산)</div><div class="big" id="h-lev">—</div><div class="k">계정 합계 기준</div></div>
-      <div><div class="k">가장 가까운 청산</div><div class="big" id="h-risk">—</div><div class="k" id="h-risk-sub">—</div></div>
-      <div><div class="k">Variational 누적 포인트</div><div class="big" id="h-pts">—</div><div class="k" id="h-pts-sub">—</div></div>
-    </div>
+    <div class="ph" style="margin-bottom:8px"><span class="n">가격차 추이</span><span class="k" id="hist-k"></span></div>
+    <div class="k" style="margin-bottom:4px">원유 BZ − CL</div>
+    <div class="chart" id="c-oil"></div>
+    <div class="k" style="margin:10px 0 4px">금 ÷ 은</div>
+    <div class="chart" id="c-gs"></div>
   </section>
 
-  <section class="pn" id="board">
-    <div class="ph">
-      <span class="title">계정 리더보드</span>
-      <div class="seg" id="sort-seg">
-        <button type="button" data-k="risk" aria-pressed="true">위험한 순</button>
-        <button type="button" data-k="oi" aria-pressed="false">OI 큰 순</button>
-        <button type="button" data-k="eff" aria-pressed="false">효율 좋은 순</button>
-        <button type="button" data-k="pts" aria-pressed="false">지난주 포인트 순</button>
-        <button type="button" data-k="cum" aria-pressed="false">누적 포인트 순</button>
-      </div>
-    </div>
-    <div class="tw"><table id="lb">
-      <thead><tr><th class="l">#</th><th class="l">계정</th><th class="l">프로젝트 · 구조</th><th>자산</th><th>OI</th><th>레버리지</th><th>청산까지</th><th>지난주 포인트</th><th>OI $1k당</th><th>누적 포인트</th><th>누적 가치</th></tr></thead>
-      <tbody></tbody>
-    </table></div>
-    <div class="msg" id="lb-msg" style="margin-top:8px">청산까지 = Variational 페어는 (자산−유지증거금)÷다리 명목가, 즉 가격차(비율)가 이만큼 불리하게 움직이면 청산. 효율 = 지난주 포인트 ÷ OI($1k) · 누적 가치 = 누적 포인트 × 포인트당 가격 · 포지션 없는 계정은 OI 0으로 표시</div>
-  </section>
-
-  <section class="pn">
-    <div class="ph"><span class="title">Variational 주간 포인트</span><span class="note" id="wk-t"></span></div>
-    <div id="wk-chart" role="img" aria-label="Variational 주간 포인트 막대그래프"></div>
-    <div class="msg" id="wk-msg" style="margin-top:6px"></div>
-  </section>
-
-  <section class="pn">
-    <div class="ph"><span class="title">페어 가격차 추이 (Variational mark · 5분 기록)</span><span class="note" id="pc-t"></span></div>
-    <div class="cards" style="grid-template-columns:repeat(auto-fit,minmax(min(100%,30rem),1fr))">
-      <div><div class="k">원유 BZ − CL ($)</div><div id="pc-oil"></div></div>
-      <div><div class="k">금 ÷ 은</div><div id="pc-gs"></div></div>
-    </div>
-    <div class="msg">점선 = 평균 진입값 · 노랑/빨강 = 리밸런싱/즉시 송금 기준. 원유: 위쪽 선은 CL 롱 계정(현구·pingu06·pingu02), 아래쪽은 CL 숏 계정. 금/은: 아래쪽은 pingu04(금 롱), 위쪽은 pingu03(금 숏). 5분마다 한 점씩 쌓여요.</div>
-  </section>
-
-  <section>
-    <div class="ph" style="margin:4px 2px 8px"><span class="title">Entropy (Hyperliquid io)</span><span class="note" id="ent-t"></span> <a class="note" href="entropy.html">상세 →</a></div>
-    <div class="cards" id="ent-cards"></div>
-    <div class="msg" style="margin-top:8px" id="ent-hint"></div>
-  </section>
-
-  <section>
-    <div class="ph" style="margin:4px 2px 8px"><span class="title">Variational</span><span class="note" id="var-t"></span></div>
-    <div class="cards" id="var-cards"></div>
-  </section>
+  <section class="foot" id="foot"></section>
 </div>
 
 <script>
+const VAR_URL = 'https://omni-client-api.prod.ap-northeast-1.variational.io/metadata/v2/stats';
 const HL = 'https://api.hyperliquid.xyz/info';
-const C = {up: '#4ade80', dn: '#f87171', am: '#fbbf24'};
-const usd0 = v => v == null || isNaN(v) ? '—' : (v < 0 ? '−$' : '$') + d3.format(',.0f')(Math.abs(v));
-const pct = v => v == null || !isFinite(v) ? '—' : d3.format('.1%')(v);
-const px = v => v == null || isNaN(v) ? '—' : (Math.abs(v) >= 1000 ? d3.format(',.1f')(v) : Math.abs(v) >= 10 ? (+v).toFixed(2) : (+v).toFixed(4));
-const el = (t, c, x) => { const e = document.createElement(t); if (c) e.className = c; if (x != null) e.textContent = x; return e; };
-const level = d => d == null ? 'mu' : d < 0.025 ? 'dn' : d < 0.05 ? 'am' : 'up';
-const levelTxt = d => d == null ? '—' : d < 0.025 ? '위험' : d < 0.05 ? '주의' : '안전';
-
-let entState = {};         // label -> {equity, oi, legs:[...], err}
-let varPositions = [], varMarks = {}, points = {}, sortKey = 'risk';
-
-// Entropy 주소는 entropy.html 에서 설정한 값(같은 브라우저 localStorage 'entropy_addrs')을 그대로 씀.
-let entCfg = {accounts: {}}, entHist = null;
-function entAddrs() { try { return JSON.parse(localStorage.getItem('entropy_addrs') || '{}'); } catch (e) { return {}; } }
-async function loadEntropyFiles() {
-  try { entCfg = await (await fetch('data/entropy_config.json?' + Date.now())).json(); } catch (e) {}
-  try { const h = await (await fetch('data/entropy_history.json?' + Date.now())).json(); entHist = h[h.length - 1]; } catch (e) {}
-  const labels = Object.values(entCfg.accounts || {}).map(a => a.label);
-  labels.forEach(l => { if (!entState[l] || !entState[l].live) {
-    const r = entHist && entHist.acct && entHist.acct[l];
-    entState[l] = {equity: r ? r.eq : null, oi: r ? r.g : null, legs: [], structure: 'DRAM/EWY', live: false, at: entHist ? entHist.t : null};
-  } });
-}
-async function post(body) {
-  const r = await fetch(HL, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)});
-  if (!r.ok) throw new Error('HTTP ' + r.status);
-  return r.json();
-}
-
-async function tickEntropy() {
-  const ad = entAddrs();
-  const list = Object.entries(entCfg.accounts || {}).map(([k, a]) => ({label: a.label, address: ad[k], structure: 'DRAM/EWY'})).filter(a => /^0x[0-9a-fA-F]{40}$/.test(a.address || ''));
-  const hint = document.getElementById('ent-hint');
-  if (!list.length) {
-    document.getElementById('ent-t').textContent = entHist ? '30분 기록값 · ' + new Date(entHist.t).toLocaleString('ko-KR') : '';
-    hint.innerHTML = '포지션별 청산거리까지 실시간으로 보려면 <a href="entropy.html">Entropy 모니터</a>에서 이 브라우저에 지갑 주소를 한 번 넣어주세요 (같은 브라우저면 여기도 자동 적용).';
-    renderEntropy(); renderBoard(); renderHero(); return;
-  }
-  hint.textContent = '';
-  await Promise.all(list.map(async a => {
-    try {
-      const s = await post({type: 'clearinghouseState', user: a.address, dex: 'io'});
-      const legs = (s.assetPositions || []).map(p => p.position).filter(p => +p.szi !== 0).map(p => {
-        const mark = Math.abs(+p.positionValue / +p.szi);
-        const liq = p.liquidationPx == null ? null : +p.liquidationPx;
-        const dist = liq ? (+p.szi > 0 ? (mark - liq) / mark : (liq - mark) / mark) : null;
-        return {coin: String(p.coin).replace(/^io:/, ''), side: +p.szi > 0 ? '롱' : '숏', size: Math.abs(+p.szi), entry: +p.entryPx, mark, value: Math.abs(+p.positionValue), upnl: +p.unrealizedPnl, liq, dist, lev: p.leverage ? p.leverage.value + 'x ' + (p.leverage.type === 'isolated' ? '격리' : '크로스') : '', margin: +p.marginUsed};
-      });
-      entState[a.label] = {equity: +s.marginSummary.accountValue, oi: d3.sum(legs, l => l.value), legs, structure: a.structure, err: null, live: true};
-    } catch (e) { entState[a.label] = Object.assign(entState[a.label] || {legs: []}, {err: e.message}); }
-  }));
-  document.getElementById('ent-t').textContent = '10초마다 갱신 · ' + new Date().toLocaleTimeString('ko-KR');
-  renderEntropy(); renderBoard(); renderHero();
-}
-
-function renderEntropy() {
-  const box = document.getElementById('ent-cards'); box.textContent = '';
-  const names = Object.keys(entState);
-  if (!names.length) { box.appendChild(el('div', 'pn msg', '아직 표시할 Entropy 계정이 없어요. 아래 설정에서 지갑 주소를 넣어주세요.')); return; }
-  // 페어 상쇄 확인: 같은 코인의 계정 간 롱/숏 합
-  const net = {};
-  names.forEach(n => entState[n].legs.forEach(l => { net[l.coin] = (net[l.coin] || 0) + (l.side === '롱' ? l.size : -l.size); }));
-  names.forEach(n => {
-    const s = entState[n], minD = d3.min(s.legs, l => l.dist);
-    const c = el('div', 'ac s-' + level(minD));
-    const h = el('div', 'ahd'); h.append(el('span', 'an', n), el('span', 'tag ent', 'Entropy · ' + (s.structure || '')), el('span', 'pill ' + level(minD), s.err ? '오류' : levelTxt(minD))); c.appendChild(h);
-    c.appendChild(el('div', 'k', s.err ? '불러오기 실패: ' + s.err : `자산 ${usd0(s.equity)} · OI ${usd0(s.oi)} · 레버리지 ${s.equity ? (s.oi / s.equity).toFixed(1) + 'x' : '—'}`));
-    const lg = el('div', 'legs');
-    s.legs.forEach(l => { const r = el('div'); r.append(el('span', null, `${l.coin} ${l.side} ${px(l.size)} · ${l.lev}`), el('span', level(l.dist), `${px(l.mark)} → 청산 ${px(l.liq)} (${pct(l.dist)})`)); lg.appendChild(r);
-      const r2 = el('div', 'mu'); r2.append(el('span', null, `진입 ${px(l.entry)} · 증거금 ${usd0(l.margin)}`), el('span', l.upnl >= 0 ? 'up' : 'dn', 'UPNL ' + usd0(l.upnl))); lg.appendChild(r2); });
-    if (!s.legs.length && !s.err) lg.appendChild(el('div', 'mu', s.live ? '열린 포지션 없음' : '30분 기록값 (다리별 청산거리는 주소 설정 시 표시)'));
-    c.appendChild(lg); box.appendChild(c);
-  });
-  const mism = Object.entries(net).filter(([, v]) => Math.abs(v) > 1e-9);
-  if (!names.some(n => entState[n].live)) return;
-  const m = el('div', 'pn msg', mism.length ? '⚠ 계정 간 수량이 안 맞아요: ' + mism.map(([k, v]) => `${k} ${v > 0 ? '+' : ''}${px(v)}`).join(' · ') + ' (이만큼은 펀딩·방향이 상쇄되지 않아요)' : '✓ 계정 간 롱/숏 수량이 맞아요 (펀딩·방향 상쇄)');
-  box.appendChild(m);
-}
-
-async function loadVariational() {
-  try {
-    const p = await (await fetch('data/positions.json?' + Date.now())).json();
-    varPositions = p.positions || []; varMeta = p.accounts || {};
-    document.getElementById('var-t').textContent = `포지션 기준 ${p.updated || '—'} · 여유 소진 35% 리밸런싱 / 55% 즉시 송금 / 75% 비상`;
-  } catch (e) { varPositions = []; }
-  try {
-    const f = await (await fetch('data/funding.json?' + Date.now())).json();
-    varMarks = {}; f.forEach(r => { varMarks[r.ticker] = r; });
-  } catch (e) { varMarks = {}; }
-  try { points = await (await fetch('data/points.json?' + Date.now())).json(); } catch (e) { points = {}; }
-  renderVariational(); renderWeeks(); renderBoard(); renderHero();
-}
-
-// 계정 내 페어: 위험 = 두 다리 가격 '차이'. 청산까지 여유 = (자산 − 유지증거금) ÷ 큰 다리 명목가
 const XYZ = {'CL-PERP': 'xyz:CL', 'BZ-PERP': 'xyz:BRENTOIL', 'XAU-PERP': 'xyz:GOLD', 'XAG-PERP': 'xyz:SILVER'};
-let varMeta = {}, xyzMids = {}, varLive = {}, varLiveAt = 0, pairHist = [], priceSrc = '';
-const VAR_KEYS = ['CL-PERP', 'BZ-PERP', 'XAU-PERP', 'XAG-PERP'];
-async function loadVarLive() {  // 브라우저에서 Variational API 직접 (막혀 있으면 조용히 실패)
+// 단계: 여유 소진율 기준 (알림 스크립트와 같음 + 미리 보기 단계 25%)
+const LV = [{f: 0, k: 'up', t: '안전'}, {f: .25, k: 'am', t: '곧 송금'}, {f: .35, k: 'or', t: '송금'}, {f: .55, k: 'dn', t: '지금 송금'}, {f: .75, k: 'dn', t: '비상'}];
+const lvOf = c => { let r = LV[0]; LV.forEach(l => { if (c >= l.f) r = l; }); return r; };
+const C = {up: '#4ade80', am: '#fbbf24', or: '#fb923c', dn: '#f87171', mu: '#86a6a3', mint: '#5eead4'};
+const usd = v => v == null || isNaN(v) ? '—' : (v < 0 ? '−$' : '$') + d3.format(',.0f')(Math.abs(v));
+const usdS = v => (v >= 0 ? '+' : '−') + '$' + d3.format(',.0f')(Math.abs(v));
+const el = (t, c, x) => { const e = document.createElement(t); if (c) e.className = c; if (x != null) e.textContent = x; return e; };
+
+let P = null, hist = [], px = {}, src = '', pxAt = null;
+
+async function getJSON(u, opt) { const r = await fetch(u, opt); if (!r.ok) throw new Error(r.status); return r.json(); }
+async function loadPositions() { try { P = await getJSON('data/positions.json?' + Date.now()); } catch (e) { P = null; } }
+async function loadHist() {
   try {
-    const d = await (await fetch('https://omni-client-api.prod.ap-northeast-1.variational.io/metadata/v2/stats')).json();
-    const o = {}; (d.listings || []).forEach(l => { if (VAR_KEYS.includes(l.ticker)) o[l.ticker] = +l.mark_price; });
-    if (Object.keys(o).length) { varLive = o; varLiveAt = Date.now(); renderVariational(); renderBoard(); renderHero(); renderPairCharts(); }
+    const r = await fetch('data/pair_marks.csv?' + Date.now()); if (!r.ok) throw 0;
+    hist = d3.csvParse(await r.text(), d => ({t: new Date(d.time_utc), CL: +d.CL || null, BZ: +d.BZ || null, XAU: +d.XAU || null, XAG: +d.XAG || null, src: d.src}));
+  } catch (e) { hist = []; }
+}
+// 가격: Variational 직접 → 5분 기록(15분 이내) → 하이퍼리퀴드
+async function loadPrices() {
+  try {
+    const d = await getJSON(VAR_URL), o = {};
+    (d.listings || []).forEach(l => { if (XYZ[l.ticker]) o[l.ticker] = +l.mark_price; });
+    if (Object.keys(o).length === 4) { px = o; src = 'Variational 실시간'; pxAt = new Date(); return; }
   } catch (e) {}
-}
-async function loadPairHist() {
+  const last = hist[hist.length - 1];
+  if (last && Date.now() - last.t < 15 * 60000 && last.src !== 'hyperliquid' && last.CL && last.BZ && last.XAU && last.XAG) {
+    px = {'CL-PERP': last.CL, 'BZ-PERP': last.BZ, 'XAU-PERP': last.XAU, 'XAG-PERP': last.XAG}; src = 'Variational 5분 기록'; pxAt = last.t; return;
+  }
   try {
-    const res = await fetch('data/pair_marks.csv?' + Date.now()); if (!res.ok) throw new Error(res.status); const t = await res.text();
-    pairHist = d3.csvParse(t, r => ({t: new Date(r.time_utc), CL: +r.CL || null, BZ: +r.BZ || null, XAU: +r.XAU || null, XAG: +r.XAG || null, src: r.src}));
-  } catch (e) { pairHist = []; }
-  renderPairCharts();
-}
-async function loadXyz() {
-  try { xyzMids = await post({type: 'allMids', dex: 'xyz'}); renderVariational(); renderBoard(); renderHero(); renderPairCharts(); } catch (e) {}
-}
-function markOf(inst, entry) {
-  if (varLive[inst] && Date.now() - varLiveAt < 120000) { priceSrc = 'Variational 실시간'; return varLive[inst]; }
-  const last = pairHist[pairHist.length - 1], col = inst.split('-')[0];
-  if (last && last[col] && Date.now() - last.t < 15 * 60000 && last.src !== 'hyperliquid') { priceSrc = `Variational ${d3.timeFormat('%H:%M')(last.t)} 기록`; return last[col]; }
-  const k = XYZ[inst]; if (k && xyzMids[k]) { priceSrc = '하이퍼리퀴드 (Variational 기록이 오래됨)'; return +xyzMids[k]; }
-  const m = varMarks[inst]; return m ? +m.mark_price : +entry;
-}
-function varAccounts() {
-  const acc = d3.group(varPositions, p => p.account), meta = varMeta || {};
-  return [...acc].map(([name, legs]) => {
-    const a = meta[name] || {};
-    const L = legs.map(l => { const mark = markOf(l.instrument, l.entry); return Object.assign({}, l, {markNow: mark, value: +l.qty * mark, pnl: (l.side === 'long' ? 1 : -1) * l.qty * (mark - l.entry)}); });
-    const oi = d3.sum(L, l => l.value), pnl = d3.sum(L, l => l.pnl);
-    const equity = a.cash != null ? a.cash + pnl : (points.balances || {})[name];
-    const mm = (a.mm_rate || 0.025) * oi, mm0 = (a.mm_rate || 0.025) * d3.sum(L, l => l.qty * l.entry);
-    const room = equity ? (equity - mm) / d3.max(L, l => l.value) : null;
-    const consumed = a.cash != null ? 1 - (equity - mm) / (a.cash - mm0) : null;
-    const ins = new Set(L.map(l => l.instrument));
-    const gauge = ins.has('CL-PERP') && ins.has('BZ-PERP') ? `BZ−CL $${(markOf('BZ-PERP') - markOf('CL-PERP')).toFixed(2)}` : ins.has('XAU-PERP') && ins.has('XAG-PERP') ? `금÷은 ${(markOf('XAU-PERP') / markOf('XAG-PERP')).toFixed(2)}` : '';
-    return {name, legs: L, oi, pnl, equity, mmUse: equity ? mm / equity : null, room, consumed, gauge, pair: a.pair, role: a.role, structure: (legs[0].group || '') + (a.pair ? ' 짝' + a.pair + a.role : '')};
-  });
+    const m = await getJSON(HL, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({type: 'allMids', dex: 'xyz'})});
+    const o = {}; Object.entries(XYZ).forEach(([k, v]) => { if (m[v]) o[k] = +m[v]; });
+    px = o; src = '하이퍼리퀴드 (Variational과 몇 센트 차이)'; pxAt = new Date();
+  } catch (e) { src = ''; }
 }
 
-function pairLevels(kind) {  // kind: 'oil' | 'gs'
-  const acc = varAccounts().filter(a => kind === 'oil' ? a.legs.some(l => l.instrument === 'CL-PERP') : a.legs.some(l => l.instrument === 'XAU-PERP'));
-  if (!acc.length) return null;
-  const meta = varMeta || {};
-  const entry = d3.mean(acc, a => { const e = Object.fromEntries(a.legs.map(l => [l.instrument, l.entry])); return kind === 'oil' ? e['BZ-PERP'] - e['CL-PERP'] : e['XAU-PERP'] / e['XAG-PERP']; });
-  const buf = d3.min(acc, a => { const m = meta[a.name] || {}; const mm0 = (m.mm_rate || 0.025) * d3.sum(a.legs, l => l.qty * l.entry); const leg = a.legs[0]; return (m.cash - mm0) / (kind === 'oil' ? leg.qty : d3.max(a.legs, l => l.qty * l.entry)); });
-  const lv = f => kind === 'oil' ? [entry + f * buf, entry - f * buf] : [entry * (1 + f * buf), entry * (1 - f * buf)];
-  return {entry, r: lv(0.35), u: lv(0.55)};
-}
-function lineChart(box, data, key, L, fmt) {
-  box.textContent = '';
-  const pts = data.filter(d => d[key] != null && isFinite(d[key]));
-  if (pts.length < 2) { box.appendChild(el('div', 'msg', '기록이 아직 부족해요 (5분마다 한 점씩 쌓여요)')); return; }
-  const w = Math.max(300, box.clientWidth || 520), h = 170, m = {t: 8, r: 34, b: 22, l: 42};
-  const vals = pts.map(d => d[key]).concat(L ? [L.entry, ...L.r, ...L.u] : []);
-  const x = d3.scaleTime().domain(d3.extent(pts, d => d.t)).range([m.l, w - m.r]);
-  const y = d3.scaleLinear().domain(d3.extent(vals)).nice().range([h - m.b, m.t]);
-  const svg = d3.select(box).append('svg').attr('viewBox', `0 0 ${w} ${h}`).attr('width', '100%');
-  svg.append('g').attr('transform', `translate(${m.l},0)`).call(d3.axisLeft(y).ticks(4).tickFormat(fmt).tickSize(-(w - m.l - m.r))).call(g => { g.select('.domain').remove(); g.selectAll('line').attr('stroke', '#1b3439'); g.selectAll('text').attr('fill', '#86a6a3'); });
-  svg.append('g').attr('transform', `translate(0,${h - m.b})`).call(d3.axisBottom(x).ticks(5).tickFormat(d3.timeFormat('%m/%d %H:%M'))).call(g => { g.select('.domain').attr('stroke', '#1b3439'); g.selectAll('line').remove(); g.selectAll('text').attr('fill', '#86a6a3'); });
-  if (L) {
-    const hl = (v, c, dash) => svg.append('line').attr('x1', m.l).attr('x2', w - m.r).attr('y1', y(v)).attr('y2', y(v)).attr('stroke', c).attr('stroke-dasharray', dash).attr('opacity', .8);
-    hl(L.entry, '#86a6a3', '3 3'); L.r.forEach(v => hl(v, '#fbbf24', '6 4')); L.u.forEach(v => hl(v, '#f87171', '6 4'));
+// 계정 계산: 위험은 두 다리의 '차이'뿐. 여유 소진율 = 처음 여유(현금−유지증거금) 중 써버린 비율
+function account(name) {
+  const m = P.accounts[name], legs = P.positions.filter(p => p.account === name);
+  const by = Object.fromEntries(legs.map(l => [l.instrument, l]));
+  const oil = !!by['CL-PERP'];
+  const pnl = d3.sum(legs, l => (l.side === 'long' ? 1 : -1) * l.qty * ((px[l.instrument] ?? l.entry) - l.entry));
+  const oi = d3.sum(legs, l => l.qty * (px[l.instrument] ?? l.entry));
+  const mm0 = m.mm_rate * d3.sum(legs, l => l.qty * l.entry), mm = m.mm_rate * oi;
+  const buf0 = m.cash - mm0, equity = m.cash + pnl;
+  const consumed = 1 - (equity - mm) / buf0;
+  // 가격차(원유) 또는 비율(금/은)로 바꾼 기준선
+  let entry, cur, unit, lossUp;
+  if (oil) {
+    entry = by['BZ-PERP'].entry - by['CL-PERP'].entry; cur = px['BZ-PERP'] - px['CL-PERP'];
+    unit = buf0 / by['CL-PERP'].qty;              // 가격차 $1당 여유 = q
+    lossUp = by['CL-PERP'].side === 'long';         // CL 롱이면 가격차가 벌어질 때 손해
+  } else {
+    entry = by['XAU-PERP'].entry / by['XAG-PERP'].entry; cur = px['XAU-PERP'] / px['XAG-PERP'];
+    unit = entry * buf0 / (by['XAU-PERP'].qty * by['XAU-PERP'].entry);  // 비율 이동 = 여유
+    lossUp = by['XAU-PERP'].side === 'short';       // 금 숏이면 비율이 오를 때 손해
   }
-  svg.append('path').datum(pts).attr('fill', 'none').attr('stroke', '#5eead4').attr('stroke-width', 1.6).attr('d', d3.line().x(d => x(d.t)).y(d => y(d[key])));
-  const last = pts[pts.length - 1];
-  svg.append('circle').attr('cx', x(last.t)).attr('cy', y(last[key])).attr('r', 3).attr('fill', '#5eead4').append('title').text(fmt(last[key]));
-}
-function renderPairCharts() {
-  if (!document.getElementById('pc-oil')) return;
-  const D = pairHist.map(d => ({t: d.t, sp: d.BZ && d.CL ? d.BZ - d.CL : null, ra: d.XAU && d.XAG ? d.XAU / d.XAG : null}));
-  if (varLive['BZ-PERP']) D.push({t: new Date(varLiveAt), sp: varLive['BZ-PERP'] - varLive['CL-PERP'], ra: varLive['XAU-PERP'] / varLive['XAG-PERP']});
-  lineChart(document.getElementById('pc-oil'), D, 'sp', pairLevels('oil'), v => '$' + d3.format('.2f')(v));
-  lineChart(document.getElementById('pc-gs'), D, 'ra', pairLevels('gs'), d3.format('.2f'));
-  document.getElementById('pc-t').textContent = (priceSrc ? '가격: ' + priceSrc : '') + (pairHist.length ? ` · 기록 ${pairHist.length}개` : '');
+  const at = f => lossUp ? entry + f * unit : entry - f * unit;   // 소진 f가 되는 가격차/비율
+  return {name, m, legs, by, oil, pnl, oi, equity, consumed, entry, cur, at, lossUp,
+    side: oil ? `CL ${by['CL-PERP'].side === 'long' ? '롱' : '숏'} · BZ ${by['BZ-PERP'].side === 'long' ? '롱' : '숏'} ${by['CL-PERP'].qty}`
+              : `금 ${by['XAU-PERP'].side === 'long' ? '롱' : '숏'} ${by['XAU-PERP'].qty} · 은 ${by['XAG-PERP'].side === 'long' ? '롱' : '숏'} ${by['XAG-PERP'].qty}`};
 }
 
-function renderWeeks() {
-  const W = points.weeks || [], box = document.getElementById('wk-chart'); box.textContent = '';
-  if (!W.length) return;
-  const w = Math.max(320, box.clientWidth || 800), h = 200, m = {t: 10, r: 8, b: 26, l: 34};
-  const x = d3.scaleBand().domain(W.map(d => d.start)).range([m.l, w - m.r]).padding(0.2);
-  const y = d3.scaleLinear().domain([0, d3.max(W, d => d.points) * 1.1]).nice().range([h - m.b, m.t]);
-  const svg = d3.select(box).append('svg').attr('viewBox', `0 0 ${w} ${h}`).attr('width', '100%');
-  svg.append('g').attr('transform', `translate(${m.l},0)`).call(d3.axisLeft(y).ticks(4).tickSize(-(w - m.l - m.r))).call(g => { g.select('.domain').remove(); g.selectAll('line').attr('stroke', '#1b3439'); g.selectAll('text').attr('fill', '#86a6a3'); });
-  const ticks = W.filter((d, i) => i % Math.ceil(W.length / 8) === 0).map(d => d.start);
-  svg.append('g').attr('transform', `translate(0,${h - m.b})`).call(d3.axisBottom(x).tickValues(ticks).tickFormat(s => s.slice(5).replace('-', '/'))).call(g => { g.select('.domain').attr('stroke', '#1b3439'); g.selectAll('line').remove(); g.selectAll('text').attr('fill', '#86a6a3'); });
-  svg.selectAll('rect.b').data(W).join('rect').attr('class', 'b').attr('x', d => x(d.start)).attr('width', x.bandwidth()).attr('y', d => y(d.points)).attr('height', d => y(0) - y(d.points)).attr('rx', 2)
-    .attr('fill', d => d.check ? '#fbbf24' : '#5eead4').attr('opacity', d => d.src === 'ledger' ? 0.6 : 0.9)
-    .append('title').text(d => `${d.start} ~ ${d.end}\n포인트 ${d.points.toFixed(3)}` + (d.oi ? `\nOI $${d3.format(',')(d.oi)}` : '') + (d.pnl != null ? `\nPnL ${usd0(d.pnl)}` : '') + (d.note ? '\n' + d.note : ''));
-  const tot = d3.sum(W, d => d.points), pnl = d3.sum(W, d => d.pnl || 0);
-  document.getElementById('wk-t').textContent = `${W.length}주 · 합계 ${tot.toFixed(1)} + 기존 ${points.basePoints} · PnL 합계 ${usd0(pnl)}`;
-  const chk = W.filter(d => d.check);
-  document.getElementById('wk-msg').textContent = '막대에 마우스를 올리면 주간 OI·PnL이 보여요.' + (chk.length ? ' 노란 막대는 엑셀의 주간 합계와 계정별 합이 달라 확인이 필요한 주: ' + chk.map(d => `${d.start.slice(5)} (${d.check})`).join(', ') : '');
-}
-
-function renderVariational() {
-  const box = document.getElementById('var-cards'); box.textContent = '';
-  const lv = c => c == null ? 'mu' : c >= 0.55 ? 'dn' : c >= 0.35 ? 'am' : 'up';
-  const lt = c => c == null ? '—' : c >= 0.75 ? '비상' : c >= 0.55 ? '즉시 송금' : c >= 0.35 ? '리밸런싱' : '정상';
-  varAccounts().sort((x, y) => (x.pair || 9) - (y.pair || 9) || (x.role < y.role ? -1 : 1)).forEach(a => {
-    const c = el('div', 'ac s-' + lv(a.consumed));
-    const h = el('div', 'ahd'); h.append(el('span', 'an', a.name), el('span', 'tag var', a.structure), el('span', 'pill ' + lv(a.consumed), lt(a.consumed))); c.appendChild(h);
-    c.appendChild(el('div', 'k', `자산 ${usd0(a.equity)} · OI ${usd0(a.oi)} · ${a.equity ? (a.oi / a.equity).toFixed(1) + 'x' : '—'} · 손익 ${usd0(a.pnl)}`));
-    const g = el('div', 'legs');
-    const r0 = el('div'); r0.append(el('span', null, a.gauge), el('span', lv(a.consumed), `여유 소진 ${a.consumed == null ? '—' : d3.format('.0%')(Math.max(0, a.consumed))} · 청산까지 ${pct(a.room)}`)); g.appendChild(r0);
-    a.legs.forEach(l => { const r = el('div', 'mu'); r.append(el('span', null, `${l.instrument.replace('-PERP', '')} ${l.side === 'long' ? '롱' : '숏'} ${px(+l.qty)} @ ${px(l.entry)}`), el('span', l.pnl >= 0 ? 'up' : 'dn', `${px(l.markNow)} · ${usd0(l.pnl)}`)); g.appendChild(r); });
-    c.appendChild(g); box.appendChild(c);
+function pairs() {
+  const ids = [...new Set(Object.values(P.accounts).map(a => a.pair))].sort();
+  return ids.map(id => {
+    const A = Object.keys(P.accounts).filter(n => P.accounts[n].pair === id).map(account);
+    const oil = A[0].oil;
+    const up = A.filter(a => a.lossUp), dn = A.filter(a => !a.lossUp);
+    const nearUp = f => d3.min(up, a => a.at(f)), nearDn = f => d3.max(dn, a => a.at(f));
+    const entry = d3.mean(A, a => a.entry), cur = A[0].cur;
+    const worst = A.reduce((w, a) => a.consumed > w.consumed ? a : w, A[0]);
+    return {id, name: (P.pairs || {})[id] || '', A, oil, entry, cur, nearUp, nearDn, worst};
   });
 }
 
-function boardRows() {
-  const rows = [];
-  Object.keys(entState).forEach(n => { const s = entState[n]; rows.push({name: n, proj: 'Entropy', struct: s.structure || '', equity: s.equity, oi: s.oi, risk: d3.min(s.legs, l => l.dist), pts: (points.entropy || {})[n]}); });
-  const cum = points.cumulative || {}, seen = new Set();
-  varAccounts().forEach(a => { seen.add(a.name); rows.push({name: a.name, proj: 'Variational', struct: a.structure || '', equity: a.equity, oi: a.oi, risk: a.room, pts: (points.variational || {})[a.name], cum: cum[a.name]}); });
-  Object.keys(cum).filter(n => !seen.has(n)).forEach(n => rows.push({name: n, proj: 'Variational', struct: '포지션 없음', equity: (points.lastBalances || {})[n], oi: 0, risk: null, pts: (points.variational || {})[n], cum: cum[n]}));
-  rows.forEach(r => { r.lev = r.equity ? r.oi / r.equity : null; r.eff = r.pts != null && r.oi ? r.pts / (r.oi / 1000) : null; });
-  return rows;
-}
-
-function renderBoard() {
-  const rows = boardRows();
-  const key = {risk: r => r.risk ?? 9, oi: r => -(r.oi || 0), eff: r => -(r.eff ?? -1), pts: r => -(r.pts ?? -1), cum: r => -(r.cum ?? -1)}[sortKey];
-  rows.sort((a, b) => key(a) - key(b));
-  const tb = document.querySelector('#lb tbody'); tb.textContent = '';
-  const maxOi = d3.max(rows, r => r.oi) || 1;
-  rows.forEach((r, i) => {
-    const tr = el('tr');
-    const td0 = el('td'); td0.appendChild(el('span', 'rank', String(i + 1))); tr.appendChild(td0);
-    tr.appendChild(el('td', 'l', r.name));
-    const tdp = el('td', 'l'); tdp.appendChild(el('span', 'tag ' + (r.proj === 'Entropy' ? 'ent' : 'var'), r.proj + (r.struct ? ' · ' + r.struct : ''))); tr.appendChild(tdp);
-    tr.appendChild(el('td', null, usd0(r.equity)));
-    const toi = el('td', null, usd0(r.oi)); const m = el('span', 'meter'); const f = el('i'); f.style.width = (r.oi / maxOi * 100) + '%'; f.style.background = r.proj === 'Entropy' ? '#a78bfa' : '#5eead4'; m.appendChild(f); toi.appendChild(m); tr.appendChild(toi);
-    tr.appendChild(el('td', null, r.lev ? r.lev.toFixed(1) + 'x' : '—'));
-    tr.appendChild(el('td', level(r.risk), pct(r.risk)));
-    tr.appendChild(el('td', null, r.pts == null ? '—' : (+r.pts).toFixed(4)));
-    tr.appendChild(el('td', null, r.eff == null ? '—' : r.eff.toFixed(4)));
-    tr.appendChild(el('td', null, r.cum == null ? '—' : r.cum.toFixed(2)));
-    tr.appendChild(el('td', null, r.cum == null ? '—' : usd0(r.cum * (points.pointValue || 0))));
-    tb.appendChild(tr);
+// 송금 제안: 소진 35% 이상인 계정에 짝 계정 이익의 비율대로 손실의 절반
+function transfers(pr) {
+  const out = [];
+  pr.A.filter(a => a.consumed >= .35).forEach(a => {
+    const mates = pr.A.filter(b => b.lossUp !== a.lossUp), gain = d3.sum(mates, b => Math.max(0, b.pnl)) || 1;
+    mates.forEach(b => { const amt = Math.max(0, -a.pnl) * .5 * Math.max(0, b.pnl) / gain; if (amt >= 5) out.push({from: b.name, to: a.name, amt, lv: lvOf(a.consumed)}); });
   });
+  return out;
 }
-document.querySelectorAll('#sort-seg button').forEach(b => b.addEventListener('click', () => {
-  sortKey = b.dataset.k; document.querySelectorAll('#sort-seg button').forEach(x => x.setAttribute('aria-pressed', String(x === b))); renderBoard();
-}));
 
-function renderHero() {
-  const rows = boardRows();
-  const oi = d3.sum(rows, r => r.oi || 0), eq = d3.sum(rows, r => r.equity || 0);
-  const ent = d3.sum(rows.filter(r => r.proj === 'Entropy'), r => r.oi || 0);
-  document.getElementById('h-oi').textContent = usd0(oi);
-  document.getElementById('h-oi-sub').textContent = `Entropy ${usd0(ent)} · Variational ${usd0(oi - ent)}`;
-  document.getElementById('h-eq').textContent = usd0(eq);
-  document.getElementById('h-lev').textContent = eq ? (oi / eq).toFixed(1) + 'x' : '—';
-  const w = rows.filter(r => r.risk != null).sort((a, b) => a.risk - b.risk)[0];
-  const e = document.getElementById('h-risk'); e.textContent = w ? pct(w.risk) : '—'; e.className = 'big ' + (w ? level(w.risk) : '');
-  document.getElementById('h-risk-sub').textContent = w ? `${w.name} (${w.proj})` : '—';
-  if (points.weeks) {
-    const tot = d3.sum(points.weeks, w => w.points) + (points.basePoints || 0);
-    document.getElementById('h-pts').textContent = d3.format(',.1f')(tot);
-    document.getElementById('h-pts-sub').textContent = `포인트당 $${points.pointValue} → ${usd0(tot * points.pointValue)}`;
+const fmtV = (oil, v) => oil ? '$' + v.toFixed(2) : v.toFixed(2);
+
+function render() {
+  if (!P || !P.positions || !P.positions.length) { document.getElementById('todo').innerHTML = '<h2>열린 포지션이 없어요</h2>'; return; }
+  const live = document.getElementById('live');
+  live.className = 'live' + (src ? '' : ' off');
+  document.getElementById('live-t').textContent = src ? `${src} · ${d3.timeFormat('%H:%M')(pxAt)}` : '가격을 못 불러왔어요';
+  if (Object.keys(px).length < 4) return;
+  const PR = pairs(), all = PR.flatMap(p => p.A);
+
+  // 지금 할 일
+  const tx = PR.flatMap(transfers), worst = all.reduce((w, a) => a.consumed > w.consumed ? a : w, all[0]);
+  const wl = lvOf(worst.consumed), todo = document.getElementById('todo');
+  todo.className = 'pn todo s-' + wl.k; todo.textContent = '';
+  if (tx.length) {
+    todo.appendChild(el('h2', null, worst.consumed >= .55 ? '🔴 지금 바로 송금하세요' : '🟠 송금할 때가 됐어요'));
+    const d = el('div', 'do'); tx.forEach(t => d.appendChild(el('div', null, `${t.from} → ${t.to}  ${usd(t.amt)}`))); todo.appendChild(d);
+    todo.appendChild(el('div', 'why', `${worst.name} 계정이 청산 여유의 ${d3.format('.0%')(worst.consumed)}를 썼어요. 보내면 다시 안전 구간으로 돌아와요.`));
+  } else {
+    // 가장 가까운 송금 기준까지 남은 거리
+    const nxt = PR.map(p => { const a = p.A.reduce((w, x) => x.consumed > w.consumed ? x : w, p.A[0]); return {p, a, trig: a.at(.35)}; })
+      .sort((x, y) => y.a.consumed - x.a.consumed)[0];
+    const gap = Math.abs(nxt.trig - nxt.p.cur), gapTxt = nxt.p.oil ? '$' + gap.toFixed(2) : gap.toFixed(2);
+    todo.appendChild(el('h2', null, worst.consumed >= .25 ? `🟡 곧 송금해야 해요 — ${worst.name}` : '✅ 지금은 할 일 없어요'));
+    todo.appendChild(el('div', 'why', `가장 가까운 송금 기준: 짝 ${nxt.p.id} ${nxt.p.oil ? '가격차' : '금÷은'}가 ${fmtV(nxt.p.oil, nxt.trig)}에 닿으면 (지금 ${fmtV(nxt.p.oil, nxt.p.cur)}, ${gapTxt} 남음) → ${nxt.a.name} 쪽으로 송금`));
   }
-  document.getElementById('stamp').textContent = '마지막 갱신 ' + new Date().toLocaleTimeString('ko-KR');
+
+  // 타일
+  const tiles = document.getElementById('tiles'); tiles.textContent = '';
+  [['총 OI', usd(d3.sum(all, a => a.oi)), ''], ['총 자산', usd(d3.sum(all, a => a.equity)), ''], ['가장 위험한 계정', d3.format('.0%')(Math.max(0, worst.consumed)), wl.k]]
+    .forEach(([k, v, c]) => { const t = el('div', 'tile'); t.append(el('div', 'k', k), el('div', 'v ' + c, v)); if (k === '가장 위험한 계정') t.appendChild(el('div', 'k', worst.name + ' · 여유 소진율')); tiles.appendChild(t); });
+
+  // 짝 카드
+  const box = document.getElementById('pairs'); box.textContent = '';
+  PR.forEach(p => {
+    const l = lvOf(p.worst.consumed), c = el('section', 'pn pair s-' + l.k);
+    const h = el('div', 'ph'); h.append(el('span', 'n', `짝 ${p.id} · ${p.oil ? '원유' : '금/은'}`), el('span', 'k', p.name), el('span', 'chip ' + l.k, l.t)); c.appendChild(h);
+    const mv = p.cur - p.entry;
+    const big = el('div', 'big');
+    big.append(el('span', 'k', p.oil ? '가격차 BZ−CL' : '금 ÷ 은'), el('span', 'now', fmtV(p.oil, p.cur)),
+      el('span', 'mv ' + (Math.abs(mv) < (p.oil ? 1 : 0.01 * p.entry) ? 'mu' : 'am'), `진입 ${fmtV(p.oil, p.entry)} 대비 ${mv >= 0 ? '+' : '−'}${p.oil ? '$' + Math.abs(mv).toFixed(2) : Math.abs(mv).toFixed(2) + ` (${d3.format('+.1%')(mv / p.entry)})`}`));
+    c.appendChild(big);
+    c.appendChild(gauge(p));
+    const sU = p.nearUp(.35), sD = p.nearDn(.35);
+    const gapTxt = g => g <= 0 ? '이미 넘음' : fmtV(p.oil, g) + ' 남음';
+    c.appendChild(el('div', 'left', `송금 기준까지  위로 ${gapTxt(sU - p.cur)}  ·  아래로 ${gapTxt(p.cur - sD)}`));
+    const ac = el('div', 'accts');
+    p.A.forEach(a => {
+      const al = lvOf(a.consumed), d = el('div', 'acct');
+      const hh = el('div', 'h'); hh.append(el('span', 'nm', a.name), el('span', 'pl ' + (a.pnl >= 0 ? 'up' : 'dn'), usdS(a.pnl))); d.appendChild(hh);
+      d.appendChild(el('div', 'k', `${a.side} · ${p.oil ? (a.lossUp ? '가격차 ↑ 손해' : '가격차 ↓ 손해') : (a.lossUp ? '비율 ↑ 손해' : '비율 ↓ 손해')}`));
+      const mt = el('div', 'meter'), fi = el('i'), mk = el('b'); fi.style.width = Math.min(100, Math.max(0, a.consumed) * 100) + '%'; fi.style.background = C[al.k]; mk.style.left = '35%'; mt.append(fi, mk); d.appendChild(mt);
+      d.appendChild(el('div', 'k', `여유 소진 ${d3.format('.0%')(Math.max(0, a.consumed))} · 자산 ${usd(a.equity)} · ${(a.oi / a.equity).toFixed(1)}배`));
+      ac.appendChild(d);
+    });
+    c.appendChild(ac); box.appendChild(c);
+  });
+
+  charts(PR);
+  document.getElementById('foot').innerHTML = `포지션 기준 ${P.updated} · SL/TP 없이 운영 — 위험은 두 다리의 가격 '차이'뿐이라 그 차이로만 판단해요.<br>여유 소진율 = 처음 청산 여유 중 써버린 비율. 25% 곧 송금 · 35% 송금(텔레그램 알림) · 55% 지금 송금 · 100% 청산.`;
 }
 
-loadVariational().then(loadPairHist).then(loadXyz).then(loadVarLive);
-setInterval(loadXyz, 15000);
-setInterval(loadVarLive, 30000);
-setInterval(loadPairHist, 5 * 60000);
-loadEntropyFiles().then(tickEntropy);
-setInterval(loadEntropyFiles, 10 * 60000);
-setInterval(tickEntropy, 10000);
-setInterval(loadVariational, 5 * 60000);
+// 게이지: 가운데 진입값, 양 끝 청산. 구간 색 = 안전/곧/송금/지금 송금
+function gauge(p) {
+  const W = Math.max(320, (document.getElementById('pairs').clientWidth || 640) - 40), H = 92, m = 22, lo = p.nearDn(1), hi = p.nearUp(1);
+  const x = d3.scaleLinear().domain([lo, hi]).range([m, W - m]).clamp(true);
+  const svg = d3.create('svg').attr('viewBox', `0 0 ${W} ${H}`);
+  const seg = [[lo, p.nearDn(.55), C.dn], [p.nearDn(.55), p.nearDn(.35), C.or], [p.nearDn(.35), p.nearDn(.25), C.am], [p.nearDn(.25), p.nearUp(.25), C.up], [p.nearUp(.25), p.nearUp(.35), C.am], [p.nearUp(.35), p.nearUp(.55), C.or], [p.nearUp(.55), hi, C.dn]];
+  seg.forEach(([a, b, col]) => svg.append('rect').attr('x', x(a)).attr('y', 34).attr('width', Math.max(0, x(b) - x(a))).attr('height', 12).attr('fill', col).attr('opacity', .55));
+  const tick = (v, label, y, anchor) => { svg.append('line').attr('x1', x(v)).attr('x2', x(v)).attr('y1', 30).attr('y2', 50).attr('stroke', '#e6f4f1').attr('opacity', .5); svg.append('text').attr('x', x(v)).attr('y', y).attr('text-anchor', anchor || 'middle').attr('fill', '#b9cfcb').attr('font-size', 13).text(label); };
+  tick(lo, '청산 ' + fmtV(p.oil, lo), 68, 'start'); tick(hi, '청산 ' + fmtV(p.oil, hi), 68, 'end');
+  tick(p.nearDn(.35), '송금 ' + fmtV(p.oil, p.nearDn(.35)), 84, W < 480 ? 'end' : 'middle'); tick(p.nearUp(.35), '송금 ' + fmtV(p.oil, p.nearUp(.35)), 84, W < 480 ? 'start' : 'middle');
+  svg.append('line').attr('x1', x(p.entry)).attr('x2', x(p.entry)).attr('y1', 28).attr('y2', 52).attr('stroke', '#e6f4f1').attr('stroke-dasharray', '3 2');
+  tick(p.entry, '진입', 68);
+  const cx = x(p.cur);
+  svg.append('path').attr('d', `M${cx - 9},8 L${cx + 9},8 L${cx},26 Z`).attr('fill', '#e6f4f1');
+  svg.append('circle').attr('cx', cx).attr('cy', 40).attr('r', 7).attr('fill', '#e6f4f1').attr('stroke', '#0c1b1e').attr('stroke-width', 2);
+  const g = el('div', 'gauge'); g.appendChild(svg.node()); return g;
+}
+
+function charts(PR) {
+  const D = hist.map(d => ({t: d.t, oil: d.BZ && d.CL ? d.BZ - d.CL : null, gs: d.XAU && d.XAG ? d.XAU / d.XAG : null}));
+  if (src === 'Variational 실시간') D.push({t: pxAt, oil: px['BZ-PERP'] - px['CL-PERP'], gs: px['XAU-PERP'] / px['XAG-PERP']});
+  document.getElementById('hist-k').textContent = hist.length ? `Variational 가격 5분 기록 · ${hist.length}개` : '5분마다 기록이 쌓여요';
+  [['c-oil', 'oil'], ['c-gs', 'gs']].forEach(([id, key]) => {
+    const p = PR.find(q => (key === 'oil') === q.oil), box = document.getElementById(id); box.textContent = '';
+    const pts = D.filter(d => d[key] != null && isFinite(d[key]));
+    if (!p || pts.length < 2) { box.appendChild(el('div', 'k', '기록이 아직 부족해요')); return; }
+    const W = Math.max(320, box.clientWidth || 640), H = 170, m = {t: 8, r: 50, b: 22, l: 30};
+    const lines = [[p.entry, '#86a6a3', '3 3', '진입'], [p.nearUp(.35), C.or, '6 4', '송금'], [p.nearDn(.35), C.or, '6 4', '송금']];
+    const vals = pts.map(d => d[key]).concat(lines.map(l => l[0]));
+    const x = d3.scaleTime().domain(d3.extent(pts, d => d.t)).range([m.l, W - m.r]);
+    const y = d3.scaleLinear().domain(d3.extent(vals)).nice().range([H - m.b, m.t]);
+    const svg = d3.create('svg').attr('viewBox', `0 0 ${W} ${H}`);
+    svg.append('g').attr('transform', `translate(0,${H - m.b})`).call(d3.axisBottom(x).ticks(5).tickFormat(d3.timeFormat('%m/%d %H시'))).call(g => { g.select('.domain').attr('stroke', '#1b3439'); g.selectAll('line').remove(); g.selectAll('text').attr('fill', '#86a6a3').attr('font-size', 12); });
+    lines.forEach(([v, col, dash, lab]) => { svg.append('line').attr('x1', m.l).attr('x2', W - m.r).attr('y1', y(v)).attr('y2', y(v)).attr('stroke', col).attr('stroke-dasharray', dash); svg.append('text').attr('x', W - m.r + 4).attr('y', y(v) + 4).attr('fill', col).attr('font-size', 12).text(lab); });
+    svg.append('path').datum(pts).attr('fill', 'none').attr('stroke', C.mint).attr('stroke-width', 2).attr('d', d3.line().x(d => x(d.t)).y(d => y(d[key])));
+    const last = pts[pts.length - 1];
+    svg.append('circle').attr('cx', x(last.t)).attr('cy', y(last[key])).attr('r', 4).attr('fill', C.mint);
+    box.appendChild(svg.node());
+  });
+}
+
+async function tick() { await loadPrices(); render(); }
+(async () => {
+  await Promise.all([loadPositions(), loadHist()]);
+  await tick();
+  setInterval(tick, 20000);
+  setInterval(async () => { await Promise.all([loadPositions(), loadHist()]); render(); }, 5 * 60000);
+})();
 </script>
 </body>
 </html>

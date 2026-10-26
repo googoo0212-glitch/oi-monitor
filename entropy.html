@@ -71,7 +71,10 @@ th{color:var(--mu);font-weight:500}th:first-child,td:first-child{text-align:left
       <div class="title">Entropy OI</div>
       <div class="mkt s" id="mkt">—</div>
     </div>
-    <span class="live" id="live"><i></i><span id="live-t">연결 중…</span></span>
+    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+      <a href="./" style="border:1px solid var(--ln);background:var(--pn2);border-radius:999px;padding:7px 14px;font-size:14px;text-decoration:none;color:var(--fg)">Variational 보기 →</a>
+      <span class="live" id="live"><i></i><span id="live-t">연결 중…</span></span>
+    </div>
   </section>
 
   <section class="pn todo" id="todo"><h2>불러오는 중…</h2></section>
@@ -97,7 +100,7 @@ th{color:var(--mu);font-weight:500}th:first-child,td:first-child{text-align:left
 
   <section class="pn">
     <details id="setup">
-      <summary>설정 (지갑 주소 · 폰용 링크) · <a href="./">통합 현황</a></summary>
+      <summary>설정 (지갑 주소 · 폰용 링크) · <a href="./">Variational</a></summary>
       <div class="in">
         <div id="addr-fields"></div>
         <div><button id="save">저장</button> <button id="copy-link">폰용 링크 복사</button></div>
