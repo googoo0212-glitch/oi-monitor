@@ -1,16 +1,30 @@
 {
  "_설명": "Entropy(io 덱) DRAM/EWY 페어 OI 모니터 설정. 지갑 주소는 여기 넣지 말고 GitHub Secret ENTROPY_ACCOUNTS 에 {\"A\":\"0x…\",\"B\":\"0x…\"} 형태로 넣으세요. legs = 각 계정이 들고 있어야 하는 방향(사라지거나 뒤집히면 알림).",
  "dex": "io",
+ "start": "2026-10-19T10:00:00Z",
+ "_start설명": "누적 수수료·펀딩·OI 유지율을 이 시각(UTC)부터 계산. 새로 시작하면 바꾸기",
  "accounts": {
-  "A": {"label": "아빠", "legs": {"DRAM": "long", "EWY": "short"}},
-  "B": {"label": "핑구1", "legs": {"DRAM": "short", "EWY": "long"}}
+  "A": {
+   "label": "아빠",
+   "legs": {
+    "DRAM": "long",
+    "EWY": "short"
+   }
+  },
+  "B": {
+   "label": "핑구1",
+   "legs": {
+    "DRAM": "short",
+    "EWY": "long"
+   }
+  }
  },
  "_기준설명": "liq_near/imminent = 포지션별 청산가까지 거리, spread_buffer = 교차증거금일 때 DRAM-EWY 스프레드가 이만큼 더 벌어지면 청산, margin = 유지증거금/계정가치, leg_imbalance = 계정 안 두 포지션 명목가 차이, net_exposure = 두 계정 합친 종목별 순노출/총노출, rebalance_gap = 두 계정 증거금 차이/평균",
  "_10배기준": "계정당 총노출 10x(포지션당 5x) 진입 시 스프레드 여유 ~16%. 스프레드 4% 움직이면 주의(12%), 8% 움직이면 위험(8%). rebalance_gap 0.40 = 스프레드 ~4% 움직였을 때 리밸런싱 알림",
  "_격리기준": "Entropy는 격리만 됨 → 포지션마다 따로 청산. liq_target = 재분배 후 목표 청산거리(5x 진입 ≈ 18%). liq_near 이하로 내려오면 손실 포지션에 마진 보충 알림",
  "_SL기준": "운영은 마진 넣고 빼기로만(거래 없이 OI 유지). SL/TP는 비상용 → 청산가에서 sl_gap(2%) 안쪽. 롱 SL = 숏 TP, 숏 SL = 롱 TP로 미러",
  "sl_gap": 0.02,
- "taker_fee": 0.00009,
+ "taker_fee": 9e-05,
  "_마진": "Entropy DRAM/EWY는 strict isolated → 마진 추가만 가능, 제거 불가. 손실 포지션은 예비금으로 보충, 수익 포지션 이익은 닫고 재진입해야 풀림",
  "liq_target": 0.18,
  "liq_near": 0.11,
@@ -20,8 +34,8 @@
  "margin_warn": 0.45,
  "margin_danger": 0.65,
  "leg_imbalance": 0.15,
- "net_exposure": 0.10,
- "rebalance_gap": 0.40,
+ "net_exposure": 0.1,
+ "rebalance_gap": 0.4,
  "repeat_minutes": 60,
  "daily_summary_hour_kst": 9,
  "history_days": 30

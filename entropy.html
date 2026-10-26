@@ -3,136 +3,144 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Entropy OI 모니터</title>
+<title>Entropy OI</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
 <style>
-:root{--bg:#071113;--pn:#0c1b1e;--pn2:#10252a;--ln:#1b3439;--fg:#e6f4f1;--mu:#86a6a3;--mint:#5eead4;--up:#4ade80;--dn:#f87171;--am:#fbbf24;--dram:#a78bfa;--ewy:#38bdf8}
+:root{--bg:#071113;--pn:#0c1b1e;--pn2:#10252a;--ln:#1b3439;--fg:#e6f4f1;--fg2:#b9cfcb;--mu:#86a6a3;--mint:#5eead4;--up:#4ade80;--dn:#f87171;--am:#fbbf24}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--fg);font-family:Pretendard,"Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;font-variant-numeric:tabular-nums}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:Pretendard,"Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;font-variant-numeric:tabular-nums;-webkit-text-size-adjust:100%}
 a{color:var(--mint)}
-.wrap{max-width:1200px;margin:0 auto;padding:16px;display:flex;flex-direction:column;gap:12px}
-.pn{background:var(--pn);border:1px solid var(--ln);border-radius:12px;padding:14px 16px;min-width:0}
+.wrap{max-width:860px;margin:0 auto;padding:16px;display:flex;flex-direction:column;gap:12px}
+.pn{background:var(--pn);border:1px solid var(--ln);border-radius:14px;padding:14px 16px;min-width:0}
 .k{font-size:12px;color:var(--mu)}
-.big{font-size:clamp(24px,4vw,34px);font-weight:600;margin-top:4px}
-.up{color:var(--up)}.dn{color:var(--dn)}.am{color:var(--am)}.mint{color:var(--mint)}
-.top{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
-.title{font-size:16px;font-weight:600}
+.s{font-size:12px;color:var(--fg2)}
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;flex-wrap:wrap}
+.title{font-size:17px;font-weight:700}
 .live{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--mu)}
-.live i{width:8px;height:8px;border-radius:50%;background:var(--up);animation:p 2s infinite}
-.live.off i{background:var(--dn);animation:none}
-@keyframes p{0%{box-shadow:0 0 0 0 rgba(74,222,128,.6)}70%{box-shadow:0 0 0 8px rgba(74,222,128,0)}100%{box-shadow:0 0 0 0 rgba(74,222,128,0)}}
-.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,17rem),1fr));gap:12px}
-.ph{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:8px;flex-wrap:wrap}
-.note{font-size:11px;color:var(--mu)}
-.chart{position:relative;min-height:240px}
-.mini{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:10px}
-.mini>div{background:var(--pn2);border-radius:8px;padding:6px 10px}
-.mini .v{font-size:15px;font-weight:600}
-.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,24rem),1fr));gap:12px}
-.ac{background:var(--pn);border:1px solid var(--ln);border-left:4px solid var(--ln);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:10px}
-.ac.s-dn{border-left-color:var(--dn)}.ac.s-am{border-left-color:var(--am)}.ac.s-up{border-left-color:rgba(74,222,128,.6)}
-.ahd{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.an{font-weight:600;font-size:15px}
-.tag{font-size:11px;border-radius:999px;padding:1px 8px;background:var(--pn2);color:var(--mu)}
-.pill{margin-left:auto;font-size:11px;font-weight:600;border-radius:999px;padding:2px 10px}
-.pill.dn{background:rgba(248,113,113,.15);color:var(--dn)}.pill.am{background:rgba(251,191,36,.15);color:var(--am)}.pill.up{background:rgba(74,222,128,.12);color:var(--up)}
-.nr{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
-@media (max-width:480px){.nr{grid-template-columns:1fr 1fr}}
-.nr>div{background:var(--pn2);border-radius:8px;padding:6px 10px;min-width:0}
-.nr .v{font-size:17px;font-weight:600}
-.hot .v{color:var(--dn)}.warm .v{color:var(--am)}
+.live i{width:8px;height:8px;border-radius:50%;background:var(--up)}
+.live.off i{background:var(--dn)}
+.mkt{display:flex;gap:10px;flex-wrap:wrap;margin-top:4px}
+/* 할 일 */
+.todo{border-left:4px solid var(--up)}
+.todo.am{border-left-color:var(--am)}.todo.dn{border-left-color:var(--dn)}
+.todo h2{margin:0 0 6px;font-size:16px}
+.todo ol{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px;font-size:14px;line-height:1.45}
+.todo .step{color:var(--fg2);font-size:13px}
+/* 숫자 타일 */
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+@media (max-width:640px){.tiles{grid-template-columns:1fr 1fr}}
+.tile{background:var(--pn);border:1px solid var(--ln);border-radius:14px;padding:12px 14px;min-width:0}
+.tile .v{font-size:22px;font-weight:700;margin:4px 0 2px;white-space:nowrap}
+/* 포지션 */
+.pos{display:flex;flex-direction:column;gap:14px}
+.row{display:flex;flex-direction:column;gap:6px}
+.rh{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.rn{font-weight:600;font-size:15px}
+.chip{font-size:12px;font-weight:600;border-radius:999px;padding:2px 9px;margin-left:auto}
+.chip.up{background:rgba(74,222,128,.13);color:var(--up)}.chip.am{background:rgba(251,191,36,.14);color:var(--am)}.chip.dn{background:rgba(248,113,113,.15);color:var(--dn)}
+.L{color:var(--up)}.S{color:var(--dn)}
+.bar{position:relative;height:28px;margin:2px 0}
+.track{position:absolute;left:0;right:0;top:12px;height:4px;border-radius:2px;background:var(--pn2)}
+.used{position:absolute;left:0;top:12px;height:4px;border-radius:2px}
+.dot{position:absolute;top:7px;width:14px;height:14px;margin-left:-7px;border-radius:50%;border:2px solid var(--pn)}
+.end{position:absolute;top:6px;width:2px;height:16px;background:var(--mu)}
+.ends{display:flex;justify-content:space-between;gap:8px}
+.ends b{font-weight:600;color:var(--fg)}
+.sub{display:flex;gap:12px;flex-wrap:wrap}
+hr{border:0;border-top:1px solid var(--ln);margin:0}
+/* 차트 */
+.chart{position:relative;min-height:200px}
+.tip{position:absolute;pointer-events:none;background:var(--pn2);border:1px solid var(--ln);border-radius:8px;padding:6px 10px;font-size:12px;display:none;white-space:nowrap;z-index:2}
+.ph{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:6px}
+.ph .t{font-size:15px;font-weight:600}
+details summary{cursor:pointer;font-size:14px;color:var(--fg2)}
+details .in{margin-top:10px;display:flex;flex-direction:column;gap:8px}
+input{width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--ln);background:var(--pn2);color:var(--fg);font-family:ui-monospace,monospace;font-size:12px}
+button{border:1px solid var(--ln);background:var(--pn2);color:var(--fg);border-radius:8px;padding:7px 12px;font-size:13px;cursor:pointer}
 table{width:100%;border-collapse:collapse;font-size:12px}
 th,td{padding:5px 6px;text-align:right;border-bottom:1px solid var(--ln);white-space:nowrap}
-th{color:var(--mu);font-weight:500}
-th:first-child,td:first-child{text-align:left}
+th{color:var(--mu);font-weight:500}th:first-child,td:first-child{text-align:left}
 .tw{overflow-x:auto}
-.L{color:var(--up)}.S{color:var(--dn)}
-.msg{font-size:12px;color:var(--mu)}
-.warnbox{font-size:12px;border-radius:8px;padding:8px 10px;background:rgba(251,191,36,.1);color:var(--am)}
-.dnbox{font-size:12px;border-radius:8px;padding:8px 10px;background:rgba(248,113,113,.12);color:var(--dn)}
-details{font-size:12px;color:var(--mu)}
-details input{width:100%;margin:4px 0 8px;padding:7px 9px;border-radius:8px;border:1px solid var(--ln);background:var(--pn2);color:var(--fg);font-family:ui-monospace,monospace;font-size:12px}
-button{border:1px solid var(--ln);background:var(--pn2);color:var(--fg);border-radius:8px;padding:6px 12px;font-size:12px;cursor:pointer}
-.tip{position:absolute;pointer-events:none;background:var(--pn2);border:1px solid var(--ln);border-radius:8px;padding:6px 10px;font-size:12px;display:none;white-space:nowrap;z-index:2}
-.leg{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--mu)}
-.leg i{display:inline-block;width:10px;height:3px;border-radius:2px;margin-right:5px;vertical-align:middle}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <section class="pn top">
+
+  <section class="top">
     <div>
-      <div class="title">Entropy OI 모니터 · DRAM / EWY 페어</div>
-      <div class="k">하이퍼리퀴드 io 덱 · 10초마다 갱신 · <a href="index.html">Variational 모니터 →</a></div>
+      <div class="title">Entropy OI</div>
+      <div class="mkt s" id="mkt">—</div>
     </div>
     <span class="live" id="live"><i></i><span id="live-t">연결 중…</span></span>
   </section>
 
+  <section class="pn todo" id="todo"><h2>불러오는 중…</h2></section>
+
+  <section class="tiles" id="tiles"></section>
+
   <section class="pn">
-    <details id="setup">
-      <summary>계정 주소 설정 (이 브라우저에만 저장, 레포에는 안 올라감)</summary>
-      <div id="addr-fields"></div>
-      <button id="save">저장</button> <button id="copy-link">폰용 링크 복사</button> <span class="msg" id="save-msg" style="word-break:break-all"></span>
+    <div class="ph"><span class="t">포지션별 SL · TP까지 남은 거리</span><span class="k">점이 왼쪽(SL)에 붙을수록 위험</span></div>
+    <div class="pos" id="pos"><div class="k">아래 '설정'에서 지갑 주소를 넣으면 보여요.</div></div>
+  </section>
+
+  <section class="pn">
+    <div class="ph"><span class="t">OI 유지 기록</span><span class="k" id="hist-k">30분마다 기록</span></div>
+    <div class="chart" id="c-oi"></div>
+  </section>
+
+  <section class="pn">
+    <details id="more">
+      <summary>상세 (계정 잔고 · 권장 SL/TP · 펀딩률)</summary>
+      <div class="in" id="detail"></div>
     </details>
   </section>
 
-  <section class="grid3">
-    <div class="pn"><div class="ph"><span class="k">DRAM · Roundhill Memory ETF</span><span class="note" id="dram-chg">—</span></div><div class="big" id="dram-px">—</div><div class="mini" id="dram-mini"></div></div>
-    <div class="pn"><div class="ph"><span class="k">EWY · iShares MSCI Korea</span><span class="note" id="ewy-chg">—</span></div><div class="big" id="ewy-px">—</div><div class="mini" id="ewy-mini"></div></div>
-    <div class="pn"><div class="ph"><span class="k">페어 관계 (7일 · 1시간봉, Entropy 가격)</span><span class="note" id="ratio-chg">—</span></div><div class="big" id="ratio">—</div><div class="mini" id="pair-mini"></div></div>
-  </section>
-
   <section class="pn">
-    <div class="ph"><span class="title">계정 합계</span><span class="note" id="tot-note"></span></div>
-    <div class="nr" id="totals"></div>
-    <div id="tot-msg" style="margin-top:8px;display:flex;flex-direction:column;gap:6px"></div>
-  </section>
-
-  <section>
-    <div class="ph" style="margin:4px 2px 8px"><span class="title">계정별</span><span class="note">격리(마진 추가만 가능): 포지션마다 따로 청산 → 손실 포지션에 예비금으로 마진 보충해서 청산거리 유지</span></div>
-    <div class="cards" id="cards"><div class="pn msg">위 '계정 주소 설정'에서 A/B 지갑 주소를 넣으면 포지션이 보여요.</div></div>
-  </section>
-
-  <section class="pn">
-    <div class="ph"><span class="title">7일 상대 성과</span><span class="note">둘 다 7일 전 = 0%, 아래 선 = DRAM − EWY (스프레드)</span></div>
-    <div class="leg"><span><i style="background:var(--dram)"></i>DRAM</span><span><i style="background:var(--ewy)"></i>EWY</span><span><i style="background:var(--am)"></i>스프레드</span></div>
-    <div class="chart" id="c-pair"></div>
-  </section>
-
-  <section class="pn">
-    <div class="ph"><span class="title">기록</span><span class="note" id="hist-note">30분마다 GitHub Actions 기록</span></div>
-    <div class="leg" id="hist-leg"></div>
-    <div class="chart" id="c-hist"></div>
-    <div class="msg" id="hist-msg"></div>
+    <details id="setup">
+      <summary>설정 (지갑 주소 · 폰용 링크) · <a href="index.html">Variational 모니터</a></summary>
+      <div class="in">
+        <div id="addr-fields"></div>
+        <div><button id="save">저장</button> <button id="copy-link">폰용 링크 복사</button></div>
+        <div class="k" id="save-msg" style="word-break:break-all"></div>
+      </div>
+    </details>
   </section>
 </div>
 
 <script>
 const HL = 'https://api.hyperliquid.xyz/info', DEX = 'io', COINS = ['DRAM', 'EWY'];
-const C = {up: '#4ade80', dn: '#f87171', am: '#fbbf24', mint: '#5eead4', mu: '#86a6a3', ln: '#1b3439', fg: '#e6f4f1', dram: '#a78bfa', ewy: '#38bdf8'};
-const ACC_COLORS = ['#5eead4', '#f472b6', '#fbbf24', '#a78bfa'];
-const pct = d3.format('.1%'), pct0 = d3.format('.0%'), spct = d3.format('+.2%'), usd = d3.format('$,.0f'), usd2 = d3.format('$,.2f');
+const C = {up: '#4ade80', dn: '#f87171', am: '#fbbf24', mint: '#5eead4', mu: '#86a6a3', ln: '#1b3439', fg: '#e6f4f1', pn: '#0c1b1e'};
+const pct = d3.format('.1%'), pct0 = d3.format('.0%'), usd = d3.format('$,.0f'), usd2 = d3.format('$,.2f');
+const kusd = v => v >= 1e4 ? '$' + d3.format('.1f')(v / 1e3) + 'k' : usd(v);
 const susd = v => (v < 0 ? '−' : '+') + usd2(Math.abs(v));
 const el = (t, c, x) => { const e = document.createElement(t); if (c) e.className = c; if (x != null) e.textContent = x; return e; };
-let CFG = {accounts: {A: {label: 'A', legs: {DRAM: 'long', EWY: 'short'}}, B: {label: 'B', legs: {DRAM: 'short', EWY: 'long'}}},
-  liq_near: .15, liq_imminent: .08, spread_buffer_warn: .15, spread_buffer_danger: .09, margin_warn: .35, margin_danger: .55,
-  leg_imbalance: .15, net_exposure: .10, rebalance_gap: .30};
-let market = {}, candles = {DRAM: [], EWY: []};
+const ko = s => s === 'long' ? '롱' : '숏';
+let CFG = {start: '2026-10-19T10:00:00Z', accounts: {A: {label: 'A', legs: {DRAM: 'long', EWY: 'short'}}, B: {label: 'B', legs: {DRAM: 'short', EWY: 'long'}}},
+  liq_target: .18, liq_near: .11, liq_imminent: .06, sl_gap: .02};
+let market = {}, accts = [], stats = {}, hist = [];
 
+// ---------- 주소 (링크 #A=…&B=… 또는 이 브라우저 저장값)
 function store(k, v) { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) { return null; } }
-// 주소: URL 뒤 #A=0x…&B=0x… 가 있으면 그걸 쓰고(이 기기에도 저장), 없으면 브라우저에 저장된 값.
-// # 뒤 내용은 서버로 전송되지 않아서 레포·Pages 로그에 안 남아요.
-function hashAddrs() {
-  const o = {};
-  new URLSearchParams(location.hash.slice(1)).forEach((v, k) => { if (/^0x[0-9a-fA-F]{40}$/.test(v)) o[k] = v; });
-  return o;
-}
-const addrs = () => {
-  const h = hashAddrs();
-  if (Object.keys(h).length) { store('entropy_addrs', JSON.stringify(h)); return h; }
-  try { return JSON.parse(store('entropy_addrs') || '{}'); } catch (e) { return {}; }
-};
+function hashAddrs() { const o = {}; new URLSearchParams(location.hash.slice(1)).forEach((v, k) => { if (/^0x[0-9a-fA-F]{40}$/.test(v)) o[k] = v; }); return o; }
+const addrs = () => { const h = hashAddrs(); if (Object.keys(h).length) { store('entropy_addrs', JSON.stringify(h)); return h; } try { return JSON.parse(store('entropy_addrs') || '{}'); } catch (e) { return {}; } };
 const addrLink = o => location.origin + location.pathname + '#' + new URLSearchParams(o).toString();
+function buildSetup() {
+  const box = document.getElementById('addr-fields'); box.textContent = ''; const a = addrs();
+  for (const [k, v] of Object.entries(CFG.accounts)) {
+    box.append(el('div', 'k', `${k} · ${v.label} (${Object.entries(v.legs).map(([c, s]) => c + ' ' + ko(s)).join(' / ')})`));
+    const i = el('input'); i.id = 'addr-' + k; i.placeholder = '0x…'; i.value = a[k] || ''; box.append(i);
+  }
+  if (!Object.values(a).some(Boolean)) document.getElementById('setup').open = true;
+}
+document.getElementById('save').onclick = () => {
+  const o = {}; for (const k of Object.keys(CFG.accounts)) { const v = document.getElementById('addr-' + k).value.trim(); if (v) o[k] = v; }
+  store('entropy_addrs', JSON.stringify(o)); history.replaceState(null, '', addrLink(o));
+  document.getElementById('save-msg').textContent = '저장됨'; refreshAll();
+};
+document.getElementById('copy-link').onclick = async () => {
+  const link = addrLink(addrs()), m = document.getElementById('save-msg');
+  try { await navigator.clipboard.writeText(link); m.textContent = '복사됨 → 폰에서 열고 홈 화면에 추가'; } catch (e) { m.textContent = link; }
+};
 
 async function post(body) {
   const r = await fetch(HL, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)});
@@ -140,274 +148,258 @@ async function post(body) {
   return r.json();
 }
 
-// ---------- 설정
-function buildSetup() {
-  const box = document.getElementById('addr-fields'); box.textContent = '';
-  const a = addrs();
-  for (const [k, v] of Object.entries(CFG.accounts)) {
-    const legs = Object.entries(v.legs).map(([c, s]) => `${c} ${s === 'long' ? '롱' : '숏'}`).join(' / ');
-    box.append(el('div', null, `${k} · ${v.label} (${legs})`));
-    const i = el('input'); i.id = 'addr-' + k; i.placeholder = '0x…'; i.value = a[k] || ''; box.append(i);
-  }
-  if (!Object.values(a).some(Boolean)) document.getElementById('setup').open = true;
+// ---------- 미국장 열림/닫힘 (공휴일 미반영)
+function nyParts(d) {
+  const p = Object.fromEntries(new Intl.DateTimeFormat('en-US', {timeZone: 'America/New_York', weekday: 'short', hour: 'numeric', minute: 'numeric', hourCycle: 'h23'}).formatToParts(d).map(x => [x.type, x.value]));
+  return {wd: p.weekday, m: (+p.hour) * 60 + (+p.minute)};
 }
-document.getElementById('save').onclick = () => {
-  const o = {};
-  for (const k of Object.keys(CFG.accounts)) { const v = document.getElementById('addr-' + k).value.trim(); if (v) o[k] = v; }
-  store('entropy_addrs', JSON.stringify(o));
-  history.replaceState(null, '', addrLink(o));
-  document.getElementById('save-msg').textContent = '저장됨 · 지금 주소창 링크를 북마크하면 다른 기기에서도 자동으로 떠요';
-  tick();
-};
-document.getElementById('copy-link').onclick = async () => {
-  const link = addrLink(addrs()), m = document.getElementById('save-msg');
-  try { await navigator.clipboard.writeText(link); m.textContent = '링크 복사됨 → 폰으로 보내서 열고 홈 화면에 추가하세요'; }
-  catch (e) { m.textContent = link; }
-};
+const isOpen = d => { const p = nyParts(d); return !['Sat', 'Sun'].includes(p.wd) && p.m >= 570 && p.m < 960; };
+function usSession() {
+  const now = new Date(), open = isOpen(now);
+  let t = new Date(Math.ceil(now / 6e4) * 6e4);
+  for (let i = 0; i < 6000 && isOpen(t) === open; i++) t = new Date(+t + 6e4);
+  const kst = new Intl.DateTimeFormat('ko-KR', {timeZone: 'Asia/Seoul', weekday: 'short', hour: '2-digit', minute: '2-digit', hourCycle: 'h23'}).format(t);
+  return open ? `미국장 열림 · ${kst} 마감 (가격 실시간 반영)` : `미국장 닫힘 · ${kst} 개장 (개장 직후 갭 주의)`;
+}
 
-// ---------- 시장
+// ---------- 데이터
 async function loadMarket() {
   const [meta, ctxs] = await post({type: 'metaAndAssetCtxs', dex: DEX});
-  meta.universe.forEach((u, i) => {
-    const c = ctxs[i], coin = u.name.split(':').pop(), mark = +c.markPx;
-    market[coin] = {mark, oracle: +c.oraclePx, prev: +c.prevDayPx, f: +c.funding, oi: +c.openInterest * mark, vol: +c.dayNtlVlm, maxLev: u.maxLeverage};
-  });
+  meta.universe.forEach((u, i) => { const c = ctxs[i], coin = u.name.split(':').pop(); market[coin] = {mark: +c.markPx, prev: +c.prevDayPx, f: +c.funding}; });
 }
-async function loadCandles() {
-  const end = Date.now(), start = end - 7 * 24 * 3600e3;
-  for (const c of COINS) {
-    const rows = await post({type: 'candleSnapshot', req: {coin: `${DEX}:${c}`, interval: '1h', startTime: start, endTime: end}});
-    candles[c] = rows.map(r => ({t: +r.t, c: +r.c}));
-  }
-}
-function pairStats() {
-  const m = new Map(candles.EWY.map(r => [r.t, r.c]));
-  const rows = candles.DRAM.filter(r => m.has(r.t)).map(r => ({t: r.t, d: r.c, e: m.get(r.t)}));
-  const rd = [], re = [];
-  for (let i = 1; i < rows.length; i++) { rd.push(Math.log(rows[i].d / rows[i - 1].d)); re.push(Math.log(rows[i].e / rows[i - 1].e)); }
-  if (rd.length < 10) return {rows};
-  const md = d3.mean(rd), me = d3.mean(re);
-  let cov = 0, vd = 0, ve = 0;
-  rd.forEach((x, i) => { cov += (x - md) * (re[i] - me); vd += (x - md) ** 2; ve += (re[i] - me) ** 2; });
-  const sp = rd.map((x, i) => x - re[i]);
-  return {rows, corr: cov / Math.sqrt(vd * ve), beta: cov / ve, spreadVolH: d3.deviation(sp), n: rd.length};
-}
-function drawMarket() {
-  for (const c of COINS) {
-    const m = market[c]; if (!m) continue;
-    const lc = c.toLowerCase();
-    document.getElementById(lc + '-px').textContent = '$' + (c === 'DRAM' ? m.mark.toFixed(3) : m.mark.toFixed(2));
-    const ch = m.prev ? m.mark / m.prev - 1 : 0, e = document.getElementById(lc + '-chg');
-    e.textContent = '24h ' + spct(ch); e.className = 'note ' + (ch >= 0 ? 'up' : 'dn');
-    const mini = document.getElementById(lc + '-mini'); mini.textContent = '';
-    [['펀딩 (연환산)', spct(m.f * 24 * 365), m.f >= 0 ? '롱이 냄' : '숏이 냄'], ['오라클 괴리', spct(m.mark / m.oracle - 1), '마크 vs 오라클'],
-     ['Entropy 미결제', usd(m.oi), '최대 ' + m.maxLev + 'x'], ['24h 거래량', usd(m.vol), '']].forEach(([k, v, s]) => {
-      const d = el('div'); d.append(el('div', 'k', k), el('div', 'v', v)); if (s) d.append(el('div', 'k', s)); mini.append(d);
-    });
-  }
-  const d = market.DRAM, e = market.EWY;
-  if (d && e) {
-    document.getElementById('ratio').textContent = (d.mark / e.mark).toFixed(4);
-    const r0 = d.prev / e.prev, r1 = d.mark / e.mark, rc = document.getElementById('ratio-chg');
-    rc.textContent = 'DRAM/EWY 24h ' + spct(r1 / r0 - 1); rc.className = 'note ' + (r1 >= r0 ? 'up' : 'dn');
-  }
-  const s = pairStats(), mini = document.getElementById('pair-mini'); mini.textContent = '';
-  if (s.corr != null) {
-    [['상관계수', s.corr.toFixed(2), s.n + '개 1시간봉'], ['베타 (DRAM/EWY)', s.beta.toFixed(2), '1 넘으면 DRAM이 더 큼'],
-     ['스프레드 변동 (1시간)', pct(s.spreadVolH), '1σ'], ['스프레드 변동 (1일 환산)', pct(s.spreadVolH * Math.sqrt(24)), '24시간 거래 기준']].forEach(([k, v, x]) => {
-      const dd = el('div'); dd.append(el('div', 'k', k), el('div', 'v', v), el('div', 'k', x)); mini.append(dd);
-    });
-  }
-  drawPair(s.rows || []);
-}
-
-// ---------- 계정
-function analyze(key, raw, orders) {
-  const acfg = CFG.accounts[key], av = +raw.marginSummary.accountValue, maint = +raw.crossMaintenanceMarginUsed;
+function parseAccount(key, raw, orders) {
+  const acfg = CFG.accounts[key];
   const legs = raw.assetPositions.map(a => a.position).filter(p => +p.szi !== 0).map(p => {
-    const coin = p.coin.split(':').pop(), szi = +p.szi, mark = market[coin] ? market[coin].mark : +p.entryPx;
-    const liq = p.liquidationPx == null ? null : +p.liquidationPx, side = szi > 0 ? 'long' : 'short';
-    const dist = liq ? (side === 'long' ? (mark - liq) / mark : (liq - mark) / mark) : null;
-    return {coin, side, szi, ntl: Math.abs(szi) * mark, entry: +p.entryPx, mark, upnl: +p.unrealizedPnl, liq, dist,
-      lev: p.leverage ? `${p.leverage.type === 'cross' ? '교차' : '격리'} ${p.leverage.value}x` : '', cross: p.leverage && p.leverage.type === 'cross',
-      fund: p.cumFunding ? -(+p.cumFunding.sinceOpen) : null, margin: +(p.marginUsed || 0)};
-  });
-  legs.forEach(l => {  // SL/TP: 롱이면 현재가 아래 트리거 = SL, 위 = TP (숏은 반대)
-    const tr = (orders || []).filter(o => o.isTrigger && o.coin.split(':').pop() === l.coin).map(o => +o.triggerPx);
-    const below = tr.filter(x => x < l.mark), above = tr.filter(x => x > l.mark);
+    const coin = p.coin.split(':').pop(), szi = +p.szi, side = szi > 0 ? 'long' : 'short';
+    const mark = market[coin] ? market[coin].mark : +p.entryPx, liq = p.liquidationPx == null ? null : +p.liquidationPx;
+    const dist = x => x == null ? null : (side === 'long' ? (mark - x) / mark : (x - mark) / mark);
+    const tr = (orders || []).filter(o => o.isTrigger && o.coin.split(':').pop() === coin).map(o => +o.triggerPx);
+    const below = tr.filter(x => x < mark), above = tr.filter(x => x > mark);
     const bmax = below.length ? Math.max(...below) : null, amin = above.length ? Math.min(...above) : null;
-    [l.sl, l.tp] = l.side === 'long' ? [bmax, amin] : [amin, bmax];
-    l.slBad = l.sl != null && l.liq && (l.side === 'long' ? l.sl <= l.liq : l.sl >= l.liq);
+    const [sl, tp] = side === 'long' ? [bmax, amin] : [amin, bmax];
+    return {coin, side, qty: Math.abs(szi), ntl: Math.abs(szi) * mark, mark, liq, sl, tp, upnl: +p.unrealizedPnl, margin: +(p.marginUsed || 0),
+      ld: dist(liq), sd: dist(sl), td: tp == null ? null : -dist(tp), cross: p.leverage && p.leverage.type === 'cross'};
   });
-  const gross = d3.sum(legs, l => l.ntl), allCross = legs.length > 0 && legs.every(l => l.cross);
-  const buf = allCross ? (av - maint) / (gross / legs.length) : null;
-  const imb = legs.length === 2 ? Math.abs(legs[0].ntl - legs[1].ntl) / (gross / 2) : null;
   const have = Object.fromEntries(legs.map(l => [l.coin, l.side]));
-  const missing = Object.entries(acfg.legs).filter(([c, s]) => have[c] !== s).map(([c, s]) => `${c} ${s === 'long' ? '롱' : '숏'}`);
-  const minDist = d3.min(legs, l => l.dist);
-  let st = 'up';
-  const legRisk = allCross ? null : minDist;  // 교차면 포지션별 청산가는 참고용
-  if (missing.length || (buf != null && buf < CFG.spread_buffer_danger) || (legRisk != null && legRisk < CFG.liq_imminent) || (allCross && maint / av > CFG.margin_danger)) st = 'dn';
-  else if ((buf != null && buf < CFG.spread_buffer_warn) || (legRisk != null && legRisk < CFG.liq_near) || (allCross && maint / av > CFG.margin_warn) || (imb != null && imb > CFG.leg_imbalance)) st = 'am';
-  return {key, label: acfg.label, av, maint, free: +(raw.withdrawable || 0), mr: av ? maint / av : null, gross, lev: av ? gross / av : 0, upnl: d3.sum(legs, l => l.upnl), buf, imb, missing, legs, minDist, legRisk, allCross, st};
+  const missing = Object.entries(acfg.legs).filter(([c, s]) => have[c] !== s).map(([c, s]) => c + ' ' + ko(s));
+  return {key, label: acfg.label, eq: +raw.marginSummary.accountValue, free: +(raw.withdrawable || 0), legs, missing, need: Object.keys(acfg.legs).length};
 }
-function drawAccounts(accts) {
-  const box = document.getElementById('cards'); box.textContent = '';
-  accts.forEach(a => {
-    const c = el('div', 'ac s-' + a.st);
-    const h = el('div', 'ahd');
-    h.append(el('span', 'an', a.label), el('span', 'tag', a.key), el('span', 'tag', usd(a.av) + ' 증거금'), el('span', 'pill ' + a.st, a.st === 'dn' ? '위험' : a.st === 'am' ? '주의' : '정상'));
-    c.append(h);
-    const nr = el('div', 'nr');
-    const cell = (k, v, sub, cls) => { const d = el('div', cls || ''); d.append(el('div', 'k', k), el('div', 'v', v)); if (sub) d.append(el('div', 'k', sub)); nr.append(d); };
-    if (a.allCross) cell('스프레드 여유', a.buf == null ? '—' : pct(a.buf), '청산까지', a.buf != null && a.buf < CFG.spread_buffer_danger ? 'hot' : a.buf != null && a.buf < CFG.spread_buffer_warn ? 'warm' : '');
-    else cell('여유 잔고', usd(a.free), '손실 포지션 보충용', a.free < 100 ? 'warm' : '');
-    cell('가장 가까운 청산', a.minDist == null ? '—' : pct(a.minDist), a.allCross ? '포지션 기준 · 참고용' : '포지션 기준', a.legRisk != null && a.legRisk < CFG.liq_imminent ? 'hot' : a.legRisk != null && a.legRisk < CFG.liq_near ? 'warm' : '');
-    cell('총 노출', a.lev.toFixed(1) + 'x', usd(a.gross), a.lev > 8 ? 'warm' : '');
-    cell('미실현', susd(a.upnl), a.allCross ? '유지증거금 ' + (a.mr == null ? '—' : pct0(a.mr)) : '격리 포지션 ' + a.legs.length + '개', a.allCross && a.mr > CFG.margin_warn ? 'warm' : '');
-    c.append(nr);
-    if (a.legs.length) {
-      const tw = el('div', 'tw'), t = el('table'), hr = el('tr');
-      ['포지션', '명목', '격리마진', '진입', '현재', '청산가', '거리', 'SL / TP', '미실현', '받은 펀딩'].forEach(x => hr.append(el('th', null, x)));
-      t.append(hr);
-      a.legs.forEach(l => {
-        const r = el('tr'), first = el('td');
-        first.append(el('span', l.side === 'long' ? 'L' : 'S', (l.side === 'long' ? '롱 ' : '숏 ') + l.coin), el('span', 'k', ' ' + l.lev));
-        r.append(first, el('td', null, usd(l.ntl)), el('td', null, l.cross ? '교차' : usd(l.margin)), el('td', null, l.entry.toFixed(3)), el('td', null, l.mark.toFixed(3)),
-          el('td', null, l.liq ? l.liq.toFixed(3) : '—'), el('td', !l.cross && l.dist != null && l.dist < CFG.liq_near ? 'am' : null, l.dist == null ? '—' : pct(l.dist)),
-          el('td', l.slBad || l.sl == null ? 'dn' : null, `${l.sl == null ? '없음' : l.sl.toFixed(3)} / ${l.tp == null ? '—' : l.tp.toFixed(3)}`),
-          el('td', l.upnl >= 0 ? 'up' : 'dn', susd(l.upnl)), el('td', l.fund >= 0 ? 'up' : 'dn', l.fund == null ? '—' : susd(l.fund)));
-        t.append(r);
-      });
-      tw.append(t); c.append(tw);
-    }
-    a.legs.filter(l => l.slBad).forEach(l => c.append(el('div', 'dnbox', `${l.coin} SL ${l.sl.toFixed(3)}이 청산가 ${l.liq.toFixed(3)} 밖 → 청산이 먼저 옴. 아래 권장값으로 옮기기`)));
-    if (a.missing.length) c.append(el('div', 'dnbox', '포지션 없음/방향 다름: ' + a.missing.join(', ') + ' → 청산·체결 확인'));
-    if (a.imb != null && a.imb > CFG.leg_imbalance) c.append(el('div', 'warnbox', `두 포지션 크기 차이 ${pct0(a.imb)} → 1:1로 다시 맞추기`));
-    
-    box.append(c);
-  });
-}
-function drawTotals(accts) {
-  const nr = document.getElementById('totals'); nr.textContent = '';
-  const cell = (k, v, sub, cls) => { const d = el('div', cls || ''); d.append(el('div', 'k', k), el('div', 'v', v)); if (sub) d.append(el('div', 'k', sub)); nr.append(d); };
-  const gross = d3.sum(accts, a => a.gross), eq = d3.sum(accts, a => a.av);
-  cell('내 Entropy OI', usd(gross), accts.length + '개 계정');
-  cell('총 증거금', usd(eq), (gross / eq || 0).toFixed(1) + 'x');
-  const msgs = document.getElementById('tot-msg'); msgs.textContent = '';
-  COINS.forEach(c => {
-    const legs = accts.flatMap(a => a.legs).filter(l => l.coin === c);
-    const net = d3.sum(legs, l => l.side === 'long' ? l.ntl : -l.ntl), g = d3.sum(legs, l => l.ntl), r = g ? Math.abs(net) / g : 0;
-    cell(c + ' 순노출', (net >= 0 ? '롱 ' : '숏 ') + usd(Math.abs(net)), pct0(r) + ' of ' + usd(g), r > CFG.net_exposure * 2 ? 'hot' : r > CFG.net_exposure ? 'warm' : '');
-  });
-  if (accts.length && !accts.every(a => a.allCross)) {
-    // 격리: 같은 종목 롱/숏 포지션끼리 이익 → 손실 포지션 마진
-    const target = CFG.liq_target || .18;
-    COINS.forEach(c => {
-      const legs = accts.flatMap(a => a.legs.filter(l => l.coin === c && l.dist != null).map(l => ({a, l}))).sort((p, q) => p.l.dist - q.l.dist);
-      if (legs.length < 2 || legs[0].a === legs[legs.length - 1].a) return;
-      const lo = legs[0], hi = legs[legs.length - 1], need = Math.max(0, lo.l.ntl * (target - lo.l.dist)), take = Math.min(need, Math.max(0, hi.l.upnl));
-      const ko = s => s === 'long' ? '롱' : '숏';
-      const cls = lo.l.dist < CFG.liq_imminent ? 'dnbox' : lo.l.dist < CFG.liq_near ? 'warnbox' : 'msg';
-      let t = `${c}: ${lo.a.label} ${ko(lo.l.side)} 청산거리 ${pct(lo.l.dist)} → ${pct0(target)} 만들려면 마진 ${usd(need)} 추가 (여유잔고 ${usd(lo.a.free)}, 수수료 0)`;
-      const same = lo.a.legs.filter(l => l !== lo.l && l.upnl > 50).sort((p, q) => q.upnl - p.upnl)[0];
-      const src = same ? {a: lo.a, l: same, x: ''} : {a: hi.a, l: hi.l, x: ` → ${lo.a.label}로 전송`};
-      if (lo.a.free < need && src.l.upnl > 50) t += ` · 잔고 없으면 ${src.a.label} ${src.l.coin} ${ko(src.l.side)}(이익 ${usd(src.l.upnl)}) 닫고 재진입${src.x} → 그 돈으로 추가`;
-      if (need < 1) t = `${c}: 두 포지션 모두 청산거리 ${pct0(target)} 이상 · 재분배 필요 없음`;
-      msgs.append(el('div', cls, t));
-    });
-    const gap = CFG.sl_gap || .02;
-    COINS.forEach(c => {
-      const L = accts.flatMap(a => a.legs.filter(l => l.coin === c && l.side === 'long' && l.liq).map(l => ({a, l})))[0];
-      const S = accts.flatMap(a => a.legs.filter(l => l.coin === c && l.side === 'short' && l.liq).map(l => ({a, l})))[0];
-      if (!L || !S) return;
-      const up = S.l.liq * (1 - gap), down = L.l.liq * (1 + gap);
-      const off = (x, y) => x == null || y == null || Math.abs(x - y) / y > .002;
-      const bad = L.l.slBad || S.l.slBad, mis = off(L.l.tp, S.l.sl) || off(S.l.tp, L.l.sl);
-      msgs.append(el('div', bad ? 'dnbox' : mis ? 'warnbox' : 'msg',
-        `${c} 권장 SL/TP (청산가 ${pct0(gap)} 안쪽, 미러): 위 ${up.toFixed(3)} = ${S.a.label} 숏 SL · ${L.a.label} 롱 TP / 아래 ${down.toFixed(3)} = ${L.a.label} 롱 SL · ${S.a.label} 숏 TP` + (bad ? ' · ⚠ SL이 청산가 밖' : mis ? ' · 미러 어긋남' : '')));
-    });
-  } else if (accts.length === 2) {
-    const [hi, lo] = accts.slice().sort((p, q) => q.av - p.av), gap = (hi.av - lo.av) / ((hi.av + lo.av) / 2);
-    if (gap > CFG.rebalance_gap) msgs.append(el('div', 'warnbox', `증거금 차이 ${pct0(gap)} → ${hi.label}에서 ${lo.label}로 ${usd((hi.av - lo.av) / 2)} 옮기면 두 계정 청산 여유가 같아져요`));
+async function loadAccounts() {
+  const a = addrs(), out = [];
+  for (const k of Object.keys(CFG.accounts)) {
+    if (!a[k]) continue;
+    let orders = []; try { orders = await post({type: 'frontendOpenOrders', user: a[k], dex: DEX}); } catch (e) {}
+    out.push(parseAccount(k, await post({type: 'clearinghouseState', user: a[k], dex: DEX}), Array.isArray(orders) ? orders : []));
   }
-  document.getElementById('tot-note').textContent = '두 계정 합치면 DRAM·EWY 모두 0에 가까워야 정상';
+  accts = out;
 }
-
-// ---------- 차트
-function lineChart(box, series, fmt, zeroLine) {
-  box.textContent = '';
-  const pts = series.flatMap(s => s.values);
-  if (!pts.length) return;
-  const W = box.clientWidth || 360, H = 240, m = {t: 10, r: 56, b: 22, l: 6};
-  const x = d3.scaleTime(d3.extent(pts, d => d.t), [m.l, W - m.r]);
-  const y = d3.scaleLinear(d3.extent(pts.concat(zeroLine ? [{v: 0}] : []), d => d.v), [H - m.b, m.t]).nice();
-  const svg = d3.select(box).append('svg').attr('width', '100%').attr('viewBox', `0 0 ${W} ${H}`).attr('height', H);
-  y.ticks(4).forEach(t => {
-    svg.append('line').attr('x1', m.l).attr('x2', W - m.r).attr('y1', y(t)).attr('y2', y(t)).attr('stroke', t === 0 && zeroLine ? C.mu : C.ln).attr('stroke-dasharray', t === 0 && zeroLine ? '3 3' : null);
-    svg.append('text').attr('x', W - m.r + 6).attr('y', y(t)).attr('dominant-baseline', 'middle').attr('font-size', 11).attr('fill', C.mu).text(fmt(t));
-  });
-  x.ticks(4).forEach(t => svg.append('text').attr('x', x(t)).attr('y', H - 5).attr('font-size', 10).attr('fill', C.mu).attr('text-anchor', 'middle').text(d3.timeFormat('%m/%d')(t)));
-  series.forEach(s => svg.append('path').datum(s.values).attr('fill', 'none').attr('stroke', s.color).attr('stroke-width', s.w || 2)
-    .attr('d', d3.line().defined(d => d.v != null && isFinite(d.v)).x(d => x(d.t)).y(d => y(d.v))));
-  const tip = el('div', 'tip'); box.append(tip);
-  const rule = svg.append('line').attr('y1', m.t).attr('y2', H - m.b).attr('stroke', C.mu).style('display', 'none');
-  svg.append('rect').attr('x', m.l).attr('y', 0).attr('width', W - m.l - m.r).attr('height', H).attr('fill', 'transparent')
-    .on('pointermove', ev => {
-      const [mx] = d3.pointer(ev), t = x.invert(mx);
-      const lines = series.map(s => { const i = d3.bisector(d => d.t).center(s.values, t); const d = s.values[i]; return d ? `${s.name} ${fmt(d.v)}` : ''; });
-      rule.style('display', null).attr('x1', mx).attr('x2', mx);
-      tip.style.display = 'block'; tip.textContent = d3.timeFormat('%m/%d %H:%M')(t) + ' · ' + lines.join(' · ');
-      tip.style.left = Math.min(mx + 10, W - 260) + 'px'; tip.style.top = '8px';
-    }).on('pointerleave', () => { rule.style('display', 'none'); tip.style.display = 'none'; });
+async function paged(type, user, start, limit) {
+  const out = [], seen = new Set(); let t = start;
+  for (let i = 0; i < 50; i++) {
+    const rows = await post({type, user, startTime: t});
+    if (!Array.isArray(rows) || !rows.length) break;
+    let n = 0;
+    rows.forEach(r => { const k = [r.tid || r.hash, r.time, r.oid, r.delta && r.delta.coin].join('|'); if (!seen.has(k)) { seen.add(k); out.push(r); n++; } });
+    if (rows.length < limit || !n) break;
+    t = Math.max(...rows.map(r => +r.time));
+  }
+  return out;
 }
-function drawPair(rows) {
-  if (!rows.length) return;
-  const d0 = rows[0].d, e0 = rows[0].e;
-  lineChart(document.getElementById('c-pair'), [
-    {name: 'DRAM', color: C.dram, values: rows.map(r => ({t: new Date(r.t), v: r.d / d0 - 1}))},
-    {name: 'EWY', color: C.ewy, values: rows.map(r => ({t: new Date(r.t), v: r.e / e0 - 1}))},
-    {name: '스프레드', color: C.am, w: 1.5, values: rows.map(r => ({t: new Date(r.t), v: (r.d / d0) / (r.e / e0) - 1}))}
-  ], spct, true);
+async function loadStats() {
+  const a = addrs(), start = Date.parse(CFG.start), pre = DEX + ':', s = {};
+  for (const k of Object.keys(CFG.accounts)) {
+    if (!a[k]) continue;
+    const st = {fees: 0, vol: 0, funding: 0, fills: 0};
+    (await paged('userFillsByTime', a[k], start, 2000)).filter(f => String(f.coin).startsWith(pre)).forEach(f => {
+      st.fees += +(f.fee || 0) + +(f.builderFee || 0); st.vol += (+f.px) * (+f.sz); st.fills++;
+    });
+    (await paged('userFunding', a[k], start, 500)).filter(r => r.delta && String(r.delta.coin).startsWith(pre)).forEach(r => { st.funding += +(r.delta.usdc || 0); });
+    s[k] = st;
+  }
+  stats = s;
 }
 async function loadHistory() {
-  let h = [];
-  try { h = await (await fetch('data/entropy_history.json?' + Date.now())).json(); } catch (e) { document.getElementById('hist-msg').textContent = '아직 기록이 없어요 (entropy-record 워크플로우가 30분마다 쌓아요).'; return; }
-  if (!h.length) return;
-  const labels = [...new Set(h.flatMap(r => Object.keys(r.acct || {})))];
-  const series = labels.map((l, i) => ({name: l, color: ACC_COLORS[i % 4], values: h.map(r => ({t: new Date(r.t), v: r.acct && r.acct[l] ? r.acct[l].eq : null}))}));
-  const leg = document.getElementById('hist-leg'); leg.textContent = '';
-  series.forEach(s => { const sp = el('span'); const i = el('i'); i.style.background = s.color; sp.append(i, s.name + ' 증거금'); leg.append(sp); });
-  lineChart(document.getElementById('c-hist'), series, d3.format('$,.0f'), false);
-  const last = h[h.length - 1], fa = c => last[c] && last[c].f != null ? spct(last[c].f * 24 * 365) : '—';
-  document.getElementById('hist-msg').textContent = `기록 ${h.length}개 · 마지막 ${d3.timeFormat('%m/%d %H:%M')(new Date(last.t))} · 펀딩 연환산 DRAM ${fa('DRAM')} / EWY ${fa('EWY')}`;
+  try { hist = await (await fetch('data/entropy_history.json?' + Date.now())).json(); } catch (e) { hist = []; }
 }
+function uptime(since) {
+  const rows = hist.filter(h => h.t >= since);
+  let full = 0, tot = 0, oiT = 0;
+  for (let i = 1; i < rows.length; i++) {
+    const a = rows[i - 1], dt = (Date.parse(rows[i].t) - Date.parse(a.t)) / 36e5;
+    if (dt <= 0 || dt > 6) continue;
+    const v = Object.values(a.acct || {});
+    const ok = v.length && v.every(x => x.g > 0 && (x.n == null || x.n >= 2));
+    tot += dt; if (ok) full += dt; oiT += d3.sum(v, x => x.g) * dt;
+  }
+  return tot ? {up: full / tot, avg: oiT / tot, days: tot / 24} : null;
+}
+
+// ---------- 판단
+function legState(l) {
+  if (l.sl == null || l.tp == null) return {c: 'am', t: (l.sl == null ? 'SL' : 'TP') + ' 없음'};
+  if (l.ld != null && l.sd != null && l.sd < 0) return {c: 'dn', t: 'SL이 청산가 밖'};
+  if (l.ld != null && l.ld < CFG.liq_imminent) return {c: 'dn', t: '위험'};
+  if (l.ld != null && l.ld < CFG.liq_near) return {c: 'am', t: '롤링 필요'};
+  return {c: 'up', t: '정상'};
+}
+function recSLTP(coin) {
+  const all = accts.flatMap(a => a.legs.map(l => ({a, l}))).filter(x => x.l.coin === coin && x.l.liq);
+  const L = all.find(x => x.l.side === 'long'), S = all.find(x => x.l.side === 'short');
+  if (!L || !S) return null;
+  const g = CFG.sl_gap || .02;
+  return {up: S.l.liq * (1 - g), down: L.l.liq * (1 + g), L, S};
+}
+function todos() {
+  const out = [];
+  accts.forEach(a => a.missing.forEach(m => out.push({c: 'dn', h: `${a.label} ${m} 포지션 없음 → OI 끊김`, s: '청산/체결됐는지 확인하고 같은 수량으로 다시 열기. 반대 지갑 같은 종목도 확인'})));
+  accts.forEach(a => a.legs.forEach(l => {
+    const st = legState(l);
+    if (st.t === '롤링 필요' || st.t === '위험') {
+      const need = Math.max(0, l.ntl * ((CFG.liq_target || .18) - l.ld));
+      const src = a.legs.filter(x => x !== l && x.upnl > 20).sort((p, q) => q.upnl - p.upnl)[0];
+      let s = `① 잔고 ${usd(a.free)}`;
+      if (a.free >= need) s += `에서 ${l.coin} ${ko(l.side)} 마진에 ${usd(need)} 추가 (수수료 0)`;
+      else if (src) s = `① ${a.label} ${src.coin} ${ko(src.side)} ${src.qty}개 닫기 (이익 ${usd(src.upnl)}) → ② 바로 같은 ${src.qty}개 다시 열기 → ③ 풀린 돈 ${usd(Math.min(need, src.upnl + a.free))}을 ${l.coin} ${ko(l.side)} 마진에 추가 → ④ 다시 연 포지션 SL/TP 걸기` + (src.upnl + a.free < need ? ` (모자란 ${usd(need - src.upnl - a.free)}은 반대 지갑에서 보내기)` : '');
+      else s += ` 부족 · 같은 지갑에 이익 포지션 없음 → 반대 지갑에서 ${usd(need)} 보내서 마진 추가`;
+      out.push({c: st.c, h: `${a.label} ${l.coin} ${ko(l.side)} 청산까지 ${pct(l.ld)} → ${usd(need)} 보충`, s});
+    }
+    if (st.t.includes('없음') || st.t.includes('밖')) {
+      const r = recSLTP(l.coin);
+      const want = r ? (l.side === 'long' ? `SL ${r.down.toFixed(2)} / TP ${r.up.toFixed(2)}` : `SL ${r.up.toFixed(2)} / TP ${r.down.toFixed(2)}`) : '';
+      out.push({c: st.c, h: `${a.label} ${l.coin} ${ko(l.side)} ${st.t}`, s: want ? `권장 ${want} (반대 지갑과 미러)` : ''});
+    }
+  }));
+  COINS.forEach(c => {
+    const r = recSLTP(c); if (!r) return;
+    const off = (x, y) => x == null || y == null || Math.abs(x - y) / y > .002;
+    if ((r.L.l.tp != null && r.S.l.sl != null && off(r.L.l.tp, r.S.l.sl)) || (r.S.l.tp != null && r.L.l.sl != null && off(r.S.l.tp, r.L.l.sl)))
+      out.push({c: 'am', h: `${c} SL/TP 미러 어긋남`, s: `위 ${r.up.toFixed(2)} = ${r.S.a.label} 숏 SL · ${r.L.a.label} 롱 TP / 아래 ${r.down.toFixed(2)} = ${r.L.a.label} 롱 SL · ${r.S.a.label} 숏 TP`});
+  });
+  return out;
+}
+
+// ---------- 그리기
+function drawHeader() {
+  const m = document.getElementById('mkt'); m.textContent = '';
+  COINS.forEach(c => { const x = market[c]; if (!x) return; const ch = x.prev ? x.mark / x.prev - 1 : 0;
+    const sp = el('span'); sp.append(`${c} ${x.mark.toFixed(2)} `, el('span', ch >= 0 ? 'L' : 'S', d3.format('+.1%')(ch))); m.append(sp); });
+  m.append(el('span', null, usSession()));
+}
+function drawTodo() {
+  const box = document.getElementById('todo'); box.textContent = '';
+  if (!accts.length) { box.className = 'pn todo am'; box.append(el('h2', null, '지갑 주소를 넣어주세요 (맨 아래 설정)')); return; }
+  const t = todos(), worst = t.some(x => x.c === 'dn') ? 'dn' : t.length ? 'am' : 'up';
+  box.className = 'pn todo ' + (worst === 'up' ? '' : worst);
+  if (!t.length) {
+    const lo = d3.min(accts.flatMap(a => a.legs), l => l.sd);
+    box.append(el('h2', null, '✅ 할 일 없음'), el('div', 's', lo != null ? `가장 가까운 SL까지 ${pct(lo)} · 롤링 알림은 청산까지 ${pct0(CFG.liq_near)} 남으면` : ''));
+    return;
+  }
+  box.append(el('h2', null, (worst === 'dn' ? '🔴 ' : '🟡 ') + `할 일 ${t.length}개`));
+  const ol = el('ol'); t.forEach(x => { const li = el('li'); li.append(el('div', null, x.h)); if (x.s) li.append(el('div', 'step', x.s)); ol.append(li); }); box.append(ol);
+}
+function tile(k, v, sub, cls) { const d = el('div', 'tile'); d.append(el('div', 'k', k)); const vv = el('div', 'v ' + (cls || ''), v); d.append(vv, el('div', 's', sub || '')); return d; }
+function drawTiles() {
+  const box = document.getElementById('tiles'); box.textContent = '';
+  const legs = accts.flatMap(a => a.legs), need = d3.sum(accts, a => a.need), open = legs.length - d3.sum(accts, a => a.missing.length);
+  box.append(tile('지금 내 OI', accts.length ? kusd(d3.sum(legs, l => l.ntl)) : '—', `포지션 ${open}/${need}`, open < need ? 'S' : ''));
+  const u = uptime(CFG.start), u24 = uptime(new Date(Date.now() - 864e5).toISOString().slice(0, 16));
+  box.append(tile('OI 유지율', u ? d3.format('.1%')(u.up) : '—', u ? `${u.days.toFixed(1)}일 · 평균 ${kusd(u.avg)}${u24 ? ' · 24h ' + pct0(u24.up) : ''}` : '기록 쌓이는 중'));
+  const st = Object.values(stats), ok = st.length && st.length === accts.length;
+  box.append(tile('쓴 수수료 (누적)', ok ? usd2(d3.sum(st, x => x.fees)) : '—', ok ? `볼륨 ${kusd(d3.sum(st, x => x.vol))} · 체결 ${d3.sum(st, x => x.fills)}회` : '불러오는 중'));
+  const first = hist.find(h => h.t >= CFG.start), eq = d3.sum(accts, a => a.eq);
+  const eq0 = first ? d3.sum(Object.values(first.acct), x => x.eq) : null;
+  box.append(tile('시작 대비 총자산', eq0 && accts.length ? susd(eq - eq0) : '—', ok ? `펀딩 합계 ${susd(d3.sum(st, x => x.funding))} · 총 ${usd(eq)}` : (accts.length ? '총 ' + usd(eq) : '')));
+}
+function drawPositions() {
+  const box = document.getElementById('pos'); if (!accts.length) return; box.textContent = '';
+  const rows = accts.flatMap(a => a.legs.map(l => ({a, l}))).sort((p, q) => (p.l.sd ?? 1) - (q.l.sd ?? 1));
+  rows.forEach(({a, l}, i) => {
+    if (i) box.append(el('hr'));
+    const st = legState(l), r = el('div', 'row');
+    const h = el('div', 'rh'); h.append(el('span', 'rn', a.label + ' · '), el('span', 'rn ' + (l.side === 'long' ? 'L' : 'S'), `${l.coin} ${ko(l.side)} ${l.qty}`), el('span', 'chip ' + st.c, (st.c === 'up' ? '✓ ' : st.c === 'am' ? '! ' : '✕ ') + st.t));
+    r.append(h);
+    // SL(왼쪽) ─── 현재 ─── TP(오른쪽)
+    const bar = el('div', 'bar'); bar.append(el('div', 'track'));
+    if (l.sd != null && l.td != null && l.sd + l.td > 0) {
+      const f = Math.max(0, Math.min(1, l.sd / (l.sd + l.td)));
+      const used = el('div', 'used'); used.style.width = (f * 100) + '%'; used.style.background = st.c === 'up' ? 'rgba(94,234,212,.35)' : st.c === 'am' ? 'rgba(251,191,36,.5)' : 'rgba(248,113,113,.55)';
+      const dot = el('div', 'dot'); dot.style.left = (f * 100) + '%'; dot.style.background = st.c === 'up' ? C.mint : st.c === 'am' ? C.am : C.dn;
+      const e1 = el('div', 'end'); e1.style.left = '0'; const e2 = el('div', 'end'); e2.style.right = '0';
+      bar.append(used, e1, e2, dot);
+    }
+    r.append(bar);
+    const ends = el('div', 'ends s');
+    const left = el('span'); left.append('SL ', el('b', null, l.sl == null ? '없음' : l.sl.toFixed(2)), l.sd == null ? '' : ` · ${pct(l.sd)} 남음`);
+    const right = el('span'); right.append('TP ', el('b', null, l.tp == null ? '없음' : l.tp.toFixed(2)), l.td == null ? '' : ` · ${pct(l.td)} 남음`);
+    ends.append(left, right); r.append(ends);
+    const sub = el('div', 'sub k');
+    sub.append(el('span', null, `현재 ${l.mark.toFixed(3)}`), el('span', null, `청산 ${l.liq ? l.liq.toFixed(2) + ' (' + pct(l.ld) + ')' : '—'}`),
+      el('span', null, `마진 ${usd(l.margin)}`), el('span', l.upnl >= 0 ? 'L' : 'S', `미실현 ${susd(l.upnl)}`));
+    r.append(sub); box.append(r);
+  });
+}
+function drawDetail() {
+  const box = document.getElementById('detail'); box.textContent = '';
+  if (!accts.length) return;
+  const tw = el('div', 'tw'), t = el('table'), hr = el('tr');
+  ['지갑', '총자산', '잔고(보충용)', 'OI', '수수료', '펀딩'].forEach(x => hr.append(el('th', null, x))); t.append(hr);
+  accts.forEach(a => { const s = stats[a.key] || {}, tr = el('tr');
+    tr.append(el('td', null, a.label), el('td', null, usd2(a.eq)), el('td', null, usd2(a.free)), el('td', null, usd(d3.sum(a.legs, l => l.ntl))),
+      el('td', null, s.fees == null ? '—' : usd2(s.fees)), el('td', null, s.funding == null ? '—' : susd(s.funding))); t.append(tr); });
+  tw.append(t); box.append(tw);
+  COINS.forEach(c => { const r = recSLTP(c); if (r) box.append(el('div', 's', `${c} 권장 SL/TP (청산가 ${pct0(CFG.sl_gap || .02)} 앞, 미러): 위 ${r.up.toFixed(2)} · 아래 ${r.down.toFixed(2)}`)); });
+  box.append(el('div', 's', '지금 펀딩률(연환산): ' + COINS.filter(c => market[c]).map(c => `${c} ${d3.format('+.1%')(market[c].f * 24 * 365)}`).join(' · ') + ' — 두 지갑 합치면 0에 가까움'));
+}
+function drawOI() {
+  const box = document.getElementById('c-oi'); box.textContent = '';
+  const rows = hist.filter(h => h.t >= CFG.start).map(h => { const v = Object.values(h.acct || {});
+    return {t: new Date(h.t), oi: d3.sum(v, x => x.g), ok: v.length && v.every(x => x.g > 0 && (x.n == null || x.n >= 2))}; });
+  document.getElementById('hist-k').textContent = rows.length ? `기록 ${rows.length}개 · 30분마다` : '기록 쌓이는 중';
+  if (rows.length < 2) return;
+  const W = box.clientWidth || 340, H = 200, m = {t: 10, r: 52, b: 22, l: 4};
+  const x = d3.scaleTime(d3.extent(rows, d => d.t), [m.l, W - m.r]);
+  const y = d3.scaleLinear([0, d3.max(rows, d => d.oi) * 1.15], [H - m.b, m.t]).nice();
+  const svg = d3.select(box).append('svg').attr('width', '100%').attr('viewBox', `0 0 ${W} ${H}`).attr('height', H).attr('role', 'img').attr('aria-label', 'OI 유지 기록');
+  y.ticks(3).forEach(t => { svg.append('line').attr('x1', m.l).attr('x2', W - m.r).attr('y1', y(t)).attr('y2', y(t)).attr('stroke', C.ln);
+    svg.append('text').attr('x', W - m.r + 6).attr('y', y(t)).attr('dominant-baseline', 'middle').attr('font-size', 11).attr('fill', C.mu).text(kusd(t)); });
+  x.ticks(4).forEach(t => svg.append('text').attr('x', x(t)).attr('y', H - 5).attr('font-size', 10).attr('fill', C.mu).attr('text-anchor', 'middle').text(d3.timeFormat('%m/%d')(t)));
+  // 끊긴 구간 표시
+  rows.forEach((d, i) => { if (!d.ok && rows[i + 1]) svg.append('rect').attr('x', x(d.t)).attr('width', Math.max(1, x(rows[i + 1].t) - x(d.t))).attr('y', m.t).attr('height', H - m.b - m.t).attr('fill', 'rgba(248,113,113,.18)'); });
+  svg.append('path').datum(rows).attr('fill', 'none').attr('stroke', C.mint).attr('stroke-width', 2).attr('d', d3.line().x(d => x(d.t)).y(d => y(d.oi)));
+  const tip = el('div', 'tip'); box.append(tip);
+  const rule = svg.append('line').attr('y1', m.t).attr('y2', H - m.b).attr('stroke', C.mu).style('display', 'none');
+  const dot = svg.append('circle').attr('r', 4).attr('fill', C.mint).attr('stroke', C.pn).attr('stroke-width', 2).style('display', 'none');
+  svg.append('rect').attr('x', m.l).attr('y', 0).attr('width', W - m.l - m.r).attr('height', H).attr('fill', 'transparent')
+    .on('pointermove', ev => { const [mx] = d3.pointer(ev), i = d3.bisector(d => d.t).center(rows, x.invert(mx)), d = rows[i];
+      rule.style('display', null).attr('x1', x(d.t)).attr('x2', x(d.t)); dot.style('display', null).attr('cx', x(d.t)).attr('cy', y(d.oi));
+      tip.style.display = 'block'; tip.textContent = `${d3.timeFormat('%m/%d %H:%M')(d.t)} · OI ${usd(d.oi)}${d.ok ? '' : ' · 끊김'}`;
+      tip.style.left = Math.min(x(d.t) + 10, W - 200) + 'px'; tip.style.top = '6px'; })
+    .on('pointerleave', () => { rule.style('display', 'none'); dot.style('display', 'none'); tip.style.display = 'none'; });
+}
+function drawAll() { drawHeader(); drawTodo(); drawTiles(); drawPositions(); drawDetail(); drawOI(); }
 
 // ---------- 루프
 async function tick() {
   const live = document.getElementById('live');
   try {
-    await loadMarket(); drawMarket();
-    const a = addrs(), accts = [];
-    for (const k of Object.keys(CFG.accounts)) if (a[k]) {
-      let orders = [];
-      try { orders = await post({type: 'frontendOpenOrders', user: a[k], dex: DEX}); } catch (e) {}
-      accts.push(analyze(k, await post({type: 'clearinghouseState', user: a[k], dex: DEX}), Array.isArray(orders) ? orders : []));
-    }
-    if (accts.length) { drawAccounts(accts); drawTotals(accts); }
-    live.className = 'live'; document.getElementById('live-t').textContent = '실시간 · ' + new Date().toLocaleTimeString('ko-KR');
-  } catch (e) {
-    live.className = 'live off'; document.getElementById('live-t').textContent = '연결 실패 (' + e.message + ')';
-  }
+    await loadMarket(); await loadAccounts(); drawAll();
+    live.className = 'live'; document.getElementById('live-t').textContent = new Date().toLocaleTimeString('ko-KR');
+  } catch (e) { live.className = 'live off'; document.getElementById('live-t').textContent = '연결 실패 ' + e.message; }
+}
+async function refreshAll() {
+  await tick();
+  try { await loadStats(); } catch (e) { console.log('stats', e); }
+  await loadHistory(); drawAll();
 }
 (async () => {
   try { const c = await (await fetch('data/entropy_config.json?' + Date.now())).json(); CFG = Object.assign(CFG, c); } catch (e) {}
   buildSetup();
-  try { await loadCandles(); } catch (e) {}
-  await tick(); loadHistory();
+  await refreshAll();
   setInterval(tick, 10000);
-  setInterval(async () => { try { await loadCandles(); drawMarket(); } catch (e) {} }, 300000);
-  window.addEventListener('resize', () => drawMarket());
+  setInterval(async () => { try { await loadStats(); } catch (e) {} drawAll(); }, 120000);
+  setInterval(async () => { await loadHistory(); drawAll(); }, 600000);
+  window.addEventListener('resize', () => drawOI());
 })();
 </script>
 </body>

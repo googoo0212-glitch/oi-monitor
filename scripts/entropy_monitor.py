@@ -67,6 +67,74 @@ def fetch_triggers(addr, dex):
     return out
 
 
+def _ms(iso):
+    return int(datetime.strptime(iso, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc).timestamp() * 1000)
+
+
+def fetch_paged(kind, addr, start_ms, limit):
+    """userFillsByTime / userFunding 을 시작 시각부터 끝까지 (한 번에 limit개씩)."""
+    out, seen = [], set()
+    t = start_ms
+    for _ in range(50):
+        rows = _post({"type": kind, "user": addr, "startTime": t})
+        if not isinstance(rows, list) or not rows:
+            break
+        new = 0
+        for r in rows:
+            key = (r.get("tid") or r.get("hash"), r.get("time"), r.get("oid"), str(r.get("delta", {}).get("coin", "")))
+            if key in seen:
+                continue
+            seen.add(key)
+            out.append(r)
+            new += 1
+        if len(rows) < limit or not new:
+            break
+        t = max(int(r["time"]) for r in rows)
+    return out
+
+
+def campaign_stats(addr, cfg):
+    """시작 시각 이후 io 덱 누적: 수수료(+면 낸 돈), 볼륨, 받은 펀딩(+면 받음), 체결 수."""
+    start = _ms(cfg.get("start", "2026-10-19T10:00:00Z"))
+    dex = cfg.get("dex", "io") + ":"
+    st = {"fees": 0.0, "vol": 0.0, "funding": 0.0, "fills": 0, "ok": True}
+    try:
+        for f in fetch_paged("userFillsByTime", addr, start, 2000):
+            if not str(f.get("coin", "")).startswith(dex):
+                continue
+            st["fees"] += float(f.get("fee") or 0) + float(f.get("builderFee") or 0)
+            st["vol"] += float(f.get("px") or 0) * float(f.get("sz") or 0)
+            st["fills"] += 1
+        for r in fetch_paged("userFunding", addr, start, 500):
+            d = r.get("delta", {})
+            if str(d.get("coin", "")).startswith(dex):
+                st["funding"] += float(d.get("usdc") or 0)
+    except Exception as e:
+        print("누적 통계 실패:", e)
+        st["ok"] = False
+    return st
+
+
+def oi_uptime(hist, since_iso=None):
+    """기록(30분 간격) 기준 OI 유지율 = 포지션 4개 모두 열려 있던 시간 비율, 평균 OI."""
+    rows = [h for h in hist if since_iso is None or h["t"] >= since_iso]
+    if len(rows) < 2:
+        return None
+    full = tot = oi_t = 0.0
+    for a, b in zip(rows, rows[1:]):
+        dt = (datetime.strptime(b["t"], "%Y-%m-%dT%H:%M:00Z") - datetime.strptime(a["t"], "%Y-%m-%dT%H:%M:00Z")).total_seconds() / 3600
+        if dt <= 0 or dt > 6:
+            continue
+        acc = a.get("acct", {})
+        ok = acc and all(v.get("g", 0) > 0 and v.get("n", 2) >= 2 for v in acc.values())
+        tot += dt
+        full += dt if ok else 0
+        oi_t += sum(v.get("g", 0) for v in acc.values()) * dt
+    if not tot:
+        return None
+    return {"uptime": full / tot, "avg_oi": oi_t / tot, "hours": tot}
+
+
 def fetch_funding_24h(addr, coins):
     """최근 24시간 받은(+)/낸(-) 펀딩 합계 (USDC)."""
     start = int((time.time() - 86400) * 1000)
@@ -169,8 +237,12 @@ def analyze(cfg, market, accts):
                 if d is None:
                     continue
                 k = 3 if d <= 0.03 else lv(d, cfg["liq_near"], cfg["liq_imminent"])
+                sl = l.get("sl")
+                sld = None if not sl else ((l["mark"] - sl) / l["mark"] if l["side"] == "long" else (sl - l["mark"]) / l["mark"])
+                slp = f"SL({sl:,.2f})까지 {sld:.1%} · " if sld is not None else "SL 없음 · "
                 al.append((f"{a['key']}:{l['coin']}:liq", k,
-                           f"{tag} {l['coin']} {'롱' if l['side'] == 'long' else '숏'} 청산가 {l['liq']:,.3f}까지 {d:.1%} (현재 {l['mark']:,.3f})"))
+                           f"{tag} {l['coin']} {'롱' if l['side'] == 'long' else '숏'}: {slp}청산({l['liq']:,.2f})까지 {d:.1%} · 현재 {l['mark']:,.3f}"
+                           + ("\n→ SL 닿으면 이 종목 OI가 양쪽 다 끊겨요. 롤링으로 마진 보충" if k else "")))
         # 3) 교차증거금 스프레드 여유
         if a["spread_buf"] is not None:
             k = lv(a["spread_buf"], cfg["spread_buffer_warn"], cfg["spread_buffer_danger"])
@@ -296,29 +368,57 @@ def dispatch(alerts, state, cfg, now):
     return out
 
 
-CFG_NEAR = [0.11]
+def dist_to(l, px):
+    if not px:
+        return None
+    return (l["mark"] - px) / l["mark"] if l["side"] == "long" else (px - l["mark"]) / l["mark"]
 
 
-def daily_summary(market, accts, summary, fund24):
+def daily_summary(market, accts, summary, stats, hist, cfg):
     ts = datetime.now(KST).strftime("%m/%d %H:%M")
     d, e = market.get("DRAM", {}), market.get("EWY", {})
-    lines = [f"📊 Entropy 일일 요약 ({ts} KST)",
-             f"DRAM {d.get('mark', 0):,.3f} · EWY {e.get('mark', 0):,.2f} · 비율 {d.get('mark', 0)/(e.get('mark') or 1):.4f}",
-             f"펀딩(연환산) DRAM {d.get('funding_h', 0)*24*365:+.1%} · EWY {e.get('funding_h', 0)*24*365:+.1%}",
-             f"내 Entropy OI ${summary['total_oi']:,.0f} · 증거금 ${summary['total_equity']:,.0f} · 미실현 {usd(summary['total_upnl'])}"]
+    n_open = sum(len(a["legs"]) - len(a["missing"]) for a in accts)
+    n_need = sum(len(cfg["accounts"][a["key"]]["legs"]) for a in accts)
+    lines = [f"📊 Entropy 일일 요약 ({ts} KST)", ""]
+    # OI
+    day_ago = (datetime.now(timezone.utc) - timedelta(days=1)).strftime("%Y-%m-%dT%H:%M:00Z")
+    u24, ua = oi_uptime(hist, day_ago), oi_uptime(hist, cfg.get("start"))
+    lines.append(f"🧱 OI ${summary['total_oi']:,.0f} (포지션 {n_open}/{n_need})")
+    if ua:
+        lines.append(f"   유지율 24h {u24['uptime']:.0%} · 시작 후 {ua['uptime']:.1%} ({ua['hours']/24:.1f}일, 평균 OI ${ua['avg_oi']:,.0f})"
+                     if u24 else f"   유지율 시작 후 {ua['uptime']:.1%} ({ua['hours']/24:.1f}일, 평균 OI ${ua['avg_oi']:,.0f})")
+    # 비용
+    if stats and all(s_["ok"] for s_ in stats.values()):
+        fee = sum(s_["fees"] for s_ in stats.values()); fund = sum(s_["funding"] for s_ in stats.values())
+        vol = sum(s_["vol"] for s_ in stats.values())
+        lines.append(f"💸 누적 수수료 ${fee:,.2f} · 볼륨 ${vol:,.0f} · 펀딩 합계 {usd(fund)}")
+        eq0 = None
+        rows = [h for h in hist if h["t"] >= cfg.get("start", "")]
+        if rows:
+            eq0 = sum(v.get("eq", 0) for v in rows[0]["acct"].values())
+        if eq0:
+            lines.append(f"   총자산 ${summary['total_equity']:,.0f} (시작 대비 {usd(summary['total_equity'] - eq0)})")
+    lines.append("")
+    lines.append("🎯 SL까지 / TP까지 / 청산까지")
+    todo = []
     for a in accts:
-        f = fund24.get(a["key"])
-        fs = f" · 펀딩24h {usd(f)}" if f is not None else ""
-        sb = f" · 스프레드여유 {a['spread_buf']:.0%}" if a["spread_buf"] is not None else ""
-        lines.append(f"- {a['label']}: ${a['equity']:,.0f} · 총노출 {a['lev_gross'] or 0:.1f}x{sb}{fs}")
         for l in a["legs"]:
-            if l["liq_dist"] is None or l["lev_type"] == "cross":
-                continue
             ko = "롱" if l["side"] == "long" else "숏"
-            # 청산거리가 liq_near(주의 알림)까지 줄어드는 가격
-            k = CFG_NEAR[0]
-            trig = l["liq"] / (1 - k) if l["side"] == "long" else l["liq"] / (1 + k)
-            lines.append(f"   {l['coin']} {ko} 청산거리 {l['liq_dist']:.1%} · 알림가 {trig:,.2f}")
+            sd, td, ld = dist_to(l, l.get("sl")), dist_to(l, l.get("tp")), l["liq_dist"]
+            f = lambda x: "없음" if x is None else f"{x:.1%}"
+            tdf = "없음" if td is None else f"{-td:.1%}"
+            warn = ld is not None and ld < cfg["liq_near"]
+            lines.append(f"{'🟡' if warn else '✅'} {a['label']} {l['coin']} {ko}: {f(sd)} / {tdf} / {f(ld)}")
+            if warn:
+                todo.append(f"{a['label']} {l['coin']} {ko} 롤링(마진 보충)")
+            if l.get("orders_known") and (l.get("sl") is None or l.get("tp") is None):
+                miss = "/".join(x for x, v in (("SL", l.get("sl")), ("TP", l.get("tp"))) if v is None)
+                todo.append(f"{a['label']} {l['coin']} {ko} {miss} 걸기")
+        for m in a["missing"]:
+            todo.append(f"{a['label']} {m} 다시 열기")
+    lines.append("")
+    lines.append("📝 할 일: " + (" / ".join(todo) if todo else "없음"))
+    lines.append(f"DRAM {d.get('mark', 0):,.2f} · EWY {e.get('mark', 0):,.2f}")
     return "\n".join(lines)
 
 
@@ -351,7 +451,7 @@ def record(cfg, market, accts):
         m = market.get(c, {})
         row[c] = {"mark": m.get("mark"), "oracle": m.get("oracle"), "f": m.get("funding_h"), "oi": round(m.get("oi_usd", 0))}
     row["acct"] = {a["label"]: {"eq": round(a["equity"], 2), "g": round(a["gross"]), "u": round(a["upnl"], 2),
-                                "sb": None if a["spread_buf"] is None else round(a["spread_buf"], 4)} for a in accts}
+                                "n": len(a["legs"]) - len(a["missing"])} for a in accts}
     hist.append(row)
     cutoff = (datetime.now(timezone.utc) - timedelta(days=cfg.get("history_days", 30))).strftime("%Y-%m-%dT%H:%M:00Z")
     hist = [h for h in hist if h["t"] >= cutoff]
@@ -368,15 +468,15 @@ def main():
         record(cfg, market, accts)
         return
     state = load_json("entropy_alert_state.json", {}) or {}
-    CFG_NEAR[0] = cfg.get("liq_near", 0.11)
     alerts, summary = analyze(cfg, market, accts)
     now = time.time()
     out = dispatch(alerts, state, cfg, now)
     # 하루 한 번 요약
     today = datetime.now(KST).strftime("%Y-%m-%d")
     if datetime.now(KST).hour >= cfg.get("daily_summary_hour_kst", 9) and state.get("_daily") != today:
-        fund24 = {a["key"]: fetch_funding_24h(addrs[a["key"]], {"DRAM", "EWY"}) for a in accts}
-        out.append(daily_summary(market, accts, summary, fund24))
+        stats = {a["key"]: campaign_stats(addrs[a["key"]], cfg) for a in accts}
+        hist = load_json("entropy_history.json", []) or []
+        out.append(daily_summary(market, accts, summary, stats, hist, cfg))
         state["_daily"] = today
     if out:
         telegram("\n\n".join(out))
