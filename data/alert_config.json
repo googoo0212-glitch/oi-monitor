@@ -1,21 +1,16 @@
 {
- "_끄기": "telegram_enabled=false 면 Variational 포지션·펀딩 알림을 보내지 않아요 (기록은 계속). Entropy 알림은 별도.",
- "telegram_enabled": false,
+ "_끄기": "telegram_enabled=false 면 Variational 알림을 보내지 않아요 (기록은 계속). Entropy 알림은 별도.",
+ "telegram_enabled": true,
  "_설명": "near = 이 거리 안으로 들어오면 '근접' 알림, imminent = '임박' 알림. 0.015 = 1.5%. repeat_minutes = 같은 단계면 몇 분마다 다시 알릴지.",
- "XAU": {
-  "near": 0.015,
-  "imminent": 0.007
- },
- "XAG": {
-  "near": 0.025,
-  "imminent": 0.012
- },
  "repeat_minutes": 60,
  "funding": {
-  "change_pp": 0.03,
-  "watch": [
-   "XAG-PERP",
-   "XAU-PERP"
-  ]
+  "change_pp": 0.05,
+  "watch": []
+ },
+ "_pair_levels": "계정별 처음 청산 여유(현금−유지증거금) 중 소진 비율. 0.35 리밸런싱 / 0.55 즉시 송금 / 0.75 비상",
+ "pair_levels": {
+  "rebalance": 0.35,
+  "urgent": 0.55,
+  "emergency": 0.75
  }
 }

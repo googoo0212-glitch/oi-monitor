@@ -89,7 +89,7 @@ a{color:var(--mint)}
       <thead><tr><th class="l">#</th><th class="l">계정</th><th class="l">프로젝트 · 구조</th><th>자산</th><th>OI</th><th>레버리지</th><th>청산까지</th><th>지난주 포인트</th><th>OI $1k당</th><th>누적 포인트</th><th>누적 가치</th></tr></thead>
       <tbody></tbody>
     </table></div>
-    <div class="msg" id="lb-msg" style="margin-top:8px">청산까지 = 가장 가까운 다리가 청산가까지 남은 가격 거리. 효율 = 지난주 포인트 ÷ OI($1k) · 누적 가치 = 누적 포인트 × 포인트당 가격 · 포지션 없는 계정은 OI 0으로 표시</div>
+    <div class="msg" id="lb-msg" style="margin-top:8px">청산까지 = Variational 페어는 (자산−유지증거금)÷다리 명목가, 즉 가격차(비율)가 이만큼 불리하게 움직이면 청산. 효율 = 지난주 포인트 ÷ OI($1k) · 누적 가치 = 누적 포인트 × 포인트당 가격 · 포지션 없는 계정은 OI 0으로 표시</div>
   </section>
 
   <section class="pn">
@@ -105,7 +105,7 @@ a{color:var(--mint)}
   </section>
 
   <section>
-    <div class="ph" style="margin:4px 2px 8px"><span class="title">Variational</span><span class="note" id="var-t">포지션은 positions.json · 가격은 30분 기록</span></div>
+    <div class="ph" style="margin:4px 2px 8px"><span class="title">Variational</span><span class="note" id="var-t"></span></div>
     <div class="cards" id="var-cards"></div>
   </section>
 </div>
@@ -194,8 +194,8 @@ function renderEntropy() {
 async function loadVariational() {
   try {
     const p = await (await fetch('data/positions.json?' + Date.now())).json();
-    varPositions = p.positions || [];
-    document.getElementById('var-t').textContent = `포지션 기준 ${p.updated || '—'} · 가격은 30분마다 기록`;
+    varPositions = p.positions || []; varMeta = p.accounts || {};
+    document.getElementById('var-t').textContent = `포지션 기준 ${p.updated || '—'} · 가격은 하이퍼리퀴드 15초 · 여유 소진 35% 리밸런싱 / 55% 즉시 송금 / 75% 비상`;
   } catch (e) { varPositions = []; }
   try {
     const f = await (await fetch('data/funding.json?' + Date.now())).json();
@@ -205,16 +205,29 @@ async function loadVariational() {
   renderVariational(); renderWeeks(); renderBoard(); renderHero();
 }
 
+// 계정 내 페어: 위험 = 두 다리 가격 '차이'. 청산까지 여유 = (자산 − 유지증거금) ÷ 큰 다리 명목가
+const XYZ = {'CL-PERP': 'xyz:CL', 'BZ-PERP': 'xyz:BRENTOIL', 'XAU-PERP': 'xyz:GOLD', 'XAG-PERP': 'xyz:SILVER'};
+let varMeta = {}, xyzMids = {};
+async function loadXyz() {
+  try { xyzMids = await post({type: 'allMids', dex: 'xyz'}); renderVariational(); renderBoard(); renderHero(); } catch (e) {}
+}
+function markOf(inst, entry) {
+  const k = XYZ[inst]; if (k && xyzMids[k]) return +xyzMids[k];
+  const m = varMarks[inst]; return m ? +m.mark_price : +entry;
+}
 function varAccounts() {
-  const acc = d3.group(varPositions, p => p.account);
+  const acc = d3.group(varPositions, p => p.account), meta = varMeta || {};
   return [...acc].map(([name, legs]) => {
-    const L = legs.map(l => {
-      const m = varMarks[l.instrument], mark = m ? +m.mark_price : +l.mark || +l.entry;
-      const liq = l.liq == null ? null : +l.liq;
-      const dist = liq ? (l.side === 'long' ? (mark - liq) / mark : (liq - mark) / mark) : null;
-      return Object.assign({}, l, {markNow: mark, value: +l.qty * mark, dist});
-    });
-    return {name, legs: L, oi: d3.sum(L, l => l.value), equity: points.balances ? points.balances[name] : null, structure: legs[0].group};
+    const a = meta[name] || {};
+    const L = legs.map(l => { const mark = markOf(l.instrument, l.entry); return Object.assign({}, l, {markNow: mark, value: +l.qty * mark, pnl: (l.side === 'long' ? 1 : -1) * l.qty * (mark - l.entry)}); });
+    const oi = d3.sum(L, l => l.value), pnl = d3.sum(L, l => l.pnl);
+    const equity = a.cash != null ? a.cash + pnl : (points.balances || {})[name];
+    const mm = (a.mm_rate || 0.025) * oi, mm0 = (a.mm_rate || 0.025) * d3.sum(L, l => l.qty * l.entry);
+    const room = equity ? (equity - mm) / d3.max(L, l => l.value) : null;
+    const consumed = a.cash != null ? 1 - (equity - mm) / (a.cash - mm0) : null;
+    const ins = new Set(L.map(l => l.instrument));
+    const gauge = ins.has('CL-PERP') && ins.has('BZ-PERP') ? `BZ−CL $${(markOf('BZ-PERP') - markOf('CL-PERP')).toFixed(2)}` : ins.has('XAU-PERP') && ins.has('XAG-PERP') ? `금÷은 ${(markOf('XAU-PERP') / markOf('XAG-PERP')).toFixed(2)}` : '';
+    return {name, legs: L, oi, pnl, equity, mmUse: equity ? mm / equity : null, room, consumed, gauge, pair: a.pair, role: a.role, structure: (legs[0].group || '') + (a.pair ? ' 짝' + a.pair + a.role : '')};
   });
 }
 
@@ -239,14 +252,16 @@ function renderWeeks() {
 
 function renderVariational() {
   const box = document.getElementById('var-cards'); box.textContent = '';
-  varAccounts().forEach(a => {
-    const minD = d3.min(a.legs, l => l.dist);
-    const c = el('div', 'ac s-' + level(minD));
-    const h = el('div', 'ahd'); h.append(el('span', 'an', a.name), el('span', 'tag var', 'Variational · ' + (a.structure || '')), el('span', 'pill ' + level(minD), levelTxt(minD))); c.appendChild(h);
-    c.appendChild(el('div', 'k', `OI ${usd0(a.oi)}` + (a.equity ? ` · 자산 ${usd0(a.equity)} · ${(a.oi / a.equity).toFixed(1)}x` : '')));
-    const lg = el('div', 'legs');
-    a.legs.forEach(l => { const r = el('div'); r.append(el('span', null, `${l.instrument} ${l.side === 'long' ? '롱' : '숏'} ${px(+l.qty)}`), el('span', level(l.dist), `${px(l.markNow)} → 청산 ${px(l.liq)} (${pct(l.dist)})`)); lg.appendChild(r); });
-    c.appendChild(lg); box.appendChild(c);
+  const lv = c => c == null ? 'mu' : c >= 0.55 ? 'dn' : c >= 0.35 ? 'am' : 'up';
+  const lt = c => c == null ? '—' : c >= 0.75 ? '비상' : c >= 0.55 ? '즉시 송금' : c >= 0.35 ? '리밸런싱' : '정상';
+  varAccounts().sort((x, y) => (x.pair || 9) - (y.pair || 9) || (x.role < y.role ? -1 : 1)).forEach(a => {
+    const c = el('div', 'ac s-' + lv(a.consumed));
+    const h = el('div', 'ahd'); h.append(el('span', 'an', a.name), el('span', 'tag var', a.structure), el('span', 'pill ' + lv(a.consumed), lt(a.consumed))); c.appendChild(h);
+    c.appendChild(el('div', 'k', `자산 ${usd0(a.equity)} · OI ${usd0(a.oi)} · ${a.equity ? (a.oi / a.equity).toFixed(1) + 'x' : '—'} · 손익 ${usd0(a.pnl)}`));
+    const g = el('div', 'legs');
+    const r0 = el('div'); r0.append(el('span', null, a.gauge), el('span', lv(a.consumed), `여유 소진 ${a.consumed == null ? '—' : d3.format('.0%')(Math.max(0, a.consumed))} · 청산까지 ${pct(a.room)}`)); g.appendChild(r0);
+    a.legs.forEach(l => { const r = el('div', 'mu'); r.append(el('span', null, `${l.instrument.replace('-PERP', '')} ${l.side === 'long' ? '롱' : '숏'} ${px(+l.qty)} @ ${px(l.entry)}`), el('span', l.pnl >= 0 ? 'up' : 'dn', `${px(l.markNow)} · ${usd0(l.pnl)}`)); g.appendChild(r); });
+    c.appendChild(g); box.appendChild(c);
   });
 }
 
@@ -254,7 +269,7 @@ function boardRows() {
   const rows = [];
   Object.keys(entState).forEach(n => { const s = entState[n]; rows.push({name: n, proj: 'Entropy', struct: s.structure || '', equity: s.equity, oi: s.oi, risk: d3.min(s.legs, l => l.dist), pts: (points.entropy || {})[n]}); });
   const cum = points.cumulative || {}, seen = new Set();
-  varAccounts().forEach(a => { seen.add(a.name); rows.push({name: a.name, proj: 'Variational', struct: a.structure || '', equity: a.equity, oi: a.oi, risk: d3.min(a.legs, l => l.dist), pts: (points.variational || {})[a.name], cum: cum[a.name]}); });
+  varAccounts().forEach(a => { seen.add(a.name); rows.push({name: a.name, proj: 'Variational', struct: a.structure || '', equity: a.equity, oi: a.oi, risk: a.room, pts: (points.variational || {})[a.name], cum: cum[a.name]}); });
   Object.keys(cum).filter(n => !seen.has(n)).forEach(n => rows.push({name: n, proj: 'Variational', struct: '포지션 없음', equity: (points.lastBalances || {})[n], oi: 0, risk: null, pts: (points.variational || {})[n], cum: cum[n]}));
   rows.forEach(r => { r.lev = r.equity ? r.oi / r.equity : null; r.eff = r.pts != null && r.oi ? r.pts / (r.oi / 1000) : null; });
   return rows;
@@ -305,7 +320,8 @@ function renderHero() {
   document.getElementById('stamp').textContent = '마지막 갱신 ' + new Date().toLocaleTimeString('ko-KR');
 }
 
-loadVariational();
+loadVariational().then(loadXyz);
+setInterval(loadXyz, 15000);
 loadEntropyFiles().then(tickEntropy);
 setInterval(loadEntropyFiles, 10 * 60000);
 setInterval(tickEntropy, 10000);

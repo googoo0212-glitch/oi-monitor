@@ -1,30 +1,43 @@
-"""5분마다: 현재가가 SL·TP·청산가에 가까워지면 텔레그램 알림 (체결 전에 미리)."""
+"""5분마다: 계정 내 페어(CL/BZ, 금/은)의 '청산 여유 소진율'을 계산해 텔레그램 알림.
+
+이 구조는 SL/TP 없이 운영해요. 위험은 두 다리의 가격 '차이'(BZ−CL, 금÷은)뿐이라서
+계정별로 처음 여유(현금 − 유지증거금) 중 얼마나 써버렸는지로 단계를 나눠요.
+  소진 35% → 리밸런싱 / 55% → 즉시 송금 / 75% → 비상(두 다리 같이 정리 고려)
+가격은 하이퍼리퀴드 xyz 덱 중간가 (Variational 가격과 몇 센트 차이).
+"""
 import time
 from datetime import datetime, timedelta, timezone
 
-from common import hl_prices, load_json, save_json, telegram
+from common import load_json, save_json, telegram, xyz_mids
+
+money = lambda v: f"{'−' if v < 0 else '+'}${abs(v):,.0f}"
 
 KST = timezone(timedelta(hours=9))
-LEVELS = {"정상": 0, "근접": 1, "임박": 2, "청산 위험": 3}
-ICON = {"근접": "🟡", "임박": "🔴", "청산 위험": "🚨", "정상": "✅"}
+SYM = {"CL-PERP": "xyz:CL", "BZ-PERP": "xyz:BRENTOIL", "XAU-PERP": "xyz:GOLD", "XAG-PERP": "xyz:SILVER"}
+LEVELS = ["정상", "리밸런싱", "즉시 송금", "비상"]
+ICON = {"정상": "✅", "리밸런싱": "🟡", "즉시 송금": "🔴", "비상": "🚨"}
 
 
-def events(legs, price):
-    """가격이 위/아래로 움직일 때 처음 닿는 이벤트."""
-    up, down = [], []
-    for l in legs:
-        sl, tp, liq = l.get("plan_sl"), l.get("plan_tp"), l.get("liq")
-        if l["side"] == "long":
-            down += [(sl, "SL"), (liq, "청산")]
-            up += [(tp, "TP")]
-        else:
-            up += [(sl, "SL"), (liq, "청산")]
-            down += [(tp, "TP")]
-    up = [e for e in up if e[0]]
-    down = [e for e in down if e[0]]
-    u = min(up) if up else None
-    d = max(down) if down else None
-    return u, d
+def account_state(name, acct, legs, px):
+    pnl = sum((1 if l["side"] == "long" else -1) * l["qty"] * (px[l["instrument"]] - l["entry"]) for l in legs)
+    oi_now = sum(l["qty"] * px[l["instrument"]] for l in legs)
+    oi_0 = sum(l["qty"] * l["entry"] for l in legs)
+    mm_now, mm_0 = acct["mm_rate"] * oi_now, acct["mm_rate"] * oi_0
+    equity = acct["cash"] + pnl
+    buf0, buf = acct["cash"] - mm_0, equity - mm_now
+    consumed = 1 - buf / buf0 if buf0 > 0 else 1
+    leg = max(l["qty"] * px[l["instrument"]] for l in legs)
+    return {"pnl": pnl, "equity": equity, "mm_usage": mm_now / equity if equity > 0 else 9,
+            "consumed": consumed, "room": buf / leg}
+
+
+def describe(legs, px):
+    inst = {l["instrument"] for l in legs}
+    if {"CL-PERP", "BZ-PERP"} <= inst:
+        return f"가격차 BZ−CL ${px['BZ-PERP'] - px['CL-PERP']:.2f}"
+    if {"XAU-PERP", "XAG-PERP"} <= inst:
+        return f"금÷은 {px['XAU-PERP'] / px['XAG-PERP']:.2f}"
+    return ""
 
 
 def main():
@@ -32,68 +45,63 @@ def main():
     if not cfg.get("telegram_enabled", True):
         print("알림 꺼짐 (alert_config.json telegram_enabled=false)")
         return
-    pos = load_json("positions.json", {}).get("positions", [])
+    th = cfg.get("pair_levels", {"rebalance": 0.35, "urgent": 0.55, "emergency": 0.75})
+    data = load_json("positions.json", {})
+    accts, pos = data.get("accounts", {}), data.get("positions", [])
+    if not pos:
+        print("포지션 없음")
+        return
+    mids = xyz_mids()
+    px = {k: mids[v] for k, v in SYM.items() if v in mids}
     state = load_json("alert_state.json", {})
-    prices = hl_prices()
-    now = time.time()
-    changed = False
-    outbox = []
-
-    accounts = {}
+    now, changed, outbox = time.time(), False, []
+    by = {}
     for p in pos:
-        if p["instrument"][:3] in ("XAU", "XAG"):
-            accounts.setdefault(p["account"], []).append(p)
-
-    for acct, legs in accounts.items():
-        asset = legs[0]["instrument"][:3]
-        px = prices.get(asset)
-        if not px:
+        by.setdefault(p["account"], []).append(p)
+    st = {}
+    for name, legs in by.items():
+        if name not in accts or any(l["instrument"] not in px for l in legs):
             continue
-        th = cfg.get(asset, {"near": 0.015, "imminent": 0.007})
-        u, d = events(legs, px)
-        cands = []
-        if u:
-            cands.append(((u[0] - px) / px, "▲", u))
-        if d:
-            cands.append(((px - d[0]) / px, "▼", d))
-        if not cands:
-            continue
-        dist, arrow, (lv, kind) = min(cands)
-        if kind == "청산":
-            level = "청산 위험"
-        elif dist < th["imminent"]:
-            level = "임박"
-        elif dist < th["near"]:
-            level = "근접"
-        else:
-            level = "정상"
-
-        prev = state.get(acct, {"level": "정상", "t": 0})
+        st[name] = account_state(name, accts[name], legs, px)
+    for name, s in st.items():
+        c = s["consumed"]
+        level = "비상" if c >= th["emergency"] else "즉시 송금" if c >= th["urgent"] else "리밸런싱" if c >= th["rebalance"] else "정상"
+        prev = state.get(name, {"level": "정상", "t": 0})
+        if prev.get("level") not in LEVELS:
+            prev = {"level": "정상", "t": 0}
+        rank, prank = LEVELS.index(level), LEVELS.index(prev["level"])
         repeat = cfg.get("repeat_minutes", 60) * 60
-        rank, prank = LEVELS[level], LEVELS.get(prev["level"], 0)
-        send = (rank > prank) or (rank > 0 and now - prev["t"] >= repeat) or (rank == 0 and prank > 0)
+        send = rank > prank or (rank > 0 and now - prev["t"] >= repeat) or (rank == 0 and prank > 0)
         if send:
             ts = datetime.now(KST).strftime("%m/%d %H:%M")
+            a = accts[name]
+            mates = [n for n, x in accts.items() if x["pair"] == a["pair"] and x["role"] != a["role"] and n in st]
             if rank == 0:
-                msg = f"✅ {acct} 정상 복귀\n{asset} {px:,.3f} · 가장 가까운 이벤트까지 {dist:.1%}"
+                msg = f"✅ {name} 정상 복귀 · {describe(by[name], px)} · 여유 소진 {c:.0%}"
             else:
-                what = {"SL": "SL(손절)", "TP": "TP(익절)", "청산": "청산가"}[kind]
-                tail = "\n→ 스왑 격리증거금 보강 필요 (청산가가 SL보다 먼저)" if level == "청산 위험" else \
-                       "\n→ 체결되면 짝 다리도 같이 닫혀 OI가 사라져요. 리밸런싱 고려" if kind in ("SL", "TP") else ""
-                msg = (f"{ICON[level]} [{level}] {acct} ({ts} KST)\n"
-                       f"{asset} 현재 {px:,.3f} → {arrow} {dist:.2%} 앞에 {what} {lv:,.3f}{tail}")
+                need = max(0.0, -s["pnl"]) * 0.5
+                gain = sum(max(0.0, st[m]["pnl"]) for m in mates) or 1
+                tx = " / ".join(f"{m} → {name} ${need * max(0.0, st[m]['pnl']) / gain:,.0f}" for m in mates)
+                tail = {"리밸런싱": f"\n→ 송금 권장: {tx}",
+                        "즉시 송금": f"\n→ 지금 송금: {tx}",
+                        "비상": f"\n→ 송금이 어려우면 {name}의 두 다리를 같은 수량으로 같이 줄이기"}[level]
+                msg = (f"{ICON[level]} [{level}] {name} ({ts} KST)\n"
+                       f"{describe(by[name], px)} · 손익 {money(s['pnl'])} · 여유 소진 {c:.0%}"
+                       f" · 유지증거금 사용률 약 {s['mm_usage']:.0%} · 청산까지 약 {s['room']:.1%}{tail}")
             outbox.append(msg)
-            state[acct] = {"level": level, "t": now}
+            state[name] = {"level": level, "t": now}
             changed = True
         elif level != prev["level"]:
-            state[acct] = {"level": level, "t": prev["t"]}
+            state[name] = {"level": level, "t": prev["t"]}
             changed = True
-
+    for k in [k for k in state if k not in st]:
+        del state[k]
+        changed = True
     if outbox:
         telegram("\n\n".join(outbox))
     if changed:
         save_json("alert_state.json", state)
-    print("prices", prices, "changed", changed)
+    print({n: f"소진 {s['consumed']:.0%} 여유 {s['room']:.1%}" for n, s in st.items()})
 
 
 if __name__ == "__main__":

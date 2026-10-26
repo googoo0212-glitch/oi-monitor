@@ -40,6 +40,16 @@ def _post(body):
         return json.loads(r.read().decode())
 
 
+def xyz_mids():
+    """하이퍼리퀴드 xyz 덱 전체 중간가 {'xyz:CL': 101.2, ...}."""
+    try:
+        return {k: float(v) for k, v in _post({"type": "allMids", "dex": "xyz"}).items()}
+    except Exception as e:
+        print("allMids 실패:", e)
+    meta, ctxs = _post({"type": "metaAndAssetCtxs", "dex": "xyz"})
+    return {u["name"]: float(c.get("midPx") or c["markPx"]) for u, c in zip(meta["universe"], ctxs)}
+
+
 def hl_prices():
     """{'XAU': 금 가격, 'XAG': 은 가격} — 하이퍼리퀴드 xyz 덱 중간가."""
     want = {"XAU": "xyz:GOLD", "XAG": "xyz:SILVER"}
