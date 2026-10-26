@@ -40,6 +40,23 @@ def _post(body):
         return json.loads(r.read().decode())
 
 
+VAR_STATS = "https://omni-client-api.prod.ap-northeast-1.variational.io/metadata/v2/stats"
+
+
+def variational_marks():
+    """Variational 공개 API의 종목별 mark price {'CL-PERP': 101.2, ...}."""
+    req = urllib.request.Request(VAR_STATS, headers={"User-Agent": "oi-monitor/1.0"})
+    with urllib.request.urlopen(req, timeout=20) as r:
+        data = json.loads(r.read().decode("utf-8"))
+    out = {}
+    for l in data.get("listings", []):
+        try:
+            out[str(l["ticker"])] = float(l["mark_price"])
+        except (KeyError, TypeError, ValueError):
+            pass
+    return out
+
+
 def xyz_mids():
     """하이퍼리퀴드 xyz 덱 전체 중간가 {'xyz:CL': 101.2, ...}."""
     try:

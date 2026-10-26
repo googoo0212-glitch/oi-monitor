@@ -29,9 +29,9 @@ jobs:
         run: |
           git config user.name "alert-bot"
           git config user.email "alert-bot@users.noreply.github.com"
-          git add data/alert_state.json
+          git add data/alert_state.json data/pair_marks.csv
           if ! git diff --cached --quiet; then
-            git commit -m "alert state $(date -u +%H:%MZ)"
+            git commit -m "pair marks $(date -u +%H:%MZ)"
             git pull --rebase
             git push
           fi

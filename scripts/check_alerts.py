@@ -3,12 +3,14 @@
 이 구조는 SL/TP 없이 운영해요. 위험은 두 다리의 가격 '차이'(BZ−CL, 금÷은)뿐이라서
 계정별로 처음 여유(현금 − 유지증거금) 중 얼마나 써버렸는지로 단계를 나눠요.
   소진 35% → 리밸런싱 / 55% → 즉시 송금 / 75% → 비상(두 다리 같이 정리 고려)
-가격은 하이퍼리퀴드 xyz 덱 중간가 (Variational 가격과 몇 센트 차이).
+가격은 Variational mark price가 기본 (청산도 이 가격 기준). 실패하면 하이퍼리퀴드 xyz 중간가로 대체.
+실행할 때마다 data/pair_marks.csv 에 가격을 한 줄씩 남겨서 페이지에서 가격차 추이를 그려요.
 """
+import os
 import time
 from datetime import datetime, timedelta, timezone
 
-from common import load_json, save_json, telegram, xyz_mids
+from common import DATA, load_json, save_json, telegram, variational_marks, xyz_mids
 
 money = lambda v: f"{'−' if v < 0 else '+'}${abs(v):,.0f}"
 
@@ -31,6 +33,16 @@ def account_state(name, acct, legs, px):
             "consumed": consumed, "room": buf / leg}
 
 
+def log_marks(px, src):
+    path = os.path.join(DATA, "pair_marks.csv")
+    new = not os.path.exists(path)
+    t = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:00Z")
+    with open(path, "a", encoding="utf-8") as fh:
+        if new:
+            fh.write("time_utc,CL,BZ,XAU,XAG,src\n")
+        fh.write(",".join([t] + [f"{px[k]:.4f}" if k in px else "" for k in SYM] + [src]) + "\n")
+
+
 def describe(legs, px):
     inst = {l["instrument"] for l in legs}
     if {"CL-PERP", "BZ-PERP"} <= inst:
@@ -51,8 +63,24 @@ def main():
     if not pos:
         print("포지션 없음")
         return
-    mids = xyz_mids()
-    px = {k: mids[v] for k, v in SYM.items() if v in mids}
+    px, src, vm_keys = {}, "variational", set()
+    try:
+        vm = variational_marks()
+        vm_keys = {k for k in SYM if k in vm}
+        px = {k: vm[k] for k in SYM if k in vm}
+    except Exception as e:
+        print("Variational 가격 실패:", e)
+    if len(px) < len(SYM):
+        try:
+            mids = xyz_mids()
+            for k, v in SYM.items():
+                if k not in px and v in mids:
+                    px[k] = mids[v]
+        except Exception as e:
+            print("하이퍼리퀴드 가격 실패:", e)
+    if src == "variational" and len(px) < len(SYM):
+        src = "hyperliquid" if not any(k in vm_keys for k in px) else "mixed"
+    log_marks(px, src)
     state = load_json("alert_state.json", {})
     now, changed, outbox = time.time(), False, []
     by = {}
