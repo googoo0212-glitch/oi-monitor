@@ -3,14 +3,12 @@
  "telegram_enabled": true,
  "_설명": "near = 이 거리 안으로 들어오면 '근접' 알림, imminent = '임박' 알림. 0.015 = 1.5%. repeat_minutes = 같은 단계면 몇 분마다 다시 알릴지.",
  "repeat_minutes": 60,
- "funding": {
-  "change_pp": 0.05,
-  "watch": []
- },
  "_pair_levels": "계정별 처음 청산 여유(현금−유지증거금) 중 소진 비율. 0.35 리밸런싱 / 0.55 즉시 송금 / 0.75 비상",
  "pair_levels": {
   "rebalance": 0.35,
   "urgent": 0.55,
   "emergency": 0.75
- }
+ },
+ "daily_summary_hour_kst": 9,
+ "_daily": "매일 아침 9시(KST) 이후 첫 실행에서 일일 요약 1회. 펀딩 알림은 없앰 (짝끼리 상쇄되므로)"
 }
