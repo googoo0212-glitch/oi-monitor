@@ -121,7 +121,7 @@ def daily_report(accts, by, st, px, src, th):
     for i in range(0, len(row), 3):
         lines.append("   " + " · ".join(row[i:i + 3]))
     lines += ["", "📝 할 일: " + (" / ".join(todo) if todo else "없음"),
-              f"CL {px['CL-PERP']:.2f} · BZ {px['BZ-PERP']:.2f}" + (f" · GOOGL {px['GOOGL-PERP']:.2f}" if 'GOOGL-PERP' in px else "") + f" ({'Variational' if src == 'variational' else src})"]
+              f"CL {px['CL-PERP']:.2f} · BZ {px['BZ-PERP']:.2f} · 괴리율 {(px['BZ-PERP'] - px['CL-PERP']) / px['CL-PERP']:.1%}" + (f" · GOOGL {px['GOOGL-PERP']:.2f}" if 'GOOGL-PERP' in px else "") + f" ({'Variational' if src == 'variational' else src})"]
     return "\n".join(lines)
 
 

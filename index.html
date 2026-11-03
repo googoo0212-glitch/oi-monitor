@@ -210,7 +210,7 @@ function render() {
     const h = el('div', 'ph'); h.append(el('span', 'n', `짝 ${p.id} · ${p.oil ? '원유' : '금/은'}`), el('span', 'k', p.name), el('span', 'chip ' + l.k, l.t)); c.appendChild(h);
     const mv = p.cur - p.entry;
     const big = el('div', 'big');
-    big.append(el('span', 'k', p.oil ? '가격차 BZ−CL' : '금 ÷ 은'), el('span', 'now', fmtV(p.oil, p.cur)),
+    big.append(el('span', 'k', p.oil ? '가격차 BZ−CL' : '금 ÷ 은'), el('span', 'now', fmtV(p.oil, p.cur) + (p.oil ? ` · ${d3.format('.1%')(p.cur / px['CL-PERP'])}` : '')),
       el('span', 'mv ' + (Math.abs(mv) < (p.oil ? 1 : 0.01 * p.entry) ? 'mu' : 'am'), `진입 ${fmtV(p.oil, p.entry)} 대비 ${mv >= 0 ? '+' : '−'}${p.oil ? '$' + Math.abs(mv).toFixed(2) : Math.abs(mv).toFixed(2) + ` (${d3.format('+.1%')(mv / p.entry)})`}`));
     c.appendChild(big);
     c.appendChild(gauge(p));
