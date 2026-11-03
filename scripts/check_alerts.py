@@ -17,9 +17,13 @@ from common import DATA, load_json, save_json, telegram, variational_marks, xyz_
 money = lambda v: f"{'−' if v < 0 else '+'}${abs(v):,.0f}"
 
 KST = timezone(timedelta(hours=9))
-SYM = {"CL-PERP": "xyz:CL", "BZ-PERP": "xyz:BRENTOIL", "XAU-PERP": "xyz:GOLD", "XAG-PERP": "xyz:SILVER"}
-LEVELS = ["정상", "리밸런싱", "즉시 송금", "비상"]
+SYM = {"CL-PERP": "xyz:CL", "BZ-PERP": "xyz:BRENTOIL", "XAU-PERP": "xyz:GOLD", "XAG-PERP": "xyz:SILVER"}  # 기록(csv) 열 순서
+EXTRA = {"GOOGL-PERP": "xyz:GOOGL"}   # 페어가 아닌 단독 포지션 (손익만 반영, 기록 안 함)
+ALL = {**SYM, **EXTRA}
+REFILL = 0.10   # 예비금 입금 후 목표 여유 소진율
+LEVELS = ["정상", "리밸런싱", "즉시 송금", "비상"]   # 표시는 '입금' (예비금 → 손해 계정)
 ICON = {"정상": "✅", "리밸런싱": "🟡", "즉시 송금": "🔴", "비상": "🚨"}
+LABEL = {"정상": "정상", "리밸런싱": "입금 필요", "즉시 송금": "지금 입금", "비상": "비상"}
 
 
 def account_state(name, acct, legs, px):
@@ -32,7 +36,13 @@ def account_state(name, acct, legs, px):
     consumed = 1 - buf / buf0 if buf0 > 0 else 1
     leg = max(l["qty"] * px[l["instrument"]] for l in legs)
     return {"pnl": pnl, "equity": equity, "mm_usage": mm_now / equity if equity > 0 else 9,
-            "consumed": consumed, "room": buf / leg}
+            "consumed": consumed, "room": buf / leg, "buf0": buf0}
+
+
+def refill(s):
+    """예비금에서 넣을 금액: 여유 소진을 REFILL(10%)까지 되돌리는 만큼, $10 단위 올림."""
+    amt = max(0.0, (s["consumed"] - REFILL) * s["buf0"])
+    return int(-(-amt // 10) * 10)
 
 
 def pair_view(legs, acct, px):
@@ -67,12 +77,13 @@ def day_range(col_a, col_b, oil):
 def daily_report(accts, by, st, px, src, th):
     fmt = lambda oil, v: f"${v:.2f}" if oil else f"{v:.2f}"
     ts = datetime.now(KST).strftime("%m/%d %H:%M")
-    oi = sum(l["qty"] * px[l["instrument"]] for legs in by.values() for l in legs)
+    oi = sum(l["qty"] * px.get(l["instrument"], l["entry"]) for legs in by.values() for l in legs)
     eq = sum(s["equity"] for s in st.values())
     pnl = sum(s["pnl"] for s in st.values())
     lines = [f"📊 Variational 일일 요약 ({ts} KST)", "",
-             f"🧱 OI ${oi:,.0f} · 총자산 ${eq:,.0f} · 손익 {money(pnl)}", "",
-             "📏 짝별 가격차 (진입 → 지금 · 송금 기준까지)"]
+             f"🧱 OI ${oi:,.0f} · 총자산 ${eq:,.0f} · 손익 {money(pnl)}",
+             f"💵 지갑 예비금 약 ${load_json('positions.json', {}).get('reserve_usd', 0):,} (입금하면 positions.json 갱신)", "",
+             "📏 짝별 가격차 (진입 → 지금 · 입금 기준까지)"]
     todo = []
     for pid in sorted({a["pair"] for a in accts.values()}):
         names = [n for n, a in accts.items() if a["pair"] == pid and n in st]
@@ -94,16 +105,14 @@ def daily_report(accts, by, st, px, src, th):
         gap_u = f"↑{gap(min(ups) - cur)}" if ups else ""
         gap_d = f"↓{gap(cur - max(dns))}" if dns else ""
         rng = day_range("CL", "BZ", True) if oil else day_range("XAU", "XAG", False)
-        lines.append(f"{icon} 짝{pid} {'원유' if oil else '금÷은'} {fmt(oil, entry)} → {fmt(oil, cur)} ({mvs}) · 송금까지 {gap_u} {gap_d}".rstrip())
+        lines.append(f"{icon} 짝{pid} {'원유' if oil else '금÷은'} {fmt(oil, entry)} → {fmt(oil, cur)} ({mvs}) · 입금 기준까지 {gap_u} {gap_d}".rstrip())
         if rng:
             lines.append(f"   24h 범위 {fmt(oil, rng[0])} ~ {fmt(oil, rng[1])}")
         if c >= th["rebalance"]:
-            mates = [n for n in names if accts[n]["role"] != accts[worst]["role"]]
-            need, gain = max(0.0, -st[worst]["pnl"]) * 0.5, sum(max(0.0, st[m]["pnl"]) for m in mates) or 1
-            todo += [f"{m} → {worst} ${need * max(0.0, st[m]['pnl']) / gain:,.0f}" for m in mates]
+            todo += [f"예비금 → {n} ${refill(st[n]):,} 입금" for n in names if st[n]["consumed"] >= th["rebalance"]]
         elif c >= 0.25:
-            todo.append(f"{worst} 곧 송금 대비 (여유 소진 {c:.0%})")
-    lines += ["", "🧯 계정별 여유 소진 (35% 송금 · 55% 지금 송금)"]
+            todo.append(f"{worst} 곧 입금 대비 (여유 소진 {c:.0%})")
+    lines += ["", "🧯 계정별 여유 소진 (35% 입금 · 55% 지금 입금)"]
     order = sorted(st, key=lambda n: (accts[n]["pair"], accts[n]["role"]))
     row = []
     for n in order:
@@ -112,7 +121,7 @@ def daily_report(accts, by, st, px, src, th):
     for i in range(0, len(row), 3):
         lines.append("   " + " · ".join(row[i:i + 3]))
     lines += ["", "📝 할 일: " + (" / ".join(todo) if todo else "없음"),
-              f"CL {px['CL-PERP']:.2f} · BZ {px['BZ-PERP']:.2f} · 금 {px['XAU-PERP']:,.1f} · 은 {px['XAG-PERP']:.3f} ({'Variational' if src == 'variational' else src})"]
+              f"CL {px['CL-PERP']:.2f} · BZ {px['BZ-PERP']:.2f}" + (f" · GOOGL {px['GOOGL-PERP']:.2f}" if 'GOOGL-PERP' in px else "") + f" ({'Variational' if src == 'variational' else src})"]
     return "\n".join(lines)
 
 
@@ -149,20 +158,20 @@ def main():
     px, src, vm_keys = {}, "variational", set()
     try:
         vm = variational_marks()
-        vm_keys = {k for k in SYM if k in vm}
-        px = {k: vm[k] for k in SYM if k in vm}
+        vm_keys = {k for k in ALL if k in vm}
+        px = {k: vm[k] for k in ALL if k in vm}
     except Exception as e:
         print("Variational 가격 실패:", e)
-    if len(px) < len(SYM):
+    if len(px) < len(ALL):
         try:
             mids = xyz_mids()
-            for k, v in SYM.items():
+            for k, v in ALL.items():
                 if k not in px and v in mids:
                     px[k] = mids[v]
         except Exception as e:
             print("하이퍼리퀴드 가격 실패:", e)
-    if src == "variational" and len(px) < len(SYM):
-        src = "hyperliquid" if not any(k in vm_keys for k in px) else "mixed"
+    if src == "variational" and any(k not in vm_keys for k in SYM if k in px):
+        src = "hyperliquid" if not any(k in vm_keys for k in SYM) else "mixed"
     log_marks(px, src)
     state = load_json("alert_state.json", {})
     now, changed, outbox = time.time(), False, []
@@ -171,9 +180,10 @@ def main():
         by.setdefault(p["account"], []).append(p)
     st = {}
     for name, legs in by.items():
-        if name not in accts or any(l["instrument"] not in px for l in legs):
+        if name not in accts or any(l["instrument"] not in px for l in legs if l["instrument"] in SYM):
             continue
-        st[name] = account_state(name, accts[name], legs, px)
+        p2 = dict(px, **{l["instrument"]: l["entry"] for l in legs if l["instrument"] not in px})  # 단독 종목 가격 없으면 진입가
+        st[name] = account_state(name, accts[name], legs, p2)
     for name, s in st.items():
         c = s["consumed"]
         level = "비상" if c >= th["emergency"] else "즉시 송금" if c >= th["urgent"] else "리밸런싱" if c >= th["rebalance"] else "정상"
@@ -186,17 +196,14 @@ def main():
         if send:
             ts = datetime.now(KST).strftime("%m/%d %H:%M")
             a = accts[name]
-            mates = [n for n, x in accts.items() if x["pair"] == a["pair"] and x["role"] != a["role"] and n in st]
             if rank == 0:
                 msg = f"✅ {name} 정상 복귀 · {describe(by[name], px)} · 여유 소진 {c:.0%}"
             else:
-                need = max(0.0, -s["pnl"]) * 0.5
-                gain = sum(max(0.0, st[m]["pnl"]) for m in mates) or 1
-                tx = " / ".join(f"{m} → {name} ${need * max(0.0, st[m]['pnl']) / gain:,.0f}" for m in mates)
-                tail = {"리밸런싱": f"\n→ 송금 권장: {tx}",
-                        "즉시 송금": f"\n→ 지금 송금: {tx}",
-                        "비상": f"\n→ 송금이 어려우면 {name}의 두 다리를 같은 수량으로 같이 줄이기"}[level]
-                msg = (f"{ICON[level]} [{level}] {name} ({ts} KST)\n"
+                tx = f"예비금 → {name} ${refill(s):,} 입금"
+                tail = {"리밸런싱": f"\n→ {tx} (여유를 10%까지 회복)",
+                        "즉시 송금": f"\n→ 지금 {tx}",
+                        "비상": f"\n→ 지금 {tx} · 어려우면 {name}의 두 다리를 같은 수량으로 같이 줄이기"}[level]
+                msg = (f"{ICON[level]} [{LABEL[level]}] {name} ({ts} KST)\n"
                        f"{describe(by[name], px)} · 손익 {money(s['pnl'])} · 여유 소진 {c:.0%}"
                        f" · 유지증거금 사용률 약 {s['mm_usage']:.0%} · 청산까지 약 {s['room']:.1%}{tail}")
             outbox.append(msg)

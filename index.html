@@ -27,7 +27,7 @@ a{color:var(--mint)}
 .todo .do div{font-size:18px;font-weight:600;background:var(--pn2);border-radius:10px;padding:10px 14px}
 .todo .why{margin-top:10px;font-size:14px;color:var(--fg2);line-height:1.5}
 /* 숫자 타일 */
-.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
 @media (max-width:600px){.tiles{grid-template-columns:1fr 1fr}}
 .tile{background:var(--pn);border:1px solid var(--ln);border-radius:16px;padding:14px 16px;min-width:0}
 .tile .v{font-size:26px;font-weight:700;margin-top:4px;white-space:nowrap}
@@ -65,7 +65,6 @@ a{color:var(--mint)}
       <div class="title">Variational OI</div>
       <span class="live" id="live"><i></i><span id="live-t">가격 불러오는 중…</span></span>
     </div>
-    <a class="nav" href="entropy.html">Entropy 보기 →</a>
   </section>
 
   <section class="pn todo" id="todo"><h2>불러오는 중…</h2></section>
@@ -78,8 +77,8 @@ a{color:var(--mint)}
     <div class="ph" style="margin-bottom:8px"><span class="n">가격차 추이</span><span class="k" id="hist-k"></span></div>
     <div class="k" style="margin-bottom:4px">원유 BZ − CL</div>
     <div class="chart" id="c-oil"></div>
-    <div class="k" style="margin:10px 0 4px">금 ÷ 은</div>
-    <div class="chart" id="c-gs"></div>
+    <div id="gs-wrap"><div class="k" style="margin:10px 0 4px">금 ÷ 은</div>
+    <div class="chart" id="c-gs"></div></div>
   </section>
 
   <section class="foot" id="foot"></section>
@@ -88,9 +87,10 @@ a{color:var(--mint)}
 <script>
 const VAR_URL = 'https://omni-client-api.prod.ap-northeast-1.variational.io/metadata/v2/stats';
 const HL = 'https://api.hyperliquid.xyz/info';
-const XYZ = {'CL-PERP': 'xyz:CL', 'BZ-PERP': 'xyz:BRENTOIL', 'XAU-PERP': 'xyz:GOLD', 'XAG-PERP': 'xyz:SILVER'};
+const XYZ = {'CL-PERP': 'xyz:CL', 'BZ-PERP': 'xyz:BRENTOIL', 'XAU-PERP': 'xyz:GOLD', 'XAG-PERP': 'xyz:SILVER', 'GOOGL-PERP': 'xyz:GOOGL'};
+const NEED = ['CL-PERP', 'BZ-PERP'];  // 페어 계산에 꼭 필요한 가격
 // 단계: 여유 소진율 기준 (알림 스크립트와 같음 + 미리 보기 단계 25%)
-const LV = [{f: 0, k: 'up', t: '안전'}, {f: .25, k: 'am', t: '곧 송금'}, {f: .35, k: 'or', t: '송금'}, {f: .55, k: 'dn', t: '지금 송금'}, {f: .75, k: 'dn', t: '비상'}];
+const LV = [{f: 0, k: 'up', t: '안전'}, {f: .25, k: 'am', t: '곧 입금'}, {f: .35, k: 'or', t: '입금'}, {f: .55, k: 'dn', t: '지금 입금'}, {f: .75, k: 'dn', t: '비상'}];
 const lvOf = c => { let r = LV[0]; LV.forEach(l => { if (c >= l.f) r = l; }); return r; };
 const C = {up: '#4ade80', am: '#fbbf24', or: '#fb923c', dn: '#f87171', mu: '#86a6a3', mint: '#5eead4'};
 const usd = v => v == null || isNaN(v) ? '—' : (v < 0 ? '−$' : '$') + d3.format(',.0f')(Math.abs(v));
@@ -112,10 +112,10 @@ async function loadPrices() {
   try {
     const d = await getJSON(VAR_URL), o = {};
     (d.listings || []).forEach(l => { if (XYZ[l.ticker]) o[l.ticker] = +l.mark_price; });
-    if (Object.keys(o).length === 4) { px = o; src = 'Variational 실시간'; pxAt = new Date(); return; }
+    if (NEED.every(k => o[k])) { px = o; src = 'Variational 실시간'; pxAt = new Date(); return; }
   } catch (e) {}
   const last = hist[hist.length - 1];
-  if (last && Date.now() - last.t < 15 * 60000 && last.src !== 'hyperliquid' && last.CL && last.BZ && last.XAU && last.XAG) {
+  if (last && Date.now() - last.t < 15 * 60000 && last.src !== 'hyperliquid' && last.CL && last.BZ) {
     px = {'CL-PERP': last.CL, 'BZ-PERP': last.BZ, 'XAU-PERP': last.XAU, 'XAG-PERP': last.XAG}; src = 'Variational 5분 기록'; pxAt = last.t; return;
   }
   try {
@@ -147,7 +147,8 @@ function account(name) {
     lossUp = by['XAU-PERP'].side === 'short';       // 금 숏이면 비율이 오를 때 손해
   }
   const at = f => lossUp ? entry + f * unit : entry - f * unit;   // 소진 f가 되는 가격차/비율
-  return {name, m, legs, by, oil, pnl, oi, equity, consumed, entry, cur, at, lossUp,
+  const solo = legs.filter(l => !['CL-PERP', 'BZ-PERP', 'XAU-PERP', 'XAG-PERP'].includes(l.instrument));
+  return {name, m, legs, by, oil, pnl, oi, equity, consumed, entry, cur, at, lossUp, buf0, solo,
     side: oil ? `CL ${by['CL-PERP'].side === 'long' ? '롱' : '숏'} · BZ ${by['BZ-PERP'].side === 'long' ? '롱' : '숏'} ${by['CL-PERP'].qty}`
               : `금 ${by['XAU-PERP'].side === 'long' ? '롱' : '숏'} ${by['XAU-PERP'].qty} · 은 ${by['XAG-PERP'].side === 'long' ? '롱' : '숏'} ${by['XAG-PERP'].qty}`};
 }
@@ -165,14 +166,9 @@ function pairs() {
   });
 }
 
-// 송금 제안: 소진 35% 이상인 계정에 짝 계정 이익의 비율대로 손실의 절반
+// 입금 제안: 계정 간 이동 없이 지갑 예비금 → 손해 계정. 여유 소진을 10%까지 되돌리는 금액
 function transfers(pr) {
-  const out = [];
-  pr.A.filter(a => a.consumed >= .35).forEach(a => {
-    const mates = pr.A.filter(b => b.lossUp !== a.lossUp), gain = d3.sum(mates, b => Math.max(0, b.pnl)) || 1;
-    mates.forEach(b => { const amt = Math.max(0, -a.pnl) * .5 * Math.max(0, b.pnl) / gain; if (amt >= 5) out.push({from: b.name, to: a.name, amt, lv: lvOf(a.consumed)}); });
-  });
-  return out;
+  return pr.A.filter(a => a.consumed >= .35).map(a => ({to: a.name, amt: Math.ceil(Math.max(0, (a.consumed - .10) * a.buf0) / 10) * 10, lv: lvOf(a.consumed)}));
 }
 
 const fmtV = (oil, v) => oil ? '$' + v.toFixed(2) : v.toFixed(2);
@@ -182,7 +178,7 @@ function render() {
   const live = document.getElementById('live');
   live.className = 'live' + (src ? '' : ' off');
   document.getElementById('live-t').textContent = src ? `${src} · ${d3.timeFormat('%H:%M')(pxAt)}` : '가격을 못 불러왔어요';
-  if (Object.keys(px).length < 4) return;
+  if (!NEED.every(k => px[k])) return;
   const PR = pairs(), all = PR.flatMap(p => p.A);
 
   // 지금 할 일
@@ -190,21 +186,21 @@ function render() {
   const wl = lvOf(worst.consumed), todo = document.getElementById('todo');
   todo.className = 'pn todo s-' + wl.k; todo.textContent = '';
   if (tx.length) {
-    todo.appendChild(el('h2', null, worst.consumed >= .55 ? '🔴 지금 바로 송금하세요' : '🟠 송금할 때가 됐어요'));
-    const d = el('div', 'do'); tx.forEach(t => d.appendChild(el('div', null, `${t.from} → ${t.to}  ${usd(t.amt)}`))); todo.appendChild(d);
-    todo.appendChild(el('div', 'why', `${worst.name} 계정이 청산 여유의 ${d3.format('.0%')(worst.consumed)}를 썼어요. 보내면 다시 안전 구간으로 돌아와요.`));
+    todo.appendChild(el('h2', null, worst.consumed >= .55 ? '🔴 지금 바로 입금하세요' : '🟠 예비금을 넣을 때가 됐어요'));
+    const d = el('div', 'do'); tx.forEach(t => d.appendChild(el('div', null, `예비금 → ${t.to}  ${usd(t.amt)} 입금`))); todo.appendChild(d);
+    todo.appendChild(el('div', 'why', `${worst.name} 계정이 청산 여유의 ${d3.format('.0%')(worst.consumed)}를 썼어요. 넣으면 여유 소진이 10%로 돌아와요. 넣은 뒤엔 알려주세요 (기록 갱신).`));
   } else {
     // 가장 가까운 송금 기준까지 남은 거리
     const nxt = PR.map(p => { const a = p.A.reduce((w, x) => x.consumed > w.consumed ? x : w, p.A[0]); return {p, a, trig: a.at(.35)}; })
       .sort((x, y) => y.a.consumed - x.a.consumed)[0];
     const gap = Math.abs(nxt.trig - nxt.p.cur), gapTxt = nxt.p.oil ? '$' + gap.toFixed(2) : gap.toFixed(2);
-    todo.appendChild(el('h2', null, worst.consumed >= .25 ? `🟡 곧 송금해야 해요 — ${worst.name}` : '✅ 지금은 할 일 없어요'));
-    todo.appendChild(el('div', 'why', `가장 가까운 송금 기준: 짝 ${nxt.p.id} ${nxt.p.oil ? '가격차' : '금÷은'}가 ${fmtV(nxt.p.oil, nxt.trig)}에 닿으면 (지금 ${fmtV(nxt.p.oil, nxt.p.cur)}, ${gapTxt} 남음) → ${nxt.a.name} 쪽으로 송금`));
+    todo.appendChild(el('h2', null, worst.consumed >= .25 ? `🟡 곧 입금해야 해요 — ${worst.name}` : '✅ 지금은 할 일 없어요'));
+    todo.appendChild(el('div', 'why', `가장 가까운 입금 기준: 짝 ${nxt.p.id} ${nxt.p.oil ? '가격차' : '금÷은'}가 ${fmtV(nxt.p.oil, nxt.trig)}에 닿으면 (지금 ${fmtV(nxt.p.oil, nxt.p.cur)}, ${gapTxt} 남음) → 예비금을 ${nxt.a.name}에 입금`));
   }
 
   // 타일
   const tiles = document.getElementById('tiles'); tiles.textContent = '';
-  [['총 OI', usd(d3.sum(all, a => a.oi)), ''], ['총 자산', usd(d3.sum(all, a => a.equity)), ''], ['가장 위험한 계정', d3.format('.0%')(Math.max(0, worst.consumed)), wl.k]]
+  [['총 OI', usd(d3.sum(all, a => a.oi)), ''], ['총 자산', usd(d3.sum(all, a => a.equity)), ''], ['지갑 예비금', usd(P.reserve_usd), ''], ['가장 위험한 계정', d3.format('.0%')(Math.max(0, worst.consumed)), wl.k]]
     .forEach(([k, v, c]) => { const t = el('div', 'tile'); t.append(el('div', 'k', k), el('div', 'v ' + c, v)); if (k === '가장 위험한 계정') t.appendChild(el('div', 'k', worst.name + ' · 여유 소진율')); tiles.appendChild(t); });
 
   // 짝 카드
@@ -220,7 +216,7 @@ function render() {
     c.appendChild(gauge(p));
     const sU = p.nearUp(.35), sD = p.nearDn(.35);
     const gapTxt = g => g <= 0 ? '이미 넘음' : fmtV(p.oil, g) + ' 남음';
-    c.appendChild(el('div', 'left', `송금 기준까지  위로 ${gapTxt(sU - p.cur)}  ·  아래로 ${gapTxt(p.cur - sD)}`));
+    c.appendChild(el('div', 'left', `입금 기준까지  위로 ${gapTxt(sU - p.cur)}  ·  아래로 ${gapTxt(p.cur - sD)}`));
     const ac = el('div', 'accts');
     p.A.forEach(a => {
       const al = lvOf(a.consumed), d = el('div', 'acct');
@@ -228,13 +224,14 @@ function render() {
       d.appendChild(el('div', 'k', `${a.side} · ${p.oil ? (a.lossUp ? '가격차 ↑ 손해' : '가격차 ↓ 손해') : (a.lossUp ? '비율 ↑ 손해' : '비율 ↓ 손해')}`));
       const mt = el('div', 'meter'), fi = el('i'), mk = el('b'); fi.style.width = Math.min(100, Math.max(0, a.consumed) * 100) + '%'; fi.style.background = C[al.k]; mk.style.left = '35%'; mt.append(fi, mk); d.appendChild(mt);
       d.appendChild(el('div', 'k', `여유 소진 ${d3.format('.0%')(Math.max(0, a.consumed))} · 자산 ${usd(a.equity)} · ${(a.oi / a.equity).toFixed(1)}배`));
+      a.solo.forEach(l => { const pl = (l.side === 'long' ? 1 : -1) * l.qty * ((px[l.instrument] ?? l.entry) - l.entry); d.appendChild(el('div', 'k', `＋ ${l.instrument.replace('-PERP', '')} ${l.side === 'long' ? '롱' : '숏'} ${l.qty} (헷지 없음) · ${usdS(pl)}`)); });
       ac.appendChild(d);
     });
     c.appendChild(ac); box.appendChild(c);
   });
 
   charts(PR);
-  document.getElementById('foot').innerHTML = `포지션 기준 ${P.updated} · SL/TP 없이 운영 — 위험은 두 다리의 가격 '차이'뿐이라 그 차이로만 판단해요.<br>여유 소진율 = 처음 청산 여유 중 써버린 비율. 25% 곧 송금 · 35% 송금(텔레그램 알림) · 55% 지금 송금 · 100% 청산.`;
+  document.getElementById('foot').innerHTML = `포지션 기준 ${P.updated} · SL/TP 없이 운영 — 위험은 두 다리의 가격 '차이'뿐이라 그 차이로만 판단해요.<br>여유 소진율 = 처음 청산 여유 중 써버린 비율. 25% 곧 입금 · 35% 입금(텔레그램 알림) · 55% 지금 입금 · 100% 청산. 입금은 지갑 예비금에서, 넣은 뒤엔 기록 갱신이 필요해요.`;
 }
 
 // 게이지: 가운데 진입값, 양 끝 청산. 구간 색 = 안전/곧/송금/지금 송금
@@ -246,7 +243,7 @@ function gauge(p) {
   seg.forEach(([a, b, col]) => svg.append('rect').attr('x', x(a)).attr('y', 34).attr('width', Math.max(0, x(b) - x(a))).attr('height', 12).attr('fill', col).attr('opacity', .55));
   const tick = (v, label, y, anchor) => { svg.append('line').attr('x1', x(v)).attr('x2', x(v)).attr('y1', 30).attr('y2', 50).attr('stroke', '#e6f4f1').attr('opacity', .5); svg.append('text').attr('x', x(v)).attr('y', y).attr('text-anchor', anchor || 'middle').attr('fill', '#b9cfcb').attr('font-size', 13).text(label); };
   tick(lo, '청산 ' + fmtV(p.oil, lo), 68, 'start'); tick(hi, '청산 ' + fmtV(p.oil, hi), 68, 'end');
-  tick(p.nearDn(.35), '송금 ' + fmtV(p.oil, p.nearDn(.35)), 84, W < 480 ? 'end' : 'middle'); tick(p.nearUp(.35), '송금 ' + fmtV(p.oil, p.nearUp(.35)), 84, W < 480 ? 'start' : 'middle');
+  tick(p.nearDn(.35), '입금 ' + fmtV(p.oil, p.nearDn(.35)), 84, W < 480 ? 'end' : 'middle'); tick(p.nearUp(.35), '입금 ' + fmtV(p.oil, p.nearUp(.35)), 84, W < 480 ? 'start' : 'middle');
   svg.append('line').attr('x1', x(p.entry)).attr('x2', x(p.entry)).attr('y1', 28).attr('y2', 52).attr('stroke', '#e6f4f1').attr('stroke-dasharray', '3 2');
   tick(p.entry, '진입', 68);
   const cx = x(p.cur);
@@ -258,13 +255,14 @@ function gauge(p) {
 function charts(PR) {
   const D = hist.map(d => ({t: d.t, oil: d.BZ && d.CL ? d.BZ - d.CL : null, gs: d.XAU && d.XAG ? d.XAU / d.XAG : null}));
   if (src === 'Variational 실시간') D.push({t: pxAt, oil: px['BZ-PERP'] - px['CL-PERP'], gs: px['XAU-PERP'] / px['XAG-PERP']});
+  document.getElementById('gs-wrap').style.display = PR.some(q => !q.oil) ? '' : 'none';
   document.getElementById('hist-k').textContent = hist.length ? `Variational 가격 5분 기록 · ${hist.length}개` : '5분마다 기록이 쌓여요';
   [['c-oil', 'oil'], ['c-gs', 'gs']].forEach(([id, key]) => {
     const p = PR.find(q => (key === 'oil') === q.oil), box = document.getElementById(id); box.textContent = '';
     const pts = D.filter(d => d[key] != null && isFinite(d[key]));
     if (!p || pts.length < 2) { box.appendChild(el('div', 'k', '기록이 아직 부족해요')); return; }
     const W = Math.max(320, box.clientWidth || 640), H = 170, m = {t: 8, r: 50, b: 22, l: 30};
-    const lines = [[p.entry, '#86a6a3', '3 3', '진입'], [p.nearUp(.35), C.or, '6 4', '송금'], [p.nearDn(.35), C.or, '6 4', '송금']];
+    const lines = [[p.entry, '#86a6a3', '3 3', '진입'], [p.nearUp(.35), C.or, '6 4', '입금'], [p.nearDn(.35), C.or, '6 4', '입금']];
     const vals = pts.map(d => d[key]).concat(lines.map(l => l[0]));
     const x = d3.scaleTime().domain(d3.extent(pts, d => d.t)).range([m.l, W - m.r]);
     const y = d3.scaleLinear().domain(d3.extent(vals)).nice().range([H - m.b, m.t]);

@@ -1,8 +1,7 @@
 name: entropy-alerts
 
 on:
-  schedule:
-    - cron: "2,12,22,32,42,52 * * * *"   # 10분마다 (GitHub 사정으로 몇 분 늦을 수 있음)
+  # 2026-11-03 Entropy 정리 → 자동 실행 끔 (다시 켜려면 schedule 복구)
   workflow_dispatch: {}
 
 permissions:

@@ -1,8 +1,7 @@
 name: entropy-record
 
 on:
-  schedule:
-    - cron: "17,47 * * * *"   # 30분마다 가격·펀딩·계정 증거금 기록 (주소는 저장 안 함)
+  # 2026-11-03 Entropy 정리 → 자동 실행 끔 (다시 켜려면 schedule 복구)
   workflow_dispatch: {}
 
 permissions:
