@@ -90,8 +90,9 @@ def daily_report(accts, by, st, px, src, th):
         icon = "🔴" if c >= th["urgent"] else "🟠" if c >= th["rebalance"] else "🟡" if c >= 0.25 else "✅"
         mv = cur - entry
         mvs = f"{'+' if mv >= 0 else '−'}${abs(mv):.2f}" if oil else f"{mv / entry:+.1%}"
-        gap_u = f"↑{fmt(oil, min(ups) - cur)}" if ups else ""
-        gap_d = f"↓{fmt(oil, cur - max(dns))}" if dns else ""
+        gap = lambda g: "넘음" if g <= 0 else fmt(oil, g)
+        gap_u = f"↑{gap(min(ups) - cur)}" if ups else ""
+        gap_d = f"↓{gap(cur - max(dns))}" if dns else ""
         rng = day_range("CL", "BZ", True) if oil else day_range("XAU", "XAG", False)
         lines.append(f"{icon} 짝{pid} {'원유' if oil else '금÷은'} {fmt(oil, entry)} → {fmt(oil, cur)} ({mvs}) · 송금까지 {gap_u} {gap_d}".rstrip())
         if rng:
