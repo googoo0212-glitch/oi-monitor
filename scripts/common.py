@@ -72,8 +72,14 @@ VAR_STATS = "https://omni-client-api.prod.ap-northeast-1.variational.io/metadata
 def variational_marks():
     """Variational 공개 API의 종목별 mark price {'CL-PERP': 101.2, ...}."""
     req = urllib.request.Request(VAR_STATS, headers={"User-Agent": "oi-monitor/1.0"})
-    with urllib.request.urlopen(req, timeout=20) as r:
-        data = json.loads(r.read().decode("utf-8"))
+    for i in range(2):  # 응답이 느릴 때가 있어서 1번 재시도
+        try:
+            with urllib.request.urlopen(req, timeout=45) as r:
+                data = json.loads(r.read().decode("utf-8"))
+            break
+        except Exception:
+            if i:
+                raise
     out = {}
     for l in data.get("listings", []):
         try:

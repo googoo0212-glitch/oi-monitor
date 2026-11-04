@@ -49,6 +49,7 @@ a{color:var(--mint)}
 .acct .h{display:flex;justify-content:space-between;align-items:baseline;gap:6px}
 .acct .nm{font-weight:700;font-size:16px}
 .acct .pl{font-size:16px;font-weight:700}
+.acct .bal{font-size:17px}.acct .bal b{font-size:20px}
 .meter{height:8px;border-radius:4px;background:#0a1416;position:relative;overflow:hidden}
 .meter i{position:absolute;left:0;top:0;bottom:0;border-radius:4px}
 .meter b{position:absolute;top:0;bottom:0;width:2px;background:var(--am)}
@@ -90,7 +91,9 @@ const HL = 'https://api.hyperliquid.xyz/info';
 const XYZ = {'CL-PERP': 'xyz:CL', 'BZ-PERP': 'xyz:BRENTOIL', 'XAU-PERP': 'xyz:GOLD', 'XAG-PERP': 'xyz:SILVER', 'GOOGL-PERP': 'xyz:GOOGL'};
 const NEED = ['CL-PERP', 'BZ-PERP'];  // 페어 계산에 꼭 필요한 가격
 // 단계: 여유 소진율 기준 (알림 스크립트와 같음 + 미리 보기 단계 25%)
-const LV = [{f: 0, k: 'up', t: '안전'}, {f: .25, k: 'am', t: '곧 입금'}, {f: .35, k: 'or', t: '입금'}, {f: .55, k: 'dn', t: '지금 입금'}, {f: .75, k: 'dn', t: '비상'}];
+// 단계 (여유 소진율): 35% 곧 입금 · 50% 입금(텔레그램) · 70% 지금 입금 · 85% 비상
+const T = {pre: .35, reb: .5, urg: .7, emg: .85, refill: .2};
+const LV = [{f: 0, k: 'up', t: '안전'}, {f: T.pre, k: 'am', t: '곧 입금'}, {f: T.reb, k: 'or', t: '입금'}, {f: T.urg, k: 'dn', t: '지금 입금'}, {f: T.emg, k: 'dn', t: '비상'}];
 const lvOf = c => { let r = LV[0]; LV.forEach(l => { if (c >= l.f) r = l; }); return r; };
 const C = {up: '#4ade80', am: '#fbbf24', or: '#fb923c', dn: '#f87171', mu: '#86a6a3', mint: '#5eead4'};
 const usd = v => v == null || isNaN(v) ? '—' : (v < 0 ? '−$' : '$') + d3.format(',.0f')(Math.abs(v));
@@ -168,7 +171,7 @@ function pairs() {
 
 // 입금 제안: 계정 간 이동 없이 지갑 예비금 → 손해 계정. 여유 소진을 10%까지 되돌리는 금액
 function transfers(pr) {
-  return pr.A.filter(a => a.consumed >= .35).map(a => ({to: a.name, amt: Math.ceil(Math.max(0, (a.consumed - .10) * a.buf0) / 10) * 10, lv: lvOf(a.consumed)}));
+  return pr.A.filter(a => a.consumed >= T.reb).map(a => ({to: a.name, amt: Math.ceil(Math.max(0, (a.consumed - T.refill) * a.buf0) / 10) * 10, lv: lvOf(a.consumed)}));
 }
 
 const fmtV = (oil, v) => oil ? '$' + v.toFixed(2) : v.toFixed(2);
@@ -186,15 +189,15 @@ function render() {
   const wl = lvOf(worst.consumed), todo = document.getElementById('todo');
   todo.className = 'pn todo s-' + wl.k; todo.textContent = '';
   if (tx.length) {
-    todo.appendChild(el('h2', null, worst.consumed >= .55 ? '🔴 지금 바로 입금하세요' : '🟠 예비금을 넣을 때가 됐어요'));
+    todo.appendChild(el('h2', null, worst.consumed >= T.urg ? '🔴 지금 바로 입금하세요' : '🟠 예비금을 넣을 때가 됐어요'));
     const d = el('div', 'do'); tx.forEach(t => d.appendChild(el('div', null, `예비금 → ${t.to}  ${usd(t.amt)} 입금`))); todo.appendChild(d);
-    todo.appendChild(el('div', 'why', `${worst.name} 계정이 청산 여유의 ${d3.format('.0%')(worst.consumed)}를 썼어요. 넣으면 여유 소진이 10%로 돌아와요. 넣은 뒤엔 알려주세요 (기록 갱신).`));
+    todo.appendChild(el('div', 'why', `${worst.name} 계정이 청산 여유의 ${d3.format('.0%')(worst.consumed)}를 썼어요. 넣으면 여유 소진이 20%로 돌아와요. 넣은 뒤엔 알려주세요 (기록 갱신).`));
   } else {
     // 가장 가까운 송금 기준까지 남은 거리
-    const nxt = PR.map(p => { const a = p.A.reduce((w, x) => x.consumed > w.consumed ? x : w, p.A[0]); return {p, a, trig: a.at(.35)}; })
+    const nxt = PR.map(p => { const a = p.A.reduce((w, x) => x.consumed > w.consumed ? x : w, p.A[0]); return {p, a, trig: a.at(T.reb)}; })
       .sort((x, y) => y.a.consumed - x.a.consumed)[0];
     const gap = Math.abs(nxt.trig - nxt.p.cur), gapTxt = nxt.p.oil ? '$' + gap.toFixed(2) : gap.toFixed(2);
-    todo.appendChild(el('h2', null, worst.consumed >= .25 ? `🟡 곧 입금해야 해요 — ${worst.name}` : '✅ 지금은 할 일 없어요'));
+    todo.appendChild(el('h2', null, worst.consumed >= T.pre ? `🟡 곧 입금해야 해요 — ${worst.name}` : '✅ 지금은 할 일 없어요'));
     todo.appendChild(el('div', 'why', `가장 가까운 입금 기준: 짝 ${nxt.p.id} ${nxt.p.oil ? '가격차' : '금÷은'}가 ${fmtV(nxt.p.oil, nxt.trig)}에 닿으면 (지금 ${fmtV(nxt.p.oil, nxt.p.cur)}, ${gapTxt} 남음) → 예비금을 ${nxt.a.name}에 입금`));
   }
 
@@ -216,7 +219,7 @@ function render() {
       el('span', 'mv ' + (Math.abs(mv) < (p.oil ? 1 : 0.01 * p.entry) ? 'mu' : 'am'), `진입 ${fmtV(p.oil, p.entry)} 대비 ${mv >= 0 ? '+' : '−'}${p.oil ? '$' + Math.abs(mv).toFixed(2) : Math.abs(mv).toFixed(2) + ` (${d3.format('+.1%')(mv / p.entry)})`}`));
     c.appendChild(big);
     c.appendChild(gauge(p));
-    const sU = p.nearUp(.35), sD = p.nearDn(.35);
+    const sU = p.nearUp(T.reb), sD = p.nearDn(T.reb);
     const gapTxt = g => g <= 0 ? '이미 넘음' : fmtV(p.oil, g) + ' 남음';
     c.appendChild(el('div', 'left', `입금 기준까지  위로 ${gapTxt(sU - p.cur)}  ·  아래로 ${gapTxt(p.cur - sD)}`));
     const ac = el('div', 'accts');
@@ -224,8 +227,10 @@ function render() {
       const al = lvOf(a.consumed), d = el('div', 'acct');
       const hh = el('div', 'h'); hh.append(el('span', 'nm', a.name), el('span', 'pl ' + (a.pnl >= 0 ? 'up' : 'dn'), usdS(a.pnl))); d.appendChild(hh);
       d.appendChild(el('div', 'k', `${a.side} · ${p.oil ? (a.lossUp ? '가격차 ↑ 손해' : '가격차 ↓ 손해') : (a.lossUp ? '비율 ↑ 손해' : '비율 ↓ 손해')}`));
-      const mt = el('div', 'meter'), fi = el('i'), mk = el('b'); fi.style.width = Math.min(100, Math.max(0, a.consumed) * 100) + '%'; fi.style.background = C[al.k]; mk.style.left = '35%'; mt.append(fi, mk); d.appendChild(mt);
-      d.appendChild(el('div', 'k', `여유 소진 ${d3.format('.0%')(Math.max(0, a.consumed))} · 자산 ${usd(a.equity)} · ${(a.oi / a.equity).toFixed(1)}배`));
+      const mt = el('div', 'meter'), fi = el('i'), mk = el('b'); fi.style.width = Math.min(100, Math.max(0, a.consumed) * 100) + '%'; fi.style.background = C[al.k]; mk.style.left = (T.reb * 100) + '%'; mt.append(fi, mk); d.appendChild(mt);
+      const mm = a.m.mm_rate * a.oi;
+      const bal = el('div', 'bal'); bal.append(el('b', null, usd(a.equity)), el('span', 'mu', ` → 청산선 ${usd(mm)}`), el('span', al.k === 'up' ? 'mu' : al.k, `  여유 ${usd(a.equity - mm)}`)); d.appendChild(bal);
+      d.appendChild(el('div', 'k', `여유 소진 ${d3.format('.0%')(Math.max(0, a.consumed))} · ${(a.oi / a.equity).toFixed(1)}배 · 입금선 가격차 ${fmtV(true, a.at(T.reb))}`));
       a.solo.forEach(l => { const pl = (l.side === 'long' ? 1 : -1) * l.qty * ((px[l.instrument] ?? l.entry) - l.entry); d.appendChild(el('div', 'k', `＋ ${l.instrument.replace('-PERP', '')} ${l.side === 'long' ? '롱' : '숏'} ${l.qty} (헷지 없음) · ${usdS(pl)}`)); });
       ac.appendChild(d);
     });
@@ -233,7 +238,7 @@ function render() {
   });
 
   charts(PR);
-  document.getElementById('foot').innerHTML = `포지션 기준 ${P.updated} · SL/TP 없이 운영 — 위험은 두 다리의 가격 '차이'뿐이라 그 차이로만 판단해요.<br>여유 소진율 = 처음 청산 여유 중 써버린 비율. 25% 곧 입금 · 35% 입금(텔레그램 알림) · 55% 지금 입금 · 100% 청산. 입금은 지갑 예비금에서, 넣은 뒤엔 기록 갱신이 필요해요.`;
+  document.getElementById('foot').innerHTML = `포지션 기준 ${P.updated} · SL/TP 없이 운영 — 위험은 두 다리의 가격 '차이'뿐이라 그 차이로만 판단해요.<br>여유 소진율 = 처음 청산 여유 중 써버린 비율. 35% 곧 입금 · 50% 입금(텔레그램 알림) · 70% 지금 입금 · 100% 청산. 입금은 지갑 예비금에서, 넣은 뒤엔 기록 갱신이 필요해요.`;
 }
 
 // 게이지: 가운데 진입값, 양 끝 청산. 구간 색 = 안전/곧/송금/지금 송금
@@ -241,11 +246,11 @@ function gauge(p) {
   const W = Math.max(320, (document.getElementById('pairs').clientWidth || 640) - 40), H = 92, m = 22, lo = p.nearDn(1), hi = p.nearUp(1);
   const x = d3.scaleLinear().domain([lo, hi]).range([m, W - m]).clamp(true);
   const svg = d3.create('svg').attr('viewBox', `0 0 ${W} ${H}`);
-  const seg = [[lo, p.nearDn(.55), C.dn], [p.nearDn(.55), p.nearDn(.35), C.or], [p.nearDn(.35), p.nearDn(.25), C.am], [p.nearDn(.25), p.nearUp(.25), C.up], [p.nearUp(.25), p.nearUp(.35), C.am], [p.nearUp(.35), p.nearUp(.55), C.or], [p.nearUp(.55), hi, C.dn]];
+  const seg = [[lo, p.nearDn(T.urg), C.dn], [p.nearDn(T.urg), p.nearDn(T.reb), C.or], [p.nearDn(T.reb), p.nearDn(T.pre), C.am], [p.nearDn(T.pre), p.nearUp(T.pre), C.up], [p.nearUp(T.pre), p.nearUp(T.reb), C.am], [p.nearUp(T.reb), p.nearUp(T.urg), C.or], [p.nearUp(T.urg), hi, C.dn]];
   seg.forEach(([a, b, col]) => svg.append('rect').attr('x', x(a)).attr('y', 34).attr('width', Math.max(0, x(b) - x(a))).attr('height', 12).attr('fill', col).attr('opacity', .55));
   const tick = (v, label, y, anchor) => { svg.append('line').attr('x1', x(v)).attr('x2', x(v)).attr('y1', 30).attr('y2', 50).attr('stroke', '#e6f4f1').attr('opacity', .5); svg.append('text').attr('x', x(v)).attr('y', y).attr('text-anchor', anchor || 'middle').attr('fill', '#b9cfcb').attr('font-size', 13).text(label); };
   tick(lo, '청산 ' + fmtV(p.oil, lo), 68, 'start'); tick(hi, '청산 ' + fmtV(p.oil, hi), 68, 'end');
-  tick(p.nearDn(.35), '입금 ' + fmtV(p.oil, p.nearDn(.35)), 84, W < 480 ? 'end' : 'middle'); tick(p.nearUp(.35), '입금 ' + fmtV(p.oil, p.nearUp(.35)), 84, W < 480 ? 'start' : 'middle');
+  tick(p.nearDn(T.reb), '입금 ' + fmtV(p.oil, p.nearDn(T.reb)), 84, W < 480 ? 'end' : 'middle'); tick(p.nearUp(T.reb), '입금 ' + fmtV(p.oil, p.nearUp(T.reb)), 84, W < 480 ? 'start' : 'middle');
   svg.append('line').attr('x1', x(p.entry)).attr('x2', x(p.entry)).attr('y1', 28).attr('y2', 52).attr('stroke', '#e6f4f1').attr('stroke-dasharray', '3 2');
   tick(p.entry, '진입', 68);
   const cx = x(p.cur);
@@ -264,7 +269,7 @@ function charts(PR) {
     const pts = D.filter(d => d[key] != null && isFinite(d[key]));
     if (!p || pts.length < 2) { box.appendChild(el('div', 'k', '기록이 아직 부족해요')); return; }
     const W = Math.max(320, box.clientWidth || 640), H = 170, m = {t: 8, r: 50, b: 22, l: 30};
-    const lines = [[p.entry, '#86a6a3', '3 3', '진입'], [p.nearUp(.35), C.or, '6 4', '입금'], [p.nearDn(.35), C.or, '6 4', '입금']];
+    const lines = [[p.entry, '#86a6a3', '3 3', '진입'], [p.nearUp(T.reb), C.or, '6 4', '입금'], [p.nearDn(T.reb), C.or, '6 4', '입금']];
     const vals = pts.map(d => d[key]).concat(lines.map(l => l[0]));
     const x = d3.scaleTime().domain(d3.extent(pts, d => d.t)).range([m.l, W - m.r]);
     const y = d3.scaleLinear().domain(d3.extent(vals)).nice().range([H - m.b, m.t]);
