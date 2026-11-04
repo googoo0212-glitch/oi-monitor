@@ -81,8 +81,8 @@ def daily_report(accts, by, st, px, src, th):
     eq = sum(s["equity"] for s in st.values())
     pnl = sum(s["pnl"] for s in st.values())
     lines = [f"📊 Variational 일일 요약 ({ts} KST)", "",
-             f"🧱 OI ${oi:,.0f} · 총자산 ${eq:,.0f} · 손익 {money(pnl)}",
-             f"💵 지갑 예비금 약 ${load_json('positions.json', {}).get('reserve_usd', 0):,} (입금하면 positions.json 갱신)", "",
+             f"🧱 OI ${oi:,.0f} · 투입 자본 ${eq:,.0f} · 손익 {money(pnl)}",
+             "",
              "📏 짝별 가격차 (진입 → 지금 · 입금 기준까지)"]
     todo = []
     for pid in sorted({a["pair"] for a in accts.values()}):
