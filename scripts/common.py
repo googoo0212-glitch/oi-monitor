@@ -33,6 +33,32 @@ def telegram(text):
         r.read()
 
 
+def telegram_commands(offset):
+    """봇에 온 새 메시지 중 내 채팅방의 명령어만 → ([명령어...], 다음 offset). 봇 토큰 없으면 ([], offset)."""
+    token, chat = os.environ.get("TELEGRAM_BOT_TOKEN"), os.environ.get("TELEGRAM_CHAT_ID")
+    if not token or not chat:
+        return [], offset
+    q = urllib.parse.urlencode({"offset": offset or 0, "timeout": 0, "allowed_updates": json.dumps(["message"])})
+    with urllib.request.urlopen(f"https://api.telegram.org/bot{token}/getUpdates?{q}", timeout=20) as r:
+        res = json.loads(r.read().decode()).get("result", [])
+    cmds = []
+    for u in res:
+        offset = max(offset or 0, u["update_id"] + 1)
+        m = u.get("message") or {}
+        if str((m.get("chat") or {}).get("id")) == str(chat) and str(m.get("text", "")).startswith("/"):
+            cmds.append(m["text"].split()[0].split("@")[0].lower())
+    return cmds, offset
+
+
+def telegram_set_commands(cmds):
+    token = os.environ.get("TELEGRAM_BOT_TOKEN")
+    if not token:
+        return False
+    body = urllib.parse.urlencode({"commands": json.dumps([{"command": c, "description": d} for c, d in cmds], ensure_ascii=False)}).encode()
+    with urllib.request.urlopen(f"https://api.telegram.org/bot{token}/setMyCommands", body, timeout=20) as r:
+        return json.loads(r.read().decode()).get("ok", False)
+
+
 def _post(body):
     req = urllib.request.Request("https://api.hyperliquid.xyz/info", json.dumps(body).encode(),
                                  {"Content-Type": "application/json"})

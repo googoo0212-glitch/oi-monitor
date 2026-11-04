@@ -27,7 +27,7 @@ a{color:var(--mint)}
 .todo .do div{font-size:18px;font-weight:600;background:var(--pn2);border-radius:10px;padding:10px 14px}
 .todo .why{margin-top:10px;font-size:14px;color:var(--fg2);line-height:1.5}
 /* 숫자 타일 */
-.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
 @media (max-width:600px){.tiles{grid-template-columns:1fr 1fr}}
 .tile{background:var(--pn);border:1px solid var(--ln);border-radius:16px;padding:14px 16px;min-width:0}
 .tile .v{font-size:26px;font-weight:700;margin-top:4px;white-space:nowrap}
@@ -200,7 +200,9 @@ function render() {
 
   // 타일
   const tiles = document.getElementById('tiles'); tiles.textContent = '';
-  [['총 OI', usd(d3.sum(all, a => a.oi)), ''], ['투입 자본 (12계정)', usd(d3.sum(all, a => a.equity)), ''], ['가장 위험한 계정', d3.format('.0%')(Math.max(0, worst.consumed)), wl.k]]
+  const base = d3.sum(all, a => (a.m.start_equity ?? a.m.balance) + (a.m.deposits || 0)), since = d3.sum(all, a => a.equity) - base;
+  const st0 = ((P.start || {}).time || '').slice(5, 10).replace('-', '/');
+  [['총 OI', usd(d3.sum(all, a => a.oi)), ''], ['투입 자본 (12계정)', usd(d3.sum(all, a => a.equity)), ''], [`${st0} 시작 대비 손익`, usdS(since), since >= 0 ? 'up' : 'dn'], ['가장 위험한 계정', d3.format('.0%')(Math.max(0, worst.consumed)), wl.k]]
     .forEach(([k, v, c]) => { const t = el('div', 'tile'); t.append(el('div', 'k', k), el('div', 'v ' + c, v)); if (k === '가장 위험한 계정') t.appendChild(el('div', 'k', worst.name + ' · 여유 소진율')); tiles.appendChild(t); });
 
   // 짝 카드

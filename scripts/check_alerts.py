@@ -12,7 +12,7 @@ import os
 import time
 from datetime import datetime, timedelta, timezone
 
-from common import DATA, load_json, save_json, telegram, variational_marks, xyz_mids
+from common import DATA, load_json, save_json, telegram, telegram_commands, telegram_set_commands, variational_marks, xyz_mids
 
 money = lambda v: f"{'−' if v < 0 else '+'}${abs(v):,.0f}"
 
@@ -74,14 +74,17 @@ def day_range(col_a, col_b, oil):
     return (min(vals), max(vals)) if vals else None
 
 
-def daily_report(accts, by, st, px, src, th):
+def daily_report(accts, by, st, px, src, th, title="일일 요약"):
     fmt = lambda oil, v: f"${v:.2f}" if oil else f"{v:.2f}"
     ts = datetime.now(KST).strftime("%m/%d %H:%M")
     oi = sum(l["qty"] * px.get(l["instrument"], l["entry"]) for legs in by.values() for l in legs)
     eq = sum(s["equity"] for s in st.values())
     pnl = sum(s["pnl"] for s in st.values())
-    lines = [f"📊 Variational 일일 요약 ({ts} KST)", "",
-             f"🧱 OI ${oi:,.0f} · 투입 자본 ${eq:,.0f} · 손익 {money(pnl)}",
+    base = sum(a.get("start_equity", 0) + a.get("deposits", 0) for n, a in accts.items() if n in st)
+    since = load_json("positions.json", {}).get("start", {}).get("time", "")[5:10].replace("-", "/")
+    lines = [f"📊 Variational {title} ({ts} KST)", "",
+             f"🧱 OI ${oi:,.0f} · 투입 자본 ${eq:,.0f}",
+             f"📈 {since} 시작 대비 {money(eq - base)} (입금 제외)",
              "",
              "📏 짝별 가격차 (진입 → 지금 · 입금 기준까지)"]
     todo = []
@@ -220,6 +223,22 @@ def main():
         outbox.append(daily_report(accts, by, st, px, src, th))
         state["_daily"] = today
         changed = True
+    # 텔레그램 /report → 지금 상황 리포트 (다음 실행 때 응답)
+    if not state.get("_cmds"):
+        try:
+            state["_cmds"] = bool(telegram_set_commands([("report", "지금 Variational 상황 리포트")]))
+            changed = True
+        except Exception as e:
+            print("명령 메뉴 등록 실패:", e)
+    try:
+        cmds, off = telegram_commands(state.get("_tg_offset", 0))
+        if off != state.get("_tg_offset", 0):
+            state["_tg_offset"] = off
+            changed = True
+        if "/report" in cmds and st:
+            outbox.append(daily_report(accts, by, st, px, src, th, title="현황 리포트 (요청)"))
+    except Exception as e:
+        print("텔레그램 명령 확인 실패:", e)
     if outbox:
         telegram("\n\n".join(outbox))
     if changed:
