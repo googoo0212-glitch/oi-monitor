@@ -2,5 +2,5 @@
  "_daily": "2026-11-06",
  "_cmds": true,
  "_tg_offset": 351782461,
- "_var_err": "HTTPError: HTTP Error 429: Too Many Requests"
+ "_var_err": null
 }
