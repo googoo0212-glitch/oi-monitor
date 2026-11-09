@@ -2,5 +2,9 @@
  "_daily": "2026-11-09",
  "_cmds": true,
  "_tg_offset": 351782461,
- "_var_err": null
+ "_var_err": "HTTPError: HTTP Error 429: Too Many Requests",
+ "pingu03": {
+  "level": "리밸런싱",
+  "t": 1794254856.5475829
+ }
 }
