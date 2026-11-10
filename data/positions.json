@@ -1,7 +1,7 @@
 {
  "updated": "2026-11-03 17:35 KST",
  "note": "6짝 모두 CL/BZ 계정 내 페어 (A=CL 롱·BZ 숏, B=반대), 19배 목표. 짝끼리 수량 같음 → 펀딩·방향 상쇄. SL/TP 없음. 리밸런싱은 계정 간 이동 없이 지갑 예비금(약 $2,000)에서 손해 계정으로 입금. 현구 GOOGL 롱은 단독 포지션.",
- "reserve_usd": 1977,
+ "reserve_usd": 0,
  "pairs": {
   "1": "현구 ↔ 아빠 ($2,000)",
   "2": "pingu02 ↔ 제비 ($1,000)",
@@ -16,144 +16,144 @@
    "role": "A",
    "balance": 2323.97,
    "upnl_at_snapshot": 45.5,
-   "cash": 2278.47,
+   "cash": 1628.47,
    "mm_usage_at_snapshot": 0.45,
    "mm_rate": 0.02486,
    "group": "원유",
    "start_equity": 2323.97,
-   "deposits": 0
+   "deposits": -650
   },
   "아빠": {
    "pair": 1,
    "role": "B",
    "balance": 2225.24,
    "upnl_at_snapshot": -16.63,
-   "cash": 2241.87,
+   "cash": 2891.87,
    "mm_usage_at_snapshot": 0.46,
    "mm_rate": 0.02488,
    "group": "원유",
    "start_equity": 2225.24,
-   "deposits": 0
+   "deposits": 650
   },
   "pingu02": {
    "pair": 2,
    "role": "A",
    "balance": 1266.84,
    "upnl_at_snapshot": 21.26,
-   "cash": 1245.58,
+   "cash": 825.58,
    "mm_usage_at_snapshot": 0.38,
    "mm_rate": 0.02501,
    "group": "원유",
    "start_equity": 1266.84,
-   "deposits": 0
+   "deposits": -420
   },
   "제비": {
    "pair": 2,
    "role": "B",
    "balance": 1026.61,
    "upnl_at_snapshot": -23.6,
-   "cash": 1050.21,
+   "cash": 1470.21,
    "mm_usage_at_snapshot": 0.47,
    "mm_rate": 0.02507,
    "group": "원유",
    "start_equity": 1026.61,
-   "deposits": 0
+   "deposits": 420
   },
   "pingu09": {
    "pair": 3,
    "role": "A",
    "balance": 496.45,
    "upnl_at_snapshot": -3.46,
-   "cash": 499.91,
+   "cash": 349.91,
    "mm_usage_at_snapshot": 0.48,
    "mm_rate": 0.0248,
    "group": "원유",
    "start_equity": 496.45,
-   "deposits": 0
+   "deposits": -150
   },
   "pingu08": {
    "pair": 3,
    "role": "B",
    "balance": 495.18,
    "upnl_at_snapshot": -4.72,
-   "cash": 499.9,
+   "cash": 649.9,
    "mm_usage_at_snapshot": 0.49,
    "mm_rate": 0.02526,
    "group": "원유",
    "start_equity": 495.18,
-   "deposits": 0
+   "deposits": 150
   },
   "pingu01": {
    "pair": 4,
    "role": "A",
    "balance": 497.72,
    "upnl_at_snapshot": -2.19,
-   "cash": 499.91,
+   "cash": 379.91,
    "mm_usage_at_snapshot": 0.48,
    "mm_rate": 0.02488,
    "group": "원유",
    "start_equity": 497.72,
-   "deposits": 0
+   "deposits": -120
   },
   "pingu05": {
    "pair": 4,
    "role": "B",
    "balance": 551.34,
    "upnl_at_snapshot": -12.83,
-   "cash": 564.17,
+   "cash": 684.17,
    "mm_usage_at_snapshot": 0.44,
    "mm_rate": 0.02528,
    "group": "원유",
    "start_equity": 551.34,
-   "deposits": 0
+   "deposits": 120
   },
   "pingu06": {
    "pair": 5,
    "role": "A",
    "balance": 593.02,
    "upnl_at_snapshot": 6.1,
-   "cash": 586.92,
+   "cash": 406.92,
    "mm_usage_at_snapshot": 0.43,
    "mm_rate": 0.02496,
    "group": "원유",
    "start_equity": 593.02,
-   "deposits": 0
+   "deposits": -180
   },
   "pingu07": {
    "pair": 5,
    "role": "B",
    "balance": 556.9,
    "upnl_at_snapshot": -11.65,
-   "cash": 568.55,
+   "cash": 748.55,
    "mm_usage_at_snapshot": 0.46,
    "mm_rate": 0.02508,
    "group": "원유",
    "start_equity": 556.9,
-   "deposits": 0
+   "deposits": 180
   },
   "pingu04": {
    "pair": 6,
    "role": "A",
    "balance": 635.64,
    "upnl_at_snapshot": -7.49,
-   "cash": 643.13,
+   "cash": 423.13,
    "mm_usage_at_snapshot": 0.4,
    "mm_rate": 0.02487,
    "group": "원유",
    "start_equity": 635.64,
-   "deposits": 0
+   "deposits": -220
   },
   "pingu03": {
    "pair": 6,
    "role": "B",
    "balance": 497.53,
    "upnl_at_snapshot": -3.26,
-   "cash": 500.79,
+   "cash": 720.79,
    "mm_usage_at_snapshot": 0.48,
    "mm_rate": 0.02335,
    "group": "원유",
    "start_equity": 497.53,
-   "deposits": 0
+   "deposits": 220
   }
  },
  "positions": [
@@ -486,5 +486,43 @@
   "time": "2026-11-03 17:35 KST",
   "total_equity": 11166.44,
   "note": "12계정 구조 시작 시점 잔고 합계. 이후 입금은 계정별 deposits에 더해서 손익에서 빼요."
- }
+ },
+ "transfers": [
+  {
+   "time": "2026-11-10 13:50 KST",
+   "note": "A→B 짝별 잔고 반반 맞추기 (거래소 경유, 계획 금액 기준)",
+   "moves": [
+    {
+     "from": "현구",
+     "to": "아빠",
+     "usd": 650
+    },
+    {
+     "from": "pingu02",
+     "to": "제비",
+     "usd": 420
+    },
+    {
+     "from": "pingu04",
+     "to": "pingu03",
+     "usd": 220
+    },
+    {
+     "from": "pingu06",
+     "to": "pingu07",
+     "usd": 180
+    },
+    {
+     "from": "pingu09",
+     "to": "pingu08",
+     "usd": 150
+    },
+    {
+     "from": "pingu01",
+     "to": "pingu05",
+     "usd": 120
+    }
+   ]
+  }
+ ]
 }
