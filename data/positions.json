@@ -5,7 +5,7 @@
  "pairs": {
   "1": "현구 ↔ 아빠 ($2,000)",
   "2": "pingu02 ↔ 제비 ($1,000)",
-  "3": "pingu08 ↔ pingu09 ($500)",
+  "3": "pingu09 ↔ pingu08 ($500)",
   "4": "pingu01 ↔ pingu05 ($500)",
   "5": "pingu06 ↔ pingu07 ($500)",
   "6": "pingu04 ↔ pingu03 ($500)"
@@ -59,7 +59,7 @@
    "start_equity": 1026.61,
    "deposits": 0
   },
-  "pingu08": {
+  "pingu09": {
    "pair": 3,
    "role": "A",
    "balance": 496.45,
@@ -71,7 +71,7 @@
    "start_equity": 496.45,
    "deposits": 0
   },
-  "pingu09": {
+  "pingu08": {
    "pair": 3,
    "role": "B",
    "balance": 495.18,
@@ -274,7 +274,7 @@
    "liq_note": "한 다리만 움직일 때 기준 (참고용)"
   },
   {
-   "account": "pingu08",
+   "account": "pingu09",
    "pair": 3,
    "role": "A",
    "group": "원유",
@@ -287,7 +287,7 @@
    "liq_note": "한 다리만 움직일 때 기준 (참고용)"
   },
   {
-   "account": "pingu08",
+   "account": "pingu09",
    "pair": 3,
    "role": "A",
    "group": "원유",
@@ -300,7 +300,7 @@
    "liq_note": "한 다리만 움직일 때 기준 (참고용)"
   },
   {
-   "account": "pingu09",
+   "account": "pingu08",
    "pair": 3,
    "role": "B",
    "group": "원유",
@@ -313,7 +313,7 @@
    "liq_note": "한 다리만 움직일 때 기준 (참고용)"
   },
   {
-   "account": "pingu09",
+   "account": "pingu08",
    "pair": 3,
    "role": "B",
    "group": "원유",
