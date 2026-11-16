@@ -91,9 +91,10 @@ const HL = 'https://api.hyperliquid.xyz/info';
 const XYZ = {'CL-PERP': 'xyz:CL', 'BZ-PERP': 'xyz:BRENTOIL', 'XAU-PERP': 'xyz:GOLD', 'XAG-PERP': 'xyz:SILVER', 'GOOGL-PERP': 'xyz:GOOGL'};
 const NEED = ['CL-PERP', 'BZ-PERP'];  // 페어 계산에 꼭 필요한 가격
 // 단계: 여유 소진율 기준 (알림 스크립트와 같음 + 미리 보기 단계 25%)
-// 단계 (여유 소진율): 35% 곧 입금 · 50% 입금(텔레그램) · 70% 지금 입금 · 85% 비상
-const T = {pre: .35, reb: .5, urg: .7, emg: .85, refill: .2};
-const LV = [{f: 0, k: 'up', t: '안전'}, {f: T.pre, k: 'am', t: '곧 입금'}, {f: T.reb, k: 'or', t: '입금'}, {f: T.urg, k: 'dn', t: '지금 입금'}, {f: T.emg, k: 'dn', t: '비상'}];
+// 단계: 청산까지 가격차 $3.5 이하 곧 송금 · $2.7 송금(텔레그램) · $1.6 지금 송금 · $0.8 비상
+const T = {pre: .35, reb: .5, urg: .7, emg: .85};
+const REF_ROOM = 5.4;   // 청산까지 가격차 $5.4 를 기준(0%)으로: 35%=$3.5, 50%=$2.7, 70%=$1.6, 85%=$0.8 남음
+const LV = [{f: 0, k: 'up', t: '안전'}, {f: T.pre, k: 'am', t: '곧 송금'}, {f: T.reb, k: 'or', t: '송금'}, {f: T.urg, k: 'dn', t: '지금 송금'}, {f: T.emg, k: 'dn', t: '비상'}];
 const lvOf = c => { let r = LV[0]; LV.forEach(l => { if (c >= l.f) r = l; }); return r; };
 const C = {up: '#4ade80', am: '#fbbf24', or: '#fb923c', dn: '#f87171', mu: '#86a6a3', mint: '#5eead4'};
 const usd = v => v == null || isNaN(v) ? '—' : (v < 0 ? '−$' : '$') + d3.format(',.0f')(Math.abs(v));
@@ -141,7 +142,7 @@ function account(name) {
   const mm0 = m.mm_rate * d3.sum(legs, l => l.qty * l.entry), mm = m.mm_rate * oi;
   const fund = FUND[name] || 0;   // 펀딩은 짝끼리 상쇄되지만 계정별 잔고는 달라져요
   const buf0 = m.cash - mm0, equity = m.cash + fund + pnl;
-  const consumed = 1 - (equity - mm) / buf0;
+  let consumed = 1 - (equity - mm) / buf0, room = null;
   // 가격차(원유) 또는 비율(금/은)로 바꾼 기준선
   let entry, cur, unit, lossUp, shift = 0;
   if (oil) {
@@ -154,9 +155,15 @@ function account(name) {
     unit = entry * buf0 / (by['XAU-PERP'].qty * by['XAU-PERP'].entry);  // 비율 이동 = 여유
     lossUp = by['XAU-PERP'].side === 'short';       // 금 숏이면 비율이 오를 때 손해
   }
-  const at = f => lossUp ? entry + f * unit + shift : entry - f * unit - shift;   // 소진 f가 되는 가격차/비율
+  let at = f => lossUp ? entry + f * unit + shift : entry - f * unit - shift;   // (금/은 등) 소진 f가 되는 비율
+  if (oil) {
+    // 원유 페어: '청산까지 남은 가격차($)'가 기준 — 송금·펀딩으로 잔고가 바뀌어도 그대로 맞아요
+    room = (equity - mm) / by['CL-PERP'].qty;
+    consumed = 1 - room / REF_ROOM;
+    at = f => lossUp ? cur + (room - (1 - f) * REF_ROOM) : cur - (room - (1 - f) * REF_ROOM);   // f=0.5 송금선, f=1 청산
+  }
   const solo = legs.filter(l => !['CL-PERP', 'BZ-PERP', 'XAU-PERP', 'XAG-PERP'].includes(l.instrument));
-  return {name, m, legs, by, oil, pnl, oi, equity, consumed, entry, cur, at, lossUp, buf0, solo, fund,
+  return {name, m, legs, by, oil, pnl, oi, equity, consumed, entry, cur, at, lossUp, buf0, solo, fund, room, buf: equity - mm, q: oil ? by['CL-PERP'].qty : 1,
     side: oil ? `CL ${by['CL-PERP'].side === 'long' ? '롱' : '숏'} · BZ ${by['BZ-PERP'].side === 'long' ? '롱' : '숏'} ${by['CL-PERP'].qty}`
               : `금 ${by['XAU-PERP'].side === 'long' ? '롱' : '숏'} ${by['XAU-PERP'].qty} · 은 ${by['XAG-PERP'].side === 'long' ? '롱' : '숏'} ${by['XAG-PERP'].qty}`};
 }
@@ -174,12 +181,20 @@ function pairs() {
   });
 }
 
-// 입금 제안: 계정 간 이동 없이 지갑 예비금 → 손해 계정. 여유 소진을 10%까지 되돌리는 금액
+// 송금 제안: 예비금이 없으므로 같은 짝의 이긴 계정 → 진 계정. 여유 소진을 20%까지 되돌리는 금액
 function transfers(pr) {
-  return pr.A.filter(a => a.consumed >= T.reb).map(a => ({to: a.name, amt: Math.ceil(Math.max(0, (a.consumed - T.refill) * a.buf0) / 10) * 10, lv: lvOf(a.consumed)}));
+  const losers = pr.A.filter(a => a.consumed >= T.reb);
+  if (!losers.length) return [];
+  const star = d3.sum(pr.A, a => a.buf) / d3.sum(pr.A, a => a.q);   // 맞춘 뒤 각 계정의 여유 ($ 가격차)
+  const out = [];
+  losers.forEach(a => pr.A.filter(b => b.lossUp !== a.lossUp).forEach(b => {
+    const give = Math.round((b.buf - star * b.q) / 10) * 10;
+    if (give >= 10) out.push({from: b.name, to: a.name, amt: give, star, lv: lvOf(a.consumed)});
+  }));
+  return out;
 }
 
-const fmtV = (oil, v) => oil ? '$' + v.toFixed(2) : v.toFixed(2);
+const fmtV = (oil, v) => oil ? (v < 0 ? '−$' : '$') + Math.abs(v).toFixed(2) : v.toFixed(2);
 
 function render() {
   if (!P || !P.positions || !P.positions.length) { document.getElementById('todo').innerHTML = '<h2>열린 포지션이 없어요</h2>'; return; }
@@ -194,24 +209,24 @@ function render() {
   const wl = lvOf(worst.consumed), todo = document.getElementById('todo');
   todo.className = 'pn todo s-' + wl.k; todo.textContent = '';
   if (tx.length) {
-    todo.appendChild(el('h2', null, worst.consumed >= T.urg ? '🔴 지금 바로 입금하세요' : '🟠 예비금을 넣을 때가 됐어요'));
-    const d = el('div', 'do'); tx.forEach(t => d.appendChild(el('div', null, `예비금 → ${t.to}  ${usd(t.amt)} 입금`))); todo.appendChild(d);
-    todo.appendChild(el('div', 'why', `${worst.name} 계정이 청산 여유의 ${d3.format('.0%')(worst.consumed)}를 썼어요. 넣으면 여유 소진이 20%로 돌아와요. 넣은 뒤엔 알려주세요 (기록 갱신).`));
+    todo.appendChild(el('h2', null, worst.consumed >= T.urg ? '🔴 지금 바로 송금하세요' : '🟠 짝 계정에서 송금할 때가 됐어요'));
+    const d = el('div', 'do'); tx.forEach(t => d.appendChild(el('div', null, `${t.from} → ${t.to}  ${usd(t.amt)} 송금`))); todo.appendChild(d);
+    todo.appendChild(el('div', 'why', `${worst.name} 계정이 청산까지 가격차 $${(worst.room ?? 0).toFixed(2)}만 남았어요. 이긴 짝 계정에서 옮기면 두 계정 모두 약 $${tx[0].star.toFixed(1)}씩 여유가 생겨요. 옮긴 뒤엔 알려주세요 (기록 갱신).`));
   } else {
     // 가장 가까운 송금 기준까지 남은 거리
     const nxt = PR.map(p => { const a = p.A.reduce((w, x) => x.consumed > w.consumed ? x : w, p.A[0]); return {p, a, trig: a.at(T.reb)}; })
       .sort((x, y) => y.a.consumed - x.a.consumed)[0];
     const gap = Math.abs(nxt.trig - nxt.p.cur), gapTxt = nxt.p.oil ? '$' + gap.toFixed(2) : gap.toFixed(2);
-    todo.appendChild(el('h2', null, worst.consumed >= T.pre ? `🟡 곧 입금해야 해요 — ${worst.name}` : '✅ 지금은 할 일 없어요'));
-    todo.appendChild(el('div', 'why', `가장 가까운 입금 기준: 짝 ${nxt.p.id} ${nxt.p.oil ? '가격차' : '금÷은'}가 ${fmtV(nxt.p.oil, nxt.trig)}에 닿으면 (지금 ${fmtV(nxt.p.oil, nxt.p.cur)}, ${gapTxt} 남음) → 예비금을 ${nxt.a.name}에 입금`));
+    todo.appendChild(el('h2', null, worst.consumed >= T.pre ? `🟡 곧 송금해야 해요 — ${worst.name}` : '✅ 지금은 할 일 없어요'));
+    todo.appendChild(el('div', 'why', `가장 가까운 송금 기준: 짝 ${nxt.p.id} ${nxt.p.oil ? '가격차' : '금÷은'}가 ${fmtV(nxt.p.oil, nxt.trig)}에 닿으면 (지금 ${fmtV(nxt.p.oil, nxt.p.cur)}, ${gapTxt} 남음) → 짝 계정에서 ${nxt.a.name}로 송금`));
   }
 
   // 타일
   const tiles = document.getElementById('tiles'); tiles.textContent = '';
   const base = d3.sum(all, a => (a.m.start_equity ?? a.m.balance) + (a.m.deposits || 0)), since = d3.sum(all, a => a.equity) - base;
   const st0 = ((P.start || {}).time || '').slice(5, 10).replace('-', '/');
-  [['총 OI', usd(d3.sum(all, a => a.oi)), ''], ['투입 자본 (12계정)', usd(d3.sum(all, a => a.equity)), ''], [`${st0} 시작 대비 손익`, usdS(since), since >= 0 ? 'up' : 'dn'], ['가장 위험한 계정', d3.format('.0%')(Math.max(0, worst.consumed)), wl.k]]
-    .forEach(([k, v, c]) => { const t = el('div', 'tile'); t.append(el('div', 'k', k), el('div', 'v ' + c, v)); if (k === '가장 위험한 계정') t.appendChild(el('div', 'k', worst.name + ' · 여유 소진율')); tiles.appendChild(t); });
+  [['총 OI', usd(d3.sum(all, a => a.oi)), ''], ['투입 자본 (12계정)', usd(d3.sum(all, a => a.equity)), ''], [`${st0} 시작 대비 손익`, usdS(since), since >= 0 ? 'up' : 'dn'], ['가장 위험한 계정', worst.room != null ? '$' + worst.room.toFixed(2) : d3.format('.0%')(Math.max(0, worst.consumed)), wl.k]]
+    .forEach(([k, v, c]) => { const t = el('div', 'tile'); t.append(el('div', 'k', k), el('div', 'v ' + c, v)); if (k === '가장 위험한 계정') t.appendChild(el('div', 'k', worst.name + ' · 청산까지 가격차')); tiles.appendChild(t); });
 
   // 짝 카드
   const box = document.getElementById('pairs'); box.textContent = '';
@@ -226,7 +241,7 @@ function render() {
     c.appendChild(gauge(p));
     const sU = p.nearUp(T.reb), sD = p.nearDn(T.reb);
     const gapTxt = g => g <= 0 ? '이미 넘음' : fmtV(p.oil, g) + ' 남음';
-    c.appendChild(el('div', 'left', `입금 기준까지  위로 ${gapTxt(sU - p.cur)}  ·  아래로 ${gapTxt(p.cur - sD)}`));
+    c.appendChild(el('div', 'left', `송금 기준까지  위로 ${gapTxt(sU - p.cur)}  ·  아래로 ${gapTxt(p.cur - sD)}`));
     const ac = el('div', 'accts');
     p.A.forEach(a => {
       const al = lvOf(a.consumed), d = el('div', 'acct');
@@ -235,7 +250,7 @@ function render() {
       const mt = el('div', 'meter'), fi = el('i'), mk = el('b'); fi.style.width = Math.min(100, Math.max(0, a.consumed) * 100) + '%'; fi.style.background = C[al.k]; mk.style.left = (T.reb * 100) + '%'; mt.append(fi, mk); d.appendChild(mt);
       const mm = a.m.mm_rate * a.oi;
       const bal = el('div', 'bal'); bal.append(el('b', null, usd(a.equity)), el('span', 'mu', ` → 청산선 ${usd(mm)}`), el('span', al.k === 'up' ? 'mu' : al.k, `  여유 ${usd(a.equity - mm)}`)); d.appendChild(bal);
-      d.appendChild(el('div', 'k', `여유 소진 ${d3.format('.0%')(Math.max(0, a.consumed))} · ${(a.oi / a.equity).toFixed(1)}배 · 입금선 가격차 ${fmtV(true, a.at(T.reb))}`));
+      d.appendChild(el('div', 'k', `청산까지 가격차 ${a.room != null ? '$' + a.room.toFixed(2) : '—'} · ${(a.oi / a.equity).toFixed(1)}배 · 송금선 ${fmtV(true, a.at(T.reb))} · 청산 ${fmtV(true, a.at(1))}`));
       if (Math.abs(a.fund) >= 1) d.appendChild(el('div', 'k', `펀딩 누적 ${usdS(a.fund)} (짝 계정과 상쇄 · 잔고에 반영됨)`));
       a.solo.forEach(l => { const pl = (l.side === 'long' ? 1 : -1) * l.qty * ((px[l.instrument] ?? l.entry) - l.entry); d.appendChild(el('div', 'k', `＋ ${l.instrument.replace('-PERP', '')} ${l.side === 'long' ? '롱' : '숏'} ${l.qty} (헷지 없음) · ${usdS(pl)}`)); });
       ac.appendChild(d);
@@ -244,7 +259,7 @@ function render() {
   });
 
   charts(PR);
-  document.getElementById('foot').innerHTML = `포지션 기준 ${P.updated} · SL/TP 없이 운영 — 위험은 두 다리의 가격 '차이'뿐이라 그 차이로만 판단해요.<br>여유 소진율 = 처음 청산 여유 중 써버린 비율. 35% 곧 입금 · 50% 입금(텔레그램 알림) · 70% 지금 입금 · 100% 청산. 입금은 지갑 예비금에서, 넣은 뒤엔 기록 갱신이 필요해요.`;
+  document.getElementById('foot').innerHTML = `포지션 기준 ${P.updated} · SL/TP 없이 운영 — 위험은 두 다리의 가격 '차이'뿐이라 그 차이로만 판단해요.<br>청산까지 가격차 = (잔고 − 청산선) ÷ 수량. $3.5 이하 곧 송금 · $2.7 이하 송금(텔레그램 알림) · $1.6 이하 지금 송금 · $0 청산. 송금은 같은 짝의 이긴 계정에서, 옮긴 뒤엔 기록 갱신이 필요해요.`;
 }
 
 // 게이지: 가운데 진입값, 양 끝 청산. 구간 색 = 안전/곧/송금/지금 송금
@@ -256,7 +271,7 @@ function gauge(p) {
   seg.forEach(([a, b, col]) => svg.append('rect').attr('x', x(a)).attr('y', 34).attr('width', Math.max(0, x(b) - x(a))).attr('height', 12).attr('fill', col).attr('opacity', .55));
   const tick = (v, label, y, anchor) => { svg.append('line').attr('x1', x(v)).attr('x2', x(v)).attr('y1', 30).attr('y2', 50).attr('stroke', '#e6f4f1').attr('opacity', .5); svg.append('text').attr('x', x(v)).attr('y', y).attr('text-anchor', anchor || 'middle').attr('fill', '#b9cfcb').attr('font-size', 13).text(label); };
   tick(lo, '청산 ' + fmtV(p.oil, lo), 68, 'start'); tick(hi, '청산 ' + fmtV(p.oil, hi), 68, 'end');
-  tick(p.nearDn(T.reb), '입금 ' + fmtV(p.oil, p.nearDn(T.reb)), 84, W < 480 ? 'end' : 'middle'); tick(p.nearUp(T.reb), '입금 ' + fmtV(p.oil, p.nearUp(T.reb)), 84, W < 480 ? 'start' : 'middle');
+  tick(p.nearDn(T.reb), '송금 ' + fmtV(p.oil, p.nearDn(T.reb)), 84, W < 480 ? 'end' : 'middle'); tick(p.nearUp(T.reb), '송금 ' + fmtV(p.oil, p.nearUp(T.reb)), 84, W < 480 ? 'start' : 'middle');
   svg.append('line').attr('x1', x(p.entry)).attr('x2', x(p.entry)).attr('y1', 28).attr('y2', 52).attr('stroke', '#e6f4f1').attr('stroke-dasharray', '3 2');
   tick(p.entry, '진입', 68);
   const cx = x(p.cur);
@@ -275,7 +290,7 @@ function charts(PR) {
     const pts = D.filter(d => d[key] != null && isFinite(d[key]));
     if (!p || pts.length < 2) { box.appendChild(el('div', 'k', '기록이 아직 부족해요')); return; }
     const W = Math.max(320, box.clientWidth || 640), H = 170, m = {t: 8, r: 50, b: 22, l: 30};
-    const lines = [[p.entry, '#86a6a3', '3 3', '진입'], [p.nearUp(T.reb), C.or, '6 4', '입금'], [p.nearDn(T.reb), C.or, '6 4', '입금']];
+    const lines = [[p.entry, '#86a6a3', '3 3', '진입'], [p.nearUp(T.reb), C.or, '6 4', '송금'], [p.nearDn(T.reb), C.or, '6 4', '송금']];
     const vals = pts.map(d => d[key]).concat(lines.map(l => l[0]));
     const x = d3.scaleTime().domain(d3.extent(pts, d => d.t)).range([m.l, W - m.r]);
     const y = d3.scaleLinear().domain(d3.extent(vals)).nice().range([H - m.b, m.t]);
