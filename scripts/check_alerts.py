@@ -169,6 +169,24 @@ def dump_listings():
         print("종목 목록 저장 실패:", e)
 
 
+def backup_funding():
+    """펀딩 기록 워크플로가 밀려서 funding.csv가 90분 넘게 멈춰 있으면 여기서 대신 한 번 기록."""
+    path = os.path.join(DATA, "funding.csv")
+    try:
+        last = ""
+        with open(path, encoding="utf-8") as fh:
+            for line in fh:
+                last = line
+        t = datetime.fromisoformat(last.split(",")[0].replace("Z", "+00:00"))
+        if datetime.now(timezone.utc) - t < timedelta(minutes=90):
+            return
+        import record_funding
+        record_funding.main()
+        print("펀딩 기록 대신 실행 (마지막 기록", t, ")")
+    except (Exception, SystemExit) as e:
+        print("펀딩 대신 기록 실패:", e)
+
+
 def log_marks(px, src):
     path = os.path.join(DATA, "pair_marks.csv")
     new = not os.path.exists(path)
@@ -220,6 +238,7 @@ def main():
         src = "hyperliquid" if not any(k in vm_keys for k in SYM) else "mixed"
     log_marks(px, src)
     dump_listings()
+    backup_funding()
     state = load_json("alert_state.json", {})
     now, changed, outbox = time.time(), False, []
     if state.get("_var_err") != state_err:
