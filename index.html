@@ -100,10 +100,13 @@ const usd = v => v == null || isNaN(v) ? '—' : (v < 0 ? '−$' : '$') + d3.for
 const usdS = v => (v >= 0 ? '+' : '−') + '$' + d3.format(',.0f')(Math.abs(v));
 const el = (t, c, x) => { const e = document.createElement(t); if (c) e.className = c; if (x != null) e.textContent = x; return e; };
 
-let P = null, hist = [], px = {}, src = '', pxAt = null;
+let P = null, hist = [], px = {}, src = '', pxAt = null, FUND = {};
 
 async function getJSON(u, opt) { const r = await fetch(u, opt); if (!r.ok) throw new Error(r.status); return r.json(); }
-async function loadPositions() { try { P = await getJSON('data/positions.json?' + Date.now()); } catch (e) { P = null; } }
+async function loadPositions() {
+  try { P = await getJSON('data/positions.json?' + Date.now()); } catch (e) { P = null; }
+  try { FUND = (await getJSON('data/funding_accrual.json?' + Date.now())).accounts || {}; } catch (e) { FUND = {}; }  // 계정별 누적 펀딩 ($, 받으면 +)
+}
 async function loadHist() {
   try {
     const r = await fetch('data/pair_marks.csv?' + Date.now()); if (!r.ok) throw 0;
@@ -136,22 +139,24 @@ function account(name) {
   const pnl = d3.sum(legs, l => (l.side === 'long' ? 1 : -1) * l.qty * ((px[l.instrument] ?? l.entry) - l.entry));
   const oi = d3.sum(legs, l => l.qty * (px[l.instrument] ?? l.entry));
   const mm0 = m.mm_rate * d3.sum(legs, l => l.qty * l.entry), mm = m.mm_rate * oi;
-  const buf0 = m.cash - mm0, equity = m.cash + pnl;
+  const fund = FUND[name] || 0;   // 펀딩은 짝끼리 상쇄되지만 계정별 잔고는 달라져요
+  const buf0 = m.cash - mm0, equity = m.cash + fund + pnl;
   const consumed = 1 - (equity - mm) / buf0;
   // 가격차(원유) 또는 비율(금/은)로 바꾼 기준선
-  let entry, cur, unit, lossUp;
+  let entry, cur, unit, lossUp, shift = 0;
   if (oil) {
     entry = by['BZ-PERP'].entry - by['CL-PERP'].entry; cur = px['BZ-PERP'] - px['CL-PERP'];
     unit = buf0 / by['CL-PERP'].qty;              // 가격차 $1당 여유 = q
+    shift = fund / by['CL-PERP'].qty;             // 펀딩으로 줄어든(늘어난) 만큼 기준선 이동
     lossUp = by['CL-PERP'].side === 'long';         // CL 롱이면 가격차가 벌어질 때 손해
   } else {
     entry = by['XAU-PERP'].entry / by['XAG-PERP'].entry; cur = px['XAU-PERP'] / px['XAG-PERP'];
     unit = entry * buf0 / (by['XAU-PERP'].qty * by['XAU-PERP'].entry);  // 비율 이동 = 여유
     lossUp = by['XAU-PERP'].side === 'short';       // 금 숏이면 비율이 오를 때 손해
   }
-  const at = f => lossUp ? entry + f * unit : entry - f * unit;   // 소진 f가 되는 가격차/비율
+  const at = f => lossUp ? entry + f * unit + shift : entry - f * unit - shift;   // 소진 f가 되는 가격차/비율
   const solo = legs.filter(l => !['CL-PERP', 'BZ-PERP', 'XAU-PERP', 'XAG-PERP'].includes(l.instrument));
-  return {name, m, legs, by, oil, pnl, oi, equity, consumed, entry, cur, at, lossUp, buf0, solo,
+  return {name, m, legs, by, oil, pnl, oi, equity, consumed, entry, cur, at, lossUp, buf0, solo, fund,
     side: oil ? `CL ${by['CL-PERP'].side === 'long' ? '롱' : '숏'} · BZ ${by['BZ-PERP'].side === 'long' ? '롱' : '숏'} ${by['CL-PERP'].qty}`
               : `금 ${by['XAU-PERP'].side === 'long' ? '롱' : '숏'} ${by['XAU-PERP'].qty} · 은 ${by['XAG-PERP'].side === 'long' ? '롱' : '숏'} ${by['XAG-PERP'].qty}`};
 }
@@ -231,6 +236,7 @@ function render() {
       const mm = a.m.mm_rate * a.oi;
       const bal = el('div', 'bal'); bal.append(el('b', null, usd(a.equity)), el('span', 'mu', ` → 청산선 ${usd(mm)}`), el('span', al.k === 'up' ? 'mu' : al.k, `  여유 ${usd(a.equity - mm)}`)); d.appendChild(bal);
       d.appendChild(el('div', 'k', `여유 소진 ${d3.format('.0%')(Math.max(0, a.consumed))} · ${(a.oi / a.equity).toFixed(1)}배 · 입금선 가격차 ${fmtV(true, a.at(T.reb))}`));
+      if (Math.abs(a.fund) >= 1) d.appendChild(el('div', 'k', `펀딩 누적 ${usdS(a.fund)} (짝 계정과 상쇄 · 잔고에 반영됨)`));
       a.solo.forEach(l => { const pl = (l.side === 'long' ? 1 : -1) * l.qty * ((px[l.instrument] ?? l.entry) - l.entry); d.appendChild(el('div', 'k', `＋ ${l.instrument.replace('-PERP', '')} ${l.side === 'long' ? '롱' : '숏'} ${l.qty} (헷지 없음) · ${usdS(pl)}`)); });
       ac.appendChild(d);
     });

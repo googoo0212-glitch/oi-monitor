@@ -31,7 +31,7 @@ def account_state(name, acct, legs, px):
     oi_now = sum(l["qty"] * px[l["instrument"]] for l in legs)
     oi_0 = sum(l["qty"] * l["entry"] for l in legs)
     mm_now, mm_0 = acct["mm_rate"] * oi_now, acct["mm_rate"] * oi_0
-    equity = acct["cash"] + pnl
+    equity = acct["cash"] + acct.get("fund", 0.0) + pnl      # fund = 누적 펀딩 (받으면 +, 내면 −)
     buf0, buf = acct["cash"] - mm_0, equity - mm_now
     consumed = 1 - buf / buf0 if buf0 > 0 else 1
     leg = max(l["qty"] * px[l["instrument"]] for l in legs)
@@ -52,11 +52,52 @@ def pair_view(legs, acct, px):
     buf0 = acct["cash"] - mm0
     if "CL-PERP" in by:
         e, c = by["BZ-PERP"]["entry"] - by["CL-PERP"]["entry"], px["BZ-PERP"] - px["CL-PERP"]
-        unit, up = buf0 / by["CL-PERP"]["qty"], by["CL-PERP"]["side"] == "long"
-        return {"oil": True, "entry": e, "cur": c, "up": up, "at": lambda f: e + f * unit if up else e - f * unit}
+        q, up, F = by["CL-PERP"]["qty"], by["CL-PERP"]["side"] == "long", acct.get("fund", 0.0)
+        # 펀딩으로 잔고가 줄면(F<0) 손해 방향 기준선이 그만큼 가까워져요
+        return {"oil": True, "entry": e, "cur": c, "up": up,
+                "at": lambda f: e + (f * buf0 + F) / q if up else e - (f * buf0 + F) / q}
     e, c = by["XAU-PERP"]["entry"] / by["XAG-PERP"]["entry"], px["XAU-PERP"] / px["XAG-PERP"]
     unit, up = e * buf0 / (by["XAU-PERP"]["qty"] * by["XAU-PERP"]["entry"]), by["XAU-PERP"]["side"] == "short"
     return {"oil": False, "entry": e, "cur": c, "up": up, "at": lambda f: e + f * unit if up else e - f * unit}
+
+
+def funding_accrual(accts, by, start_utc):
+    """funding.csv(30분 기록)로 계정별 누적 펀딩을 추정. {계정: $} (받으면 +).
+    계정에 fund_anchor(실제 화면에서 확인한 누적값과 시각)가 있으면 거기서부터 이어서 계산."""
+    path = os.path.join(DATA, "funding.csv")
+    if not os.path.exists(path):
+        return {}
+    P = lambda t: datetime.fromisoformat(t.replace("Z", "+00:00"))
+    ser = {}
+    with open(path, encoding="utf-8") as fh:
+        for r in csv.DictReader(fh):
+            if r.get("perp_last_apr") not in (None, "") and r.get("mark_price"):
+                ser.setdefault(r["ticker"], []).append((P(r["time_utc"]), float(r["perp_last_apr"]), float(r["mark_price"])))
+    now = datetime.now(timezone.utc)
+
+    def per_unit_long(tk, t0):
+        s = ser.get(tk, [])
+        tot = 0.0
+        for i, (t, apr, price) in enumerate(s):
+            nxt = s[i + 1][0] if i + 1 < len(s) else min(now, t + timedelta(hours=8))
+            a, b = max(t, t0), min(nxt, now)
+            if b > a:
+                tot += -apr * price * (b - a).total_seconds() / 31557600   # 음수 펀딩이면 롱이 받음
+        return tot
+
+    cache, out = {}, {}
+    for name, legs in by.items():
+        a = accts.get(name, {})
+        anchor = a.get("fund_anchor") or {}
+        t0 = P(anchor["time_utc"]) if anchor.get("time_utc") else start_utc
+        f = anchor.get("usd", 0.0)
+        for l in legs:
+            k = (l["instrument"], t0)
+            if k not in cache:
+                cache[k] = per_unit_long(l["instrument"], t0)
+            f += (1 if l["side"] == "long" else -1) * l["qty"] * cache[k]
+        out[name] = round(f, 2)
+    return out
 
 
 def day_range(col_a, col_b, oil):
@@ -87,6 +128,9 @@ def daily_report(accts, by, st, px, src, th, title="일일 요약"):
              f"🧱 OI ${oi:,.0f} · 투입 자본 ${eq:,.0f}",
              f"📈 {since} 시작 대비 {money(eq - base)} (입금 제외)",
              f"📏 가격차 BZ−CL ${sp:.2f} (괴리율 {sp / px['CL-PERP']:.1%})" + (f" · 24h ${rng[0]:.2f}~{rng[1]:.2f}" if rng else ""),
+             "💸 펀딩 누적: A 계정 {} · B 계정 {} (짝끼리 상쇄, 잔고에 반영)".format(
+                 money(sum(a.get("fund", 0) for n, a in accts.items() if n in st and a["role"] == "A")),
+                 money(sum(a.get("fund", 0) for n, a in accts.items() if n in st and a["role"] == "B"))),
              "", "💰 잔고 → 청산선 (여유) · 입금선 = 이 가격차가 되면 입금"]
     icon = lambda c: "🔴" if c >= th["urgent"] else "🟠" if c >= th["rebalance"] else "🟡" if c >= th["pre"] else "✅"
     todo = []
@@ -166,6 +210,19 @@ def main():
     by = {}
     for p in pos:
         by.setdefault(p["account"], []).append(p)
+    # 누적 펀딩 반영 (짝끼리는 상쇄되지만 계정별 잔고는 달라져요) + 페이지용 파일 저장
+    try:
+        t = data.get("start", {}).get("time", "")[:16]
+        start_utc = datetime.strptime(t, "%Y-%m-%d %H:%M").replace(tzinfo=KST).astimezone(timezone.utc)
+        fund = funding_accrual(accts, by, start_utc)
+        for n, f in fund.items():
+            if n in accts:
+                accts[n] = dict(accts[n], fund=f)
+        save_json("funding_accrual.json", {"updated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:00Z"),
+                                           "since": data.get("start", {}).get("time"), "accounts": fund,
+                                           "note": "계정별 누적 펀딩 추정 ($, 받으면 +). funding.csv 기반, fund_anchor가 있으면 실제값에서 이어 계산"})
+    except Exception as e:
+        print("펀딩 누적 계산 실패:", e)
     st = {}
     for name, legs in by.items():
         if name not in accts or any(l["instrument"] not in px for l in legs if l["instrument"] in SYM):

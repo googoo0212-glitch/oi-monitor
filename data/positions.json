@@ -21,7 +21,12 @@
    "mm_rate": 0.02486,
    "group": "원유",
    "start_equity": 2323.97,
-   "deposits": -650
+   "deposits": -650,
+   "fund_anchor": {
+    "time_utc": "2026-11-16T11:54:00Z",
+    "usd": -227.59,
+    "note": "화면 Funding 열로 확인: 11/03 스냅샷 이후 BZ −447.34, CL +222.37, GOOGL −2.62. 잔고 $2,113.33과 정확히 일치"
+   }
   },
   "아빠": {
    "pair": 1,
