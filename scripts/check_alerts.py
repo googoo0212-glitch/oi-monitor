@@ -152,6 +152,23 @@ def daily_report(accts, by, st, px, src, th, title="일일 요약"):
     return "\n".join(lines)
 
 
+def dump_listings():
+    """Variational 전체 종목 목록(증거금·OI·펀딩 등 원본)을 12시간에 한 번 data/var_listings.json 에 저장 — 종목 비교용."""
+    import common
+    path = os.path.join(DATA, "var_listings.json")
+    try:
+        if not common.LAST_STATS:
+            return
+        if os.path.exists(path) and time.time() - os.path.getmtime(path) < 12 * 3600 and os.path.getsize(path) > 1000:
+            return
+        import json as _json
+        with open(path, "w", encoding="utf-8") as fh:
+            _json.dump({"saved_utc": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:00Z"), **common.LAST_STATS},
+                       fh, ensure_ascii=False, separators=(",", ":"))
+    except Exception as e:
+        print("종목 목록 저장 실패:", e)
+
+
 def log_marks(px, src):
     path = os.path.join(DATA, "pair_marks.csv")
     new = not os.path.exists(path)
@@ -202,6 +219,7 @@ def main():
     if src == "variational" and any(k not in vm_keys for k in SYM if k in px):
         src = "hyperliquid" if not any(k in vm_keys for k in SYM) else "mixed"
     log_marks(px, src)
+    dump_listings()
     state = load_json("alert_state.json", {})
     now, changed, outbox = time.time(), False, []
     if state.get("_var_err") != state_err:

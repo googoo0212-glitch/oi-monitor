@@ -67,6 +67,7 @@ def _post(body):
 
 
 VAR_STATS = "https://omni-client-api.prod.ap-northeast-1.variational.io/metadata/v2/stats"
+LAST_STATS = {}
 
 
 def variational_marks():
@@ -80,6 +81,8 @@ def variational_marks():
         except Exception:
             if i:
                 raise
+    LAST_STATS.clear()
+    LAST_STATS.update(data)          # 종목 전체 목록 덤프용 (check_alerts가 하루 2번 저장)
     out = {}
     for l in data.get("listings", []):
         try:
