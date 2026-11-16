@@ -38,7 +38,12 @@
    "mm_rate": 0.02488,
    "group": "원유",
    "start_equity": 2225.24,
-   "deposits": 650
+   "deposits": 650,
+   "fund_anchor": {
+    "time_utc": "2026-11-16T12:00:00Z",
+    "usd": 224.93,
+    "note": "11/16 화면 Funding 열 기준 (11/03 스냅샷 이후 누적). 잔고와 $1 이내 일치"
+   }
   },
   "pingu02": {
    "pair": 2,
@@ -50,7 +55,12 @@
    "mm_rate": 0.02501,
    "group": "원유",
    "start_equity": 1266.84,
-   "deposits": -420
+   "deposits": -420,
+   "fund_anchor": {
+    "time_utc": "2026-11-16T12:00:00Z",
+    "usd": -105.21,
+    "note": "11/16 화면 Funding 열 기준 (11/03 스냅샷 이후 누적). 잔고와 $1 이내 일치"
+   }
   },
   "제비": {
    "pair": 2,
@@ -62,7 +72,12 @@
    "mm_rate": 0.02507,
    "group": "원유",
    "start_equity": 1026.61,
-   "deposits": 420
+   "deposits": 420,
+   "fund_anchor": {
+    "time_utc": "2026-11-16T12:00:00Z",
+    "usd": 105.21,
+    "note": "11/16 화면 Funding 열 기준 (11/03 스냅샷 이후 누적). 잔고와 $1 이내 일치"
+   }
   },
   "pingu09": {
    "pair": 3,
@@ -74,7 +89,12 @@
    "mm_rate": 0.0248,
    "group": "원유",
    "start_equity": 496.45,
-   "deposits": -150
+   "deposits": -150,
+   "fund_anchor": {
+    "time_utc": "2026-11-16T12:00:00Z",
+    "usd": -52.6,
+    "note": "화면 미확인 — 짝 계정 pingu08의 반대값으로 추정"
+   }
   },
   "pingu08": {
    "pair": 3,
@@ -86,7 +106,12 @@
    "mm_rate": 0.02526,
    "group": "원유",
    "start_equity": 495.18,
-   "deposits": 150
+   "deposits": 150,
+   "fund_anchor": {
+    "time_utc": "2026-11-16T12:00:00Z",
+    "usd": 52.6,
+    "note": "11/16 화면 Funding 열 기준 (11/03 스냅샷 이후 누적). 잔고와 $1 이내 일치"
+   }
   },
   "pingu01": {
    "pair": 4,
@@ -98,7 +123,12 @@
    "mm_rate": 0.02488,
    "group": "원유",
    "start_equity": 497.72,
-   "deposits": -120
+   "deposits": -120,
+   "fund_anchor": {
+    "time_utc": "2026-11-16T12:00:00Z",
+    "usd": -52.6,
+    "note": "11/16 화면 Funding 열 기준 (11/03 스냅샷 이후 누적). 잔고와 $1 이내 일치"
+   }
   },
   "pingu05": {
    "pair": 4,
@@ -110,7 +140,12 @@
    "mm_rate": 0.02528,
    "group": "원유",
    "start_equity": 551.34,
-   "deposits": 120
+   "deposits": 120,
+   "fund_anchor": {
+    "time_utc": "2026-11-16T12:00:00Z",
+    "usd": 52.6,
+    "note": "11/16 화면 Funding 열 기준 (11/03 스냅샷 이후 누적). 잔고와 $1 이내 일치"
+   }
   },
   "pingu06": {
    "pair": 5,
@@ -122,7 +157,12 @@
    "mm_rate": 0.02496,
    "group": "원유",
    "start_equity": 593.02,
-   "deposits": -180
+   "deposits": -180,
+   "fund_anchor": {
+    "time_utc": "2026-11-16T12:00:00Z",
+    "usd": -55.96,
+    "note": "11/16 화면 Funding 열 기준 (11/03 스냅샷 이후 누적). 잔고와 $1 이내 일치"
+   }
   },
   "pingu07": {
    "pair": 5,
@@ -134,7 +174,12 @@
    "mm_rate": 0.02508,
    "group": "원유",
    "start_equity": 556.9,
-   "deposits": 180
+   "deposits": 180,
+   "fund_anchor": {
+    "time_utc": "2026-11-16T12:00:00Z",
+    "usd": 55.97,
+    "note": "11/16 화면 Funding 열 기준 (11/03 스냅샷 이후 누적). 잔고와 $1 이내 일치"
+   }
   },
   "pingu04": {
    "pair": 6,
@@ -146,7 +191,12 @@
    "mm_rate": 0.02487,
    "group": "원유",
    "start_equity": 635.64,
-   "deposits": -220
+   "deposits": -220,
+   "fund_anchor": {
+    "time_utc": "2026-11-16T12:00:00Z",
+    "usd": -55.95,
+    "note": "11/16 화면 Funding 열 기준 (11/03 스냅샷 이후 누적). 잔고와 $1 이내 일치"
+   }
   },
   "pingu03": {
    "pair": 6,
@@ -158,7 +208,12 @@
    "mm_rate": 0.02335,
    "group": "원유",
    "start_equity": 497.53,
-   "deposits": 220
+   "deposits": 220,
+   "fund_anchor": {
+    "time_utc": "2026-11-16T12:00:00Z",
+    "usd": 55.97,
+    "note": "11/16 화면 Funding 열 기준 (11/03 스냅샷 이후 누적). 잔고와 $1 이내 일치"
+   }
   }
  },
  "positions": [
@@ -529,5 +584,6 @@
     }
    ]
   }
- ]
+ ],
+ "verified": "2026-11-16 21:03 KST: 11계정 잔고·펀딩 화면과 대조, 모두 $1 이내 일치 (pingu09만 미확인)"
 }

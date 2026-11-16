@@ -1,5 +1,5 @@
 {
- "updated": "2026-10-23",
+ "updated": "2026-11-16",
  "pointValue": 44,
  "basePoints": 13.65,
  "basePointsNote": "OI 파밍 전부터 있던 포인트",
@@ -1430,6 +1430,171 @@
    },
    "src": "ledger",
    "note": "실험 주 · 약 3일분"
+  },
+  {
+   "start": "2026-10-22",
+   "end": "2026-10-29",
+   "balance": null,
+   "pnl": null,
+   "oi": null,
+   "points": 3.994046,
+   "accounts": {
+    "아빠": {
+     "bal": null,
+     "pts": 1.036377
+    },
+    "현구": {
+     "bal": null,
+     "pts": 0.830581
+    },
+    "제비": {
+     "bal": null,
+     "pts": 0.439416
+    },
+    "pingu02": {
+     "bal": null,
+     "pts": 0.58078
+    },
+    "pingu05": {
+     "bal": null,
+     "pts": 0.30732
+    },
+    "pingu06": {
+     "bal": null,
+     "pts": 0.325269
+    },
+    "pingu07": {
+     "bal": null,
+     "pts": 0.218903
+    },
+    "pingu04": {
+     "bal": null,
+     "pts": 0.122852
+    },
+    "pingu03": {
+     "bal": null,
+     "pts": 0.132548
+    }
+   },
+   "src": "screenshot",
+   "note": "금·은 정리(10/24) → 원유 9계정 진입(10/26). 거래량 포함 주"
+  },
+  {
+   "start": "2026-10-29",
+   "end": "2026-11-05",
+   "balance": null,
+   "pnl": null,
+   "oi": null,
+   "points": 3.758981,
+   "accounts": {
+    "아빠": {
+     "bal": null,
+     "pts": 0.750723
+    },
+    "현구": {
+     "bal": null,
+     "pts": 0.727222
+    },
+    "제비": {
+     "bal": null,
+     "pts": 0.314073
+    },
+    "pingu02": {
+     "bal": null,
+     "pts": 0.353709
+    },
+    "pingu01": {
+     "bal": null,
+     "pts": 0.191493
+    },
+    "pingu05": {
+     "bal": null,
+     "pts": 0.159704
+    },
+    "pingu08": {
+     "bal": null,
+     "pts": 0.185188
+    },
+    "pingu06": {
+     "bal": null,
+     "pts": 0.181026
+    },
+    "pingu07": {
+     "bal": null,
+     "pts": 0.16875
+    },
+    "pingu04": {
+     "bal": null,
+     "pts": 0.326423
+    },
+    "pingu03": {
+     "bal": null,
+     "pts": 0.40067
+    }
+   },
+   "src": "screenshot",
+   "note": "11/03 12계정 재편. pingu09 미확인"
+  },
+  {
+   "start": "2026-11-05",
+   "end": "2026-11-12",
+   "balance": null,
+   "pnl": null,
+   "oi": null,
+   "points": 2.983684,
+   "accounts": {
+    "아빠": {
+     "bal": null,
+     "pts": 0.640383
+    },
+    "현구": {
+     "bal": null,
+     "pts": 0.657916
+    },
+    "제비": {
+     "bal": null,
+     "pts": 0.299483
+    },
+    "pingu02": {
+     "bal": null,
+     "pts": 0.299483
+    },
+    "pingu01": {
+     "bal": null,
+     "pts": 0.149741
+    },
+    "pingu05": {
+     "bal": null,
+     "pts": 0.149739
+    },
+    "pingu08": {
+     "bal": null,
+     "pts": 0.149742
+    },
+    "pingu06": {
+     "bal": null,
+     "pts": 0.159298
+    },
+    "pingu07": {
+     "bal": null,
+     "pts": 0.1593
+    },
+    "pingu04": {
+     "bal": null,
+     "pts": 0.159299
+    },
+    "pingu03": {
+     "bal": null,
+     "pts": 0.1593
+    }
+   },
+   "src": "screenshot",
+   "note": "거래 없는 첫 주: OI $1M·주당 17.36포인트로 전 계정 동일. pingu09 미확인"
   }
- ]
+ ],
+ "model": {
+  "oi_pts_per_1M_week": 17.36,
+  "volume_pts_per_1M": 15,
+  "note": "11/05~12 주에 11계정 모두 OI에 정확히 비례. 거래량 요율은 10/29~11/05 회귀 추정(10~17)"
+ }
 }
