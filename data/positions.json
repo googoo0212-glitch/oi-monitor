@@ -1,14 +1,13 @@
 {
- "updated": "2026-11-16 21:04 KST (12계정 잔고·펀딩 화면 대조)",
- "note": "6짝 모두 CL/BZ 계정 내 페어 (A=CL 롱·BZ 숏, B=반대). 짝끼리 수량 같음 → 펀딩·방향 상쇄. SL/TP 없음. 예비금 없음 → 리밸런싱은 같은 짝의 이긴 계정에서 진 계정으로 송금. 현구 GOOGL 롱은 단독 포지션.",
+ "updated": "2026-11-16 23:00 KST (짝 3 pingu08·09 종료, 10계정)",
+ "note": "5짝 모두 CL/BZ 계정 내 페어 (A=CL 롱·BZ 숏, B=반대). 짝끼리 수량 같음 → 펀딩·방향 상쇄. SL/TP 없음. 예비금 없음 → 리밸런싱은 같은 짝의 이긴 계정에서 진 계정으로 송금. 현구 GOOGL 롱은 단독 포지션. 다음 송금 때 현구·아빠 2계정으로 모을 계획.",
  "reserve_usd": 0,
  "pairs": {
-  "1": "현구 ↔ 아빠 ($2,000)",
-  "2": "pingu02 ↔ 제비 ($1,000)",
-  "3": "pingu09 ↔ pingu08 ($500)",
-  "4": "pingu01 ↔ pingu05 ($500)",
-  "5": "pingu06 ↔ pingu07 ($500)",
-  "6": "pingu04 ↔ pingu03 ($500)"
+  "1": "현구 ↔ 아빠",
+  "2": "pingu02 ↔ 제비",
+  "4": "pingu01 ↔ pingu05",
+  "5": "pingu06 ↔ pingu07",
+  "6": "pingu04 ↔ pingu03"
  },
  "accounts": {
   "현구": {
@@ -76,40 +75,6 @@
    "fund_anchor": {
     "time_utc": "2026-11-16T12:00:00Z",
     "usd": 105.21,
-    "note": "11/16 화면 Funding 열 기준 (11/03 스냅샷 이후 누적). 잔고와 $1 이내 일치"
-   }
-  },
-  "pingu09": {
-   "pair": 3,
-   "role": "A",
-   "balance": 496.45,
-   "upnl_at_snapshot": -3.46,
-   "cash": 349.91,
-   "mm_usage_at_snapshot": 0.48,
-   "mm_rate": 0.0248,
-   "group": "원유",
-   "start_equity": 496.45,
-   "deposits": -150,
-   "fund_anchor": {
-    "time_utc": "2026-11-16T12:00:00Z",
-    "usd": -52.6,
-    "note": "11/16 화면 확인: BZ −104.60, CL +52.00. 잔고 $434.93과 일치"
-   }
-  },
-  "pingu08": {
-   "pair": 3,
-   "role": "B",
-   "balance": 495.18,
-   "upnl_at_snapshot": -4.72,
-   "cash": 649.9,
-   "mm_usage_at_snapshot": 0.49,
-   "mm_rate": 0.02526,
-   "group": "원유",
-   "start_equity": 495.18,
-   "deposits": 150,
-   "fund_anchor": {
-    "time_utc": "2026-11-16T12:00:00Z",
-    "usd": 52.6,
     "note": "11/16 화면 Funding 열 기준 (11/03 스냅샷 이후 누적). 잔고와 $1 이내 일치"
    }
   },
@@ -334,58 +299,6 @@
    "liq_note": "한 다리만 움직일 때 기준 (참고용)"
   },
   {
-   "account": "pingu09",
-   "pair": 3,
-   "role": "A",
-   "group": "원유",
-   "instrument": "CL-PERP",
-   "side": "long",
-   "qty": 47,
-   "entry": 97.9571,
-   "mode": "cross",
-   "liq": 92.3081,
-   "liq_note": "한 다리만 움직일 때 기준 (참고용)"
-  },
-  {
-   "account": "pingu09",
-   "pair": 3,
-   "role": "A",
-   "group": "원유",
-   "instrument": "BZ-PERP",
-   "side": "short",
-   "qty": 47,
-   "entry": 106.531,
-   "mode": "cross",
-   "liq": 111.866,
-   "liq_note": "한 다리만 움직일 때 기준 (참고용)"
-  },
-  {
-   "account": "pingu08",
-   "pair": 3,
-   "role": "B",
-   "group": "원유",
-   "instrument": "CL-PERP",
-   "side": "short",
-   "qty": 47,
-   "entry": 97.8464,
-   "mode": "cross",
-   "liq": 103.182,
-   "liq_note": "한 다리만 움직일 때 기준 (참고용)"
-  },
-  {
-   "account": "pingu08",
-   "pair": 3,
-   "role": "B",
-   "group": "원유",
-   "instrument": "BZ-PERP",
-   "side": "long",
-   "qty": 47,
-   "entry": 106.565,
-   "mode": "cross",
-   "liq": 100.942,
-   "liq_note": "한 다리만 움직일 때 기준 (참고용)"
-  },
-  {
    "account": "pingu01",
    "pair": 4,
    "role": "A",
@@ -544,8 +457,8 @@
  ],
  "start": {
   "time": "2026-11-03 17:35 KST",
-  "total_equity": 11166.44,
-  "note": "12계정 구조 시작 시점 잔고 합계. 이후 입금은 계정별 deposits에 더해서 손익에서 빼요."
+  "total_equity": 10174.81,
+  "note": "남아 있는 10계정의 11/03 17:35 잔고 합계 (종료한 pingu08·09 제외). 이후 입출금은 계정별 deposits로 손익에서 빼요."
  },
  "transfers": [
   {
@@ -599,5 +512,38 @@
   "pingu07": "0x9f…01E",
   "pingu08": "0x77…F54",
   "pingu09": "0xe0…72D"
- }
+ },
+ "closed": [
+  {
+   "time": "2026-11-16 23:00 KST",
+   "accounts": [
+    "pingu09",
+    "pingu08"
+   ],
+   "qty_each": 47,
+   "note": "짝 3 동시 종료 후 전액 출금(약 $985, 추정) → 바이낸스 (predict.fun 헷지용). 종료 계정은 시작 대비 손익 계산에서 제외",
+   "records": {
+    "pingu09": {
+     "start_equity": 496.45,
+     "deposits": -150,
+     "cash": 349.91,
+     "fund_anchor": {
+      "time_utc": "2026-11-16T12:00:00Z",
+      "usd": -52.6,
+      "note": "11/16 화면 확인: BZ −104.60, CL +52.00. 잔고 $434.93과 일치"
+     }
+    },
+    "pingu08": {
+     "start_equity": 495.18,
+     "deposits": 150,
+     "cash": 649.9,
+     "fund_anchor": {
+      "time_utc": "2026-11-16T12:00:00Z",
+      "usd": 52.6,
+      "note": "11/16 화면 Funding 열 기준 (11/03 스냅샷 이후 누적). 잔고와 $1 이내 일치"
+     }
+    }
+   }
+  }
+ ]
 }

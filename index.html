@@ -225,7 +225,7 @@ function render() {
   const tiles = document.getElementById('tiles'); tiles.textContent = '';
   const base = d3.sum(all, a => (a.m.start_equity ?? a.m.balance) + (a.m.deposits || 0)), since = d3.sum(all, a => a.equity) - base;
   const st0 = ((P.start || {}).time || '').slice(5, 10).replace('-', '/');
-  [['총 OI', usd(d3.sum(all, a => a.oi)), ''], ['투입 자본 (12계정)', usd(d3.sum(all, a => a.equity)), ''], [`${st0} 시작 대비 손익`, usdS(since), since >= 0 ? 'up' : 'dn'], ['가장 위험한 계정', worst.room != null ? '$' + worst.room.toFixed(2) : d3.format('.0%')(Math.max(0, worst.consumed)), wl.k]]
+  [['총 OI', usd(d3.sum(all, a => a.oi)), ''], [`투입 자본 (${all.length}계정)`, usd(d3.sum(all, a => a.equity)), ''], [`${st0} 시작 대비 손익`, usdS(since), since >= 0 ? 'up' : 'dn'], ['가장 위험한 계정', worst.room != null ? '$' + worst.room.toFixed(2) : d3.format('.0%')(Math.max(0, worst.consumed)), wl.k]]
     .forEach(([k, v, c]) => { const t = el('div', 'tile'); t.append(el('div', 'k', k), el('div', 'v ' + c, v)); if (k === '가장 위험한 계정') t.appendChild(el('div', 'k', worst.name + ' · 청산까지 가격차')); tiles.appendChild(t); });
 
   // 짝 카드
