@@ -1485,7 +1485,7 @@
    "balance": null,
    "pnl": null,
    "oi": null,
-   "points": 3.758981,
+   "points": 3.919984,
    "accounts": {
     "아빠": {
      "bal": null,
@@ -1530,10 +1530,14 @@
     "pingu03": {
      "bal": null,
      "pts": 0.40067
+    },
+    "pingu09": {
+     "bal": null,
+     "pts": 0.161003
     }
    },
    "src": "screenshot",
-   "note": "11/03 12계정 재편. pingu09 미확인"
+   "note": "11/03 12계정 재편."
   },
   {
    "start": "2026-11-05",
@@ -1541,7 +1545,7 @@
    "balance": null,
    "pnl": null,
    "oi": null,
-   "points": 2.983684,
+   "points": 3.133425,
    "accounts": {
     "아빠": {
      "bal": null,
@@ -1586,10 +1590,14 @@
     "pingu03": {
      "bal": null,
      "pts": 0.1593
+    },
+    "pingu09": {
+     "bal": null,
+     "pts": 0.149741
     }
    },
    "src": "screenshot",
-   "note": "거래 없는 첫 주: OI $1M·주당 17.36포인트로 전 계정 동일. pingu09 미확인"
+   "note": "거래 없는 첫 주: OI $1M·주당 17.36포인트로 전 계정 동일."
   }
  ],
  "model": {
