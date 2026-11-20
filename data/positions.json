@@ -1,225 +1,72 @@
 {
- "updated": "2026-11-20 14:01 KST (현구 잔고 화면 대조)",
- "note": "5짝 모두 CL/BZ 계정 내 페어 (A=CL 롱·BZ 숏, B=반대). 짝끼리 수량 같음 → 펀딩·방향 상쇄. SL/TP 없음. 예비금 없음 → 리밸런싱은 같은 짝의 이긴 계정에서 진 계정으로 송금. 현구 GOOGL 롱은 단독 포지션. 다음 송금 때 현구·아빠 2계정으로 모을 계획.",
+ "updated": "2026-11-20",
+ "note": "11/20 3계정으로 정리: 파밍 pingu01(A) ↔ 아빠(B) 각 350배럴, 현구는 트레이딩 전용(헷지 감시 제외). 유지증거금 2% 화면 확인.",
  "reserve_usd": 0,
  "pairs": {
-  "1": "현구 ↔ 아빠",
-  "2": "pingu02 ↔ 제비",
-  "4": "pingu01 ↔ pingu05",
-  "5": "pingu06 ↔ pingu07",
-  "6": "pingu04 ↔ pingu03"
+  "1": "pingu01 ↔ 아빠"
  },
  "accounts": {
-  "현구": {
+  "pingu01": {
    "pair": 1,
    "role": "A",
-   "balance": 2323.97,
-   "upnl_at_snapshot": 45.5,
-   "cash": 1546.47,
-   "mm_usage_at_snapshot": 0.45,
-   "mm_rate": 0.02486,
+   "balance": 3017.41,
+   "upnl_at_snapshot": -15.12,
+   "cash": 3032.53,
+   "mm_usage_at_snapshot": 0.39,
+   "mm_rate": 0.02,
    "group": "원유",
-   "start_equity": 2323.97,
-   "deposits": -650,
+   "start_equity": 3017.41,
+   "deposits": 0,
    "fund_anchor": {
-    "time_utc": "2026-11-16T11:54:00Z",
-    "usd": -227.59,
-    "note": "화면 Funding 열로 확인: 11/03 스냅샷 이후 BZ −447.34, CL +222.37, GOOGL −2.62. 잔고 $2,113.33과 정확히 일치"
-   },
-   "adjust_note": "11/20 14:01 화면 잔고 $1,663.15에 맞춤: BTC 롱 약 $3,920 (미실현 −$80)을 현금에서 차감. BTC 이후 움직임은 추적 안 함 → 계정 정리 때 제거"
+    "time_utc": "2026-11-20T10:10:00Z",
+    "usd": 0.0,
+    "note": "11/20 19:10 재진입 시점, 펀딩 0부터"
+   }
   },
   "아빠": {
    "pair": 1,
    "role": "B",
-   "balance": 2225.24,
-   "upnl_at_snapshot": -16.63,
-   "cash": 2891.87,
-   "mm_usage_at_snapshot": 0.46,
-   "mm_rate": 0.02488,
-   "group": "원유",
-   "start_equity": 2225.24,
-   "deposits": 650,
-   "fund_anchor": {
-    "time_utc": "2026-11-16T12:00:00Z",
-    "usd": 224.93,
-    "note": "11/16 화면 Funding 열 기준 (11/03 스냅샷 이후 누적). 잔고와 $1 이내 일치"
-   }
-  },
-  "pingu02": {
-   "pair": 2,
-   "role": "A",
-   "balance": 1266.84,
-   "upnl_at_snapshot": 21.26,
-   "cash": 825.58,
-   "mm_usage_at_snapshot": 0.38,
-   "mm_rate": 0.02501,
-   "group": "원유",
-   "start_equity": 1266.84,
-   "deposits": -420,
-   "fund_anchor": {
-    "time_utc": "2026-11-16T12:00:00Z",
-    "usd": -105.21,
-    "note": "11/16 화면 Funding 열 기준 (11/03 스냅샷 이후 누적). 잔고와 $1 이내 일치"
-   }
-  },
-  "제비": {
-   "pair": 2,
-   "role": "B",
-   "balance": 1026.61,
-   "upnl_at_snapshot": -23.6,
-   "cash": 1470.21,
-   "mm_usage_at_snapshot": 0.47,
-   "mm_rate": 0.02507,
-   "group": "원유",
-   "start_equity": 1026.61,
-   "deposits": 420,
-   "fund_anchor": {
-    "time_utc": "2026-11-16T12:00:00Z",
-    "usd": 105.21,
-    "note": "11/16 화면 Funding 열 기준 (11/03 스냅샷 이후 누적). 잔고와 $1 이내 일치"
-   }
-  },
-  "pingu01": {
-   "pair": 4,
-   "role": "A",
-   "balance": 497.72,
-   "upnl_at_snapshot": -2.19,
-   "cash": 379.91,
-   "mm_usage_at_snapshot": 0.48,
-   "mm_rate": 0.02488,
-   "group": "원유",
-   "start_equity": 497.72,
-   "deposits": -120,
-   "fund_anchor": {
-    "time_utc": "2026-11-16T12:00:00Z",
-    "usd": -52.6,
-    "note": "11/16 화면 Funding 열 기준 (11/03 스냅샷 이후 누적). 잔고와 $1 이내 일치"
-   }
-  },
-  "pingu05": {
-   "pair": 4,
-   "role": "B",
-   "balance": 551.34,
-   "upnl_at_snapshot": -12.83,
-   "cash": 684.17,
-   "mm_usage_at_snapshot": 0.44,
-   "mm_rate": 0.02528,
-   "group": "원유",
-   "start_equity": 551.34,
-   "deposits": 120,
-   "fund_anchor": {
-    "time_utc": "2026-11-16T12:00:00Z",
-    "usd": 52.6,
-    "note": "11/16 화면 Funding 열 기준 (11/03 스냅샷 이후 누적). 잔고와 $1 이내 일치"
-   }
-  },
-  "pingu06": {
-   "pair": 5,
-   "role": "A",
-   "balance": 593.02,
-   "upnl_at_snapshot": 6.1,
-   "cash": 406.92,
-   "mm_usage_at_snapshot": 0.43,
-   "mm_rate": 0.02496,
-   "group": "원유",
-   "start_equity": 593.02,
-   "deposits": -180,
-   "fund_anchor": {
-    "time_utc": "2026-11-16T12:00:00Z",
-    "usd": -55.96,
-    "note": "11/16 화면 Funding 열 기준 (11/03 스냅샷 이후 누적). 잔고와 $1 이내 일치"
-   }
-  },
-  "pingu07": {
-   "pair": 5,
-   "role": "B",
-   "balance": 556.9,
-   "upnl_at_snapshot": -11.65,
-   "cash": 748.55,
-   "mm_usage_at_snapshot": 0.46,
-   "mm_rate": 0.02508,
-   "group": "원유",
-   "start_equity": 556.9,
-   "deposits": 180,
-   "fund_anchor": {
-    "time_utc": "2026-11-16T12:00:00Z",
-    "usd": 55.97,
-    "note": "11/16 화면 Funding 열 기준 (11/03 스냅샷 이후 누적). 잔고와 $1 이내 일치"
-   }
-  },
-  "pingu04": {
-   "pair": 6,
-   "role": "A",
-   "balance": 635.64,
-   "upnl_at_snapshot": -7.49,
-   "cash": 423.13,
+   "balance": 2988.22,
+   "upnl_at_snapshot": -18.55,
+   "cash": 3006.77,
    "mm_usage_at_snapshot": 0.4,
-   "mm_rate": 0.02487,
+   "mm_rate": 0.02,
    "group": "원유",
-   "start_equity": 635.64,
-   "deposits": -220,
+   "start_equity": 2988.22,
+   "deposits": 0,
    "fund_anchor": {
-    "time_utc": "2026-11-16T12:00:00Z",
-    "usd": -55.95,
-    "note": "11/16 화면 Funding 열 기준 (11/03 스냅샷 이후 누적). 잔고와 $1 이내 일치"
-   }
-  },
-  "pingu03": {
-   "pair": 6,
-   "role": "B",
-   "balance": 497.53,
-   "upnl_at_snapshot": -3.26,
-   "cash": 720.79,
-   "mm_usage_at_snapshot": 0.48,
-   "mm_rate": 0.02335,
-   "group": "원유",
-   "start_equity": 497.53,
-   "deposits": 220,
-   "fund_anchor": {
-    "time_utc": "2026-11-16T12:00:00Z",
-    "usd": 55.97,
-    "note": "11/16 화면 Funding 열 기준 (11/03 스냅샷 이후 누적). 잔고와 $1 이내 일치"
+    "time_utc": "2026-11-20T10:10:00Z",
+    "usd": 0.0,
+    "note": "11/20 19:10 재진입 시점, 펀딩 0부터"
    }
   }
  },
  "positions": [
   {
-   "account": "현구",
+   "account": "pingu01",
    "pair": 1,
    "role": "A",
    "group": "원유",
    "instrument": "CL-PERP",
    "side": "long",
-   "qty": 201,
-   "entry": 100.691,
+   "qty": 350,
+   "entry": 81.1314,
    "mode": "cross",
-   "liq": 91.4176,
+   "liq": 75.7449,
    "liq_note": "한 다리만 움직일 때 기준 (참고용)"
   },
   {
-   "account": "현구",
+   "account": "pingu01",
    "pair": 1,
    "role": "A",
    "group": "원유",
    "instrument": "BZ-PERP",
    "side": "short",
-   "qty": 201,
-   "entry": 109.606,
+   "qty": 350,
+   "entry": 87.903,
    "mode": "cross",
-   "liq": 112.682,
+   "liq": 93.0462,
    "liq_note": "한 다리만 움직일 때 기준 (참고용)"
-  },
-  {
-   "account": "현구",
-   "pair": 1,
-   "role": "A",
-   "group": "단독",
-   "instrument": "GOOGL-PERP",
-   "side": "long",
-   "qty": 3.5106,
-   "entry": 284.857,
-   "mode": "cross",
-   "note": "헷지 없는 단독 롱 (사용자 보유)"
   },
   {
    "account": "아빠",
@@ -228,10 +75,10 @@
    "group": "원유",
    "instrument": "CL-PERP",
    "side": "short",
-   "qty": 201,
-   "entry": 100.67,
+   "qty": 350,
+   "entry": 81.0829,
    "mode": "cross",
-   "liq": 103.847,
+   "liq": 86.1496,
    "liq_note": "한 다리만 움직일 때 기준 (참고용)"
   },
   {
@@ -241,310 +88,125 @@
    "group": "원유",
    "instrument": "BZ-PERP",
    "side": "long",
-   "qty": 201,
-   "entry": 109.371,
+   "qty": 350,
+   "entry": 87.9507,
    "mode": "cross",
-   "liq": 100.551,
-   "liq_note": "한 다리만 움직일 때 기준 (참고용)"
-  },
-  {
-   "account": "pingu02",
-   "pair": 2,
-   "role": "A",
-   "group": "원유",
-   "instrument": "CL-PERP",
-   "side": "long",
-   "qty": 94,
-   "entry": 101.495,
-   "mode": "cross",
-   "liq": 89.5164,
-   "liq_note": "한 다리만 움직일 때 기준 (참고용)"
-  },
-  {
-   "account": "pingu02",
-   "pair": 2,
-   "role": "A",
-   "group": "원유",
-   "instrument": "BZ-PERP",
-   "side": "short",
-   "qty": 94,
-   "entry": 110.329,
-   "mode": "cross",
-   "liq": 114.85,
-   "liq_note": "한 다리만 움직일 때 기준 (참고용)"
-  },
-  {
-   "account": "제비",
-   "pair": 2,
-   "role": "B",
-   "group": "원유",
-   "instrument": "CL-PERP",
-   "side": "short",
-   "qty": 94,
-   "entry": 100.087,
-   "mode": "cross",
-   "liq": 103.72,
-   "liq_note": "한 다리만 움직일 때 기준 (참고용)"
-  },
-  {
-   "account": "제비",
-   "pair": 2,
-   "role": "B",
-   "group": "원유",
-   "instrument": "BZ-PERP",
-   "side": "long",
-   "qty": 94,
-   "entry": 108.946,
-   "mode": "cross",
-   "liq": 100.714,
-   "liq_note": "한 다리만 움직일 때 기준 (참고용)"
-  },
-  {
-   "account": "pingu01",
-   "pair": 4,
-   "role": "A",
-   "group": "원유",
-   "instrument": "CL-PERP",
-   "side": "long",
-   "qty": 47,
-   "entry": 97.889,
-   "mode": "cross",
-   "liq": 92.2364,
-   "liq_note": "한 다리만 움직일 때 기준 (참고용)"
-  },
-  {
-   "account": "pingu01",
-   "pair": 4,
-   "role": "A",
-   "group": "원유",
-   "instrument": "BZ-PERP",
-   "side": "short",
-   "qty": 47,
-   "entry": 106.46,
-   "mode": "cross",
-   "liq": 111.824,
-   "liq_note": "한 다리만 움직일 때 기준 (참고용)"
-  },
-  {
-   "account": "pingu05",
-   "pair": 4,
-   "role": "B",
-   "group": "원유",
-   "instrument": "CL-PERP",
-   "side": "short",
-   "qty": 47,
-   "entry": 101.267,
-   "mode": "cross",
-   "liq": 104.253,
-   "liq_note": "한 다리만 움직일 때 기준 (참고용)"
-  },
-  {
-   "account": "pingu05",
-   "pair": 4,
-   "role": "B",
-   "group": "원유",
-   "instrument": "BZ-PERP",
-   "side": "long",
-   "qty": 47,
-   "entry": 110.168,
-   "mode": "cross",
-   "liq": 99.6216,
-   "liq_note": "한 다리만 움직일 때 기준 (참고용)"
-  },
-  {
-   "account": "pingu06",
-   "pair": 5,
-   "role": "A",
-   "group": "원유",
-   "instrument": "CL-PERP",
-   "side": "long",
-   "qty": 50,
-   "entry": 100.941,
-   "mode": "cross",
-   "liq": 90.9016,
-   "liq_note": "한 다리만 움직일 때 기준 (참고용)"
-  },
-  {
-   "account": "pingu06",
-   "pair": 5,
-   "role": "A",
-   "group": "원유",
-   "instrument": "BZ-PERP",
-   "side": "short",
-   "qty": 50,
-   "entry": 109.71,
-   "mode": "cross",
-   "liq": 113.063,
-   "liq_note": "한 다리만 움직일 때 기준 (참고용)"
-  },
-  {
-   "account": "pingu07",
-   "pair": 5,
-   "role": "B",
-   "group": "원유",
-   "instrument": "CL-PERP",
-   "side": "short",
-   "qty": 50,
-   "entry": 100.868,
-   "mode": "cross",
-   "liq": 103.692,
-   "liq_note": "한 다리만 움직일 때 기준 (참고용)"
-  },
-  {
-   "account": "pingu07",
-   "pair": 5,
-   "role": "B",
-   "group": "원유",
-   "instrument": "BZ-PERP",
-   "side": "long",
-   "qty": 50,
-   "entry": 109.758,
-   "mode": "cross",
-   "liq": 100.279,
-   "liq_note": "한 다리만 움직일 때 기준 (참고용)"
-  },
-  {
-   "account": "pingu04",
-   "pair": 6,
-   "role": "A",
-   "group": "원유",
-   "instrument": "CL-PERP",
-   "side": "long",
-   "qty": 50,
-   "entry": 97.9602,
-   "mode": "cross",
-   "liq": 90.0925,
-   "liq_note": "한 다리만 움직일 때 기준 (참고용)"
-  },
-  {
-   "account": "pingu04",
-   "pair": 6,
-   "role": "A",
-   "group": "원유",
-   "instrument": "BZ-PERP",
-   "side": "short",
-   "qty": 50,
-   "entry": 106.508,
-   "mode": "cross",
-   "liq": 114.002,
-   "liq_note": "한 다리만 움직일 때 기준 (참고용)"
-  },
-  {
-   "account": "pingu03",
-   "pair": 6,
-   "role": "B",
-   "group": "원유",
-   "instrument": "CL-PERP",
-   "side": "short",
-   "qty": 50,
-   "entry": 97.8191,
-   "mode": "cross",
-   "liq": 102.984,
-   "liq_note": "한 다리만 움직일 때 기준 (참고용)"
-  },
-  {
-   "account": "pingu03",
-   "pair": 6,
-   "role": "B",
-   "group": "원유",
-   "instrument": "BZ-PERP",
-   "side": "long",
-   "qty": 50,
-   "entry": 106.592,
-   "mode": "cross",
-   "liq": 101.358,
+   "liq": 82.6448,
    "liq_note": "한 다리만 움직일 때 기준 (참고용)"
   }
  ],
  "start": {
-  "time": "2026-11-03 17:35 KST",
-  "total_equity": 10174.81,
-  "note": "남아 있는 10계정의 11/03 17:35 잔고 합계 (종료한 pingu08·09 제외). 이후 입출금은 계정별 deposits로 손익에서 빼요."
+  "time": "2026-11-20 19:10 KST",
+  "total_equity": 6005.63
  },
- "transfers": [
-  {
-   "time": "2026-11-10 13:50 KST",
-   "note": "A→B 짝별 잔고 반반 맞추기 (거래소 경유, 계획 금액 기준)",
-   "moves": [
-    {
-     "from": "현구",
-     "to": "아빠",
-     "usd": 650
-    },
-    {
-     "from": "pingu02",
-     "to": "제비",
-     "usd": 420
-    },
-    {
-     "from": "pingu04",
-     "to": "pingu03",
-     "usd": 220
-    },
-    {
-     "from": "pingu06",
-     "to": "pingu07",
-     "usd": 180
-    },
-    {
-     "from": "pingu09",
-     "to": "pingu08",
-     "usd": 150
-    },
-    {
-     "from": "pingu01",
-     "to": "pingu05",
-     "usd": 120
-    }
-   ]
-  }
- ],
- "verified": "2026-11-16 21:04 KST: 12계정 잔고·펀딩 화면과 대조, 모두 $1 이내 일치",
- "wallets": {
-  "현구": "0xcA…890",
-  "제비": "0x10…740",
-  "아빠": "0xE0…12c",
-  "pingu01": "0xa2…33F",
-  "pingu02": "0x44…ed7",
-  "pingu03": "0xff…3Ef",
-  "pingu04": "0x0d…6f9",
-  "pingu05": "0xE4…93F",
-  "pingu06": "0x5F…5Ce",
-  "pingu07": "0x9f…01E",
-  "pingu08": "0x77…F54",
-  "pingu09": "0xe0…72D"
- },
+ "transfers": [],
+ "verified": "2026-11-20 19:10 KST: pingu01·아빠 포지션·잔고 화면 기준 (유지증거금 39%/40% → 2%)",
  "closed": [
   {
-   "time": "2026-11-16 23:00 KST",
+   "date": "2026-11-20",
    "accounts": [
-    "pingu09",
-    "pingu08"
+    "pingu02",
+    "제비",
+    "pingu03",
+    "pingu04",
+    "pingu05",
+    "pingu06",
+    "pingu07"
    ],
-   "qty_each": 47,
-   "note": "짝 3 동시 종료 후 전액 출금(약 $985, 추정) → 바이낸스 (predict.fun 헷지용). 종료 계정은 시작 대비 손익 계산에서 제외",
-   "records": {
-    "pingu09": {
-     "start_equity": 496.45,
-     "deposits": -150,
-     "cash": 349.91,
-     "fund_anchor": {
-      "time_utc": "2026-11-16T12:00:00Z",
-      "usd": -52.6,
-      "note": "11/16 화면 확인: BZ −104.60, CL +52.00. 잔고 $434.93과 일치"
+   "note": "전부 출금 후 pingu01·아빠·현구로 재배치"
+  },
+  {
+   "date": "2026-11-20",
+   "accounts": [
+    "현구"
+   ],
+   "note": "CL·BZ만 종료, 트레이딩 전용"
+  }
+ ],
+ "history_before_1120": {
+  "start": {
+   "time": "2026-11-03 17:35 KST",
+   "total_equity": 10174.81,
+   "note": "남아 있는 10계정의 11/03 17:35 잔고 합계 (종료한 pingu08·09 제외). 이후 입출금은 계정별 deposits로 손익에서 빼요."
+  },
+  "transfers": [
+   {
+    "time": "2026-11-10 13:50 KST",
+    "note": "A→B 짝별 잔고 반반 맞추기 (거래소 경유, 계획 금액 기준)",
+    "moves": [
+     {
+      "from": "현구",
+      "to": "아빠",
+      "usd": 650
+     },
+     {
+      "from": "pingu02",
+      "to": "제비",
+      "usd": 420
+     },
+     {
+      "from": "pingu04",
+      "to": "pingu03",
+      "usd": 220
+     },
+     {
+      "from": "pingu06",
+      "to": "pingu07",
+      "usd": 180
+     },
+     {
+      "from": "pingu09",
+      "to": "pingu08",
+      "usd": 150
+     },
+     {
+      "from": "pingu01",
+      "to": "pingu05",
+      "usd": 120
      }
-    },
-    "pingu08": {
-     "start_equity": 495.18,
-     "deposits": 150,
-     "cash": 649.9,
-     "fund_anchor": {
-      "time_utc": "2026-11-16T12:00:00Z",
-      "usd": 52.6,
-      "note": "11/16 화면 Funding 열 기준 (11/03 스냅샷 이후 누적). 잔고와 $1 이내 일치"
+    ]
+   }
+  ],
+  "closed": [
+   {
+    "time": "2026-11-16 23:00 KST",
+    "accounts": [
+     "pingu09",
+     "pingu08"
+    ],
+    "qty_each": 47,
+    "note": "짝 3 동시 종료 후 전액 출금(약 $985, 추정) → 바이낸스 (predict.fun 헷지용). 종료 계정은 시작 대비 손익 계산에서 제외",
+    "records": {
+     "pingu09": {
+      "start_equity": 496.45,
+      "deposits": -150,
+      "cash": 349.91,
+      "fund_anchor": {
+       "time_utc": "2026-11-16T12:00:00Z",
+       "usd": -52.6,
+       "note": "11/16 화면 확인: BZ −104.60, CL +52.00. 잔고 $434.93과 일치"
+      }
+     },
+     "pingu08": {
+      "start_equity": 495.18,
+      "deposits": 150,
+      "cash": 649.9,
+      "fund_anchor": {
+       "time_utc": "2026-11-16T12:00:00Z",
+       "usd": 52.6,
+       "note": "11/16 화면 Funding 열 기준 (11/03 스냅샷 이후 누적). 잔고와 $1 이내 일치"
+      }
      }
     }
    }
-  }
- ]
+  ],
+  "pairs": {
+   "1": "현구 ↔ 아빠",
+   "2": "pingu02 ↔ 제비",
+   "4": "pingu01 ↔ pingu05",
+   "5": "pingu06 ↔ pingu07",
+   "6": "pingu04 ↔ pingu03"
+  },
+  "verified": "2026-11-16 21:04 KST: 12계정 잔고·펀딩 화면과 대조, 모두 $1 이내 일치"
+ }
 }
