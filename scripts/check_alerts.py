@@ -165,7 +165,7 @@ def daily_report(accts, by, st, px, src, th, title="일일 요약"):
         names = sorted([n for n, a in accts.items() if a["pair"] == pid and n in st], key=lambda n: accts[n]["role"])
         if not names:
             continue
-        lines.append(f"짝{pid}")
+        lines.append(load_json("positions.json", {}).get("pairs", {}).get(str(pid), f"짝{pid}"))
         for n in names:
             s, v = st[n], pair_view(by[n], accts[n], px)
             c = s["consumed"]
