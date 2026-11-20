@@ -1,8 +1,8 @@
 {
- "updated": "2026-11-16",
+ "updated": "2026-11-20",
  "pointValue": 44,
- "basePoints": 13.65,
- "basePointsNote": "OI 파밍 전부터 있던 포인트",
+ "basePoints": 11.61,
+ "basePointsNote": "화면 총합 − 주간 기록 합 (대부분 제비 11.1, 10/01 이전 기록 없는 기간)",
  "period": "10/16~10/23",
  "balances": {
   "아빠": 2316.75,
@@ -41,18 +41,18 @@
   "현구": 0.282888
  },
  "cumulative": {
-  "현구": 67.463919,
-  "아빠": 65.234499,
-  "pingu01": 33.767093,
-  "pingu02": 34.254607,
-  "pingu03": 12.459,
-  "pingu04": 12.442977,
-  "pingu05": 12.462105,
-  "pingu06": 12.463116,
-  "pingu07": 7.29388,
-  "pingu08": 14.898597,
-  "pingu09": 10.433051,
-  "제비": 6.702407
+  "현구": 70.3,
+  "아빠": 67.52,
+  "pingu01": 34.11,
+  "pingu02": 35.43,
+  "pingu03": 13.15,
+  "pingu04": 13.05,
+  "pingu05": 13.08,
+  "pingu06": 13.13,
+  "pingu07": 7.92,
+  "pingu08": 15.39,
+  "pingu09": 10.6,
+  "제비": 18.85
  },
  "entropy": {},
  "weeks": [
@@ -1598,11 +1598,64 @@
    },
    "src": "screenshot",
    "note": "거래 없는 첫 주: OI $1M·주당 17.36포인트로 전 계정 동일."
+  },
+  {
+   "start": "2026-11-12",
+   "end": "2026-11-19",
+   "balance": null,
+   "pnl": null,
+   "oi": null,
+   "points": 3.436414,
+   "accounts": {
+    "현구": {
+     "bal": null,
+     "pts": 0.851045
+    },
+    "아빠": {
+     "bal": null,
+     "pts": 0.760848
+    },
+    "pingu01": {
+     "bal": null,
+     "pts": 0.177909
+    },
+    "pingu02": {
+     "bal": null,
+     "pts": 0.355819
+    },
+    "제비": {
+     "bal": null,
+     "pts": 0.355819
+    },
+    "pingu05": {
+     "bal": null,
+     "pts": 0.17791
+    },
+    "pingu06": {
+     "bal": null,
+     "pts": 0.189266
+    },
+    "pingu07": {
+     "bal": null,
+     "pts": 0.189266
+    },
+    "pingu04": {
+     "bal": null,
+     "pts": 0.189266
+    },
+    "pingu03": {
+     "bal": null,
+     "pts": 0.189266
+    }
+   },
+   "src": "screenshot+estimate",
+   "note": "현구·아빠·pingu01 실제, 나머지 배럴 비례 추정. OI $1M·주당 21.29"
   }
  ],
  "model": {
-  "oi_pts_per_1M_week": 17.36,
+  "oi_pts_per_1M_week": 21.29,
   "volume_pts_per_1M": 15,
   "note": "11/05~12 주에 11계정 모두 OI에 정확히 비례. 거래량 요율은 10/29~11/05 회귀 추정(10~17)"
- }
+ },
+ "cumulativeNote": "11/16 21시 각 계정 Points 화면 총합 (11/05~12 주까지)"
 }
