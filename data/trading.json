@@ -1,12 +1,12 @@
 {
  "_설명": "현구 계정 방향성 트레이딩. 포지션을 사고팔거나 손절가를 바꾸면 이 파일만 고치면 돼요 (GitHub 연필 아이콘 → 수정 → Commit). 지갑 주소는 넣지 않아요.",
  "account": "현구",
- "updated": "2026-11-21 15:50 KST",
+ "updated": "2026-11-21 15:58 KST",
  "snapshot": {
-  "time": "2026-11-21 15:40 KST",
-  "balance": 3721.74,
-  "upnl": 2.28,
-  "_note": "1칸 실행 직후 화면. 수량·진입가는 화면 가치·UPNL과 15:41 Variational 가격으로 역산(추정)"
+  "time": "2026-11-21 15:52 KST",
+  "balance": 3757.05,
+  "upnl": 34.74,
+  "_note": "1칸 $3,500 체결 후 화면 (수량·진입가는 펼친 화면 그대로)"
  },
  "rules": {
   "telegram": true,
@@ -28,73 +28,67 @@
    "symbol": "BTC",
    "instrument": "BTC-PERP",
    "side": "long",
-   "qty": 0.010641,
-   "entry": 56384.55,
+   "qty": 0.01754,
+   "entry": 57002.51,
    "mm_rate": 0.01,
    "stop": 40000,
    "group": "크립토",
-   "stop_rule": "BTC 40,000 깨지면 전부 정리",
-   "est": true
+   "stop_rule": "BTC 40,000 — 깨지면 전부 정리"
   },
   {
    "symbol": "ZEC",
    "instrument": "ZEC-PERP",
    "side": "long",
-   "qty": 0.427049,
-   "entry": 702.59,
+   "qty": 0.6928,
+   "entry": 725.339,
    "mm_rate": 0.025,
-   "stop": 562.07,
+   "stop": 580.27,
    "group": "크립토",
-   "stop_rule": "체결가 −20% · BTC 40,000 깨지면 전부 정리",
-   "est": true
+   "stop_rule": "진입가 −20% · BTC 40,000 깨지면 같이 정리"
   },
   {
    "symbol": "UNI",
    "instrument": "UNI-PERP",
    "side": "long",
-   "qty": 70.41931,
-   "entry": 4.2608,
+   "qty": 114.66,
+   "entry": 4.36117,
    "mm_rate": 0.01,
-   "stop": 3.4086,
+   "stop": 3.4889,
    "group": "크립토",
-   "stop_rule": "체결가 −20% · BTC 40,000 깨지면 전부 정리",
-   "est": true
+   "stop_rule": "진입가 −20% · BTC 40,000 깨지면 같이 정리"
   },
   {
    "symbol": "NVDA",
    "instrument": "NVDA-PERP",
    "side": "long",
-   "qty": 2.331485,
-   "entry": 128.699,
+   "qty": 3.8645,
+   "entry": 129.411,
    "mm_rate": 0.025,
-   "stop": 102.96,
+   "stop": 103.53,
    "group": "AI 주식",
-   "stop_rule": "체결가 −20% · BTC 40,000 깨지면 전부 정리",
-   "est": true
+   "stop_rule": "진입가 −20% · BTC 40,000 깨지면 같이 정리"
   },
   {
    "symbol": "GOOGL",
    "instrument": "GOOGL-PERP",
    "side": "long",
-   "qty": 1.118215,
-   "entry": 268.276,
+   "qty": 1.8593,
+   "entry": 268.929,
    "mm_rate": 0.025,
-   "stop": 214.62,
+   "stop": 215.14,
    "group": "AI 주식",
-   "stop_rule": "체결가 −20% · BTC 40,000 깨지면 전부 정리",
-   "est": true
+   "stop_rule": "진입가 −20% · BTC 40,000 깨지면 같이 정리"
   },
   {
    "symbol": "CRWV",
    "instrument": "CRWV-PERP",
    "side": "long",
-   "qty": 7.513354,
-   "entry": 39.925,
+   "qty": 12.449,
+   "entry": 40.1618,
    "mm_rate": 0.025,
-   "stop": 31.94,
+   "stop": 32.13,
    "group": "AI 주식",
-   "stop_rule": "체결가 −20% · BTC 40,000 깨지면 전부 정리",
-   "est": true
+   "stop_rule": "진입가 −20% · BTC 40,000 깨지면 같이 정리"
   }
  ],
  "plans": [],
@@ -177,7 +171,6 @@
   "near_pct": 0.01,
   "done": [
    58000
-  ],
-  "_1칸": "1칸은 $2,100 산 뒤 $1,400 추가 (BTC $400 + 나머지 $200씩) 예정 — 추가 체결 후 positions 갱신"
+  ]
  }
 }
