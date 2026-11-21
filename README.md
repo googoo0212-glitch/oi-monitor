@@ -21,3 +21,9 @@
 - 설정: `data/entropy_config.json` (계정 라벨, 각 계정이 들고 있어야 할 방향, 알림 기준)
 - **Secrets 추가 필요**: `ENTROPY_ACCOUNTS` = `{"A":"0x…","B":"0x…"}`, `ENTROPY_TELEGRAM_BOT_TOKEN` (Entropy 전용 봇, 없으면 기존 봇으로 보냄). 받는 채팅은 기존 `TELEGRAM_CHAT_ID`
 - '받은 펀딩' 칸은 API의 cumFunding 부호를 뒤집어 표시 — 첫날 Entropy 화면 펀딩 내역과 부호 한 번 대조하기
+
+## 현구 트레이딩 (방향성 롱)
+- `trading.html` — 현구 계정 포지션별 손익·손절까지 거리, "손절 다 맞으면" 자산과 차값($1,800) 여유, 노출(크립토/AI 주식), 펀딩 주당 추정, 12/10 점검 D-day (20초마다 Variational 가격)
+- `data/trading.json` — 기준 잔고·포지션·손절가·규칙. **사고팔거나 손절가를 바꾸면 이 파일만 수정**
+  - `snapshot.balance`·`upnl`은 화면의 Balance·Unrealized PNL을 그대로 (입출금하면 새로 적기)
+  - `stop` = 비상 손절가, `close_stop` = 봉 마감 기준 손절선, 손절 미정이면 `stop: null` + `assumed_stop`
