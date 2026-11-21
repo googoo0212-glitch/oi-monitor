@@ -1,12 +1,12 @@
 {
  "_설명": "현구 계정 방향성 트레이딩. 포지션을 사고팔거나 손절가를 바꾸면 이 파일만 고치면 돼요 (GitHub 연필 아이콘 → 수정 → Commit). 지갑 주소는 넣지 않아요.",
  "account": "현구",
- "updated": "2026-11-21 15:35 KST",
+ "updated": "2026-11-21 15:40 KST",
  "snapshot": {
-  "time": "2026-11-21 12:30 KST",
-  "balance": 3719.46,
-  "upnl": 0,
-  "_note": "11/21 전부 정리 후 잔고. 이 시점부터 트레이딩 손익만 계산 (이전 OI 파밍 손익과 분리)"
+  "time": "2026-11-21 15:40 KST",
+  "balance": 3721.74,
+  "upnl": 2.28,
+  "_note": "1칸 실행 직후 화면. 수량·진입가는 화면 가치·UPNL과 15:41 Variational 가격으로 역산(추정)"
  },
  "rules": {
   "telegram": true,
@@ -15,17 +15,91 @@
   "_알림": "telegram=false면 현구 알림 끔. 🔴🟠는 repeat_minutes마다, 🟡는 하루 한 번 다시 알림. 매일 9시 이후 첫 실행에 요약",
   "reserve_usd": 1800,
   "reserve_note": "12월 중순 차값 (predict.fun 에어드랍이 늦으면 트레이딩 돈에서 출금)",
-  "gap_buffer_usd": 300,
+  "gap_buffer_usd": 250,
   "floor_usd": 2100,
   "floor_note": "자산이 이 아래면 남은 포지션 전부 정리 (차값 $1,800 + 갭 여유 $300)",
   "stop_near_pct": 0.03,
   "check_date": "2026-12-10",
-  "check_note": "predict.fun 안 들어왔으면: 남은 포지션 총액 ≤ (자산 − $1,800) × 3.5 로 줄이고 $1,800 출금"
+  "check_note": "predict.fun 안 들어왔으면: 남은 포지션 총액 ≤ (자산 − $1,800) × 3.5 로 줄이고 $1,800 출금",
+  "_gap_note": "사다리 A안(BTC $600·나머지 $300) 선택으로 갭 여유 $300→$250"
  },
- "positions": [],
+ "positions": [
+  {
+   "symbol": "BTC",
+   "instrument": "BTC-PERP",
+   "side": "long",
+   "qty": 0.010641,
+   "entry": 56384.55,
+   "mm_rate": 0.01,
+   "stop": 40000,
+   "group": "크립토",
+   "stop_rule": "BTC 40,000 깨지면 전부 정리",
+   "est": true
+  },
+  {
+   "symbol": "ZEC",
+   "instrument": "ZEC-PERP",
+   "side": "long",
+   "qty": 0.427049,
+   "entry": 702.59,
+   "mm_rate": 0.025,
+   "stop": 562.07,
+   "group": "크립토",
+   "stop_rule": "체결가 −20% · BTC 40,000 깨지면 전부 정리",
+   "est": true
+  },
+  {
+   "symbol": "UNI",
+   "instrument": "UNI-PERP",
+   "side": "long",
+   "qty": 70.41931,
+   "entry": 4.2608,
+   "mm_rate": 0.01,
+   "stop": 3.4086,
+   "group": "크립토",
+   "stop_rule": "체결가 −20% · BTC 40,000 깨지면 전부 정리",
+   "est": true
+  },
+  {
+   "symbol": "NVDA",
+   "instrument": "NVDA-PERP",
+   "side": "long",
+   "qty": 2.331485,
+   "entry": 128.699,
+   "mm_rate": 0.025,
+   "stop": 102.96,
+   "group": "AI 주식",
+   "stop_rule": "체결가 −20% · BTC 40,000 깨지면 전부 정리",
+   "est": true
+  },
+  {
+   "symbol": "GOOGL",
+   "instrument": "GOOGL-PERP",
+   "side": "long",
+   "qty": 1.118215,
+   "entry": 268.276,
+   "mm_rate": 0.025,
+   "stop": 214.62,
+   "group": "AI 주식",
+   "stop_rule": "체결가 −20% · BTC 40,000 깨지면 전부 정리",
+   "est": true
+  },
+  {
+   "symbol": "CRWV",
+   "instrument": "CRWV-PERP",
+   "side": "long",
+   "qty": 7.513354,
+   "entry": 39.925,
+   "mm_rate": 0.025,
+   "stop": 31.94,
+   "group": "AI 주식",
+   "stop_rule": "체결가 −20% · BTC 40,000 깨지면 전부 정리",
+   "est": true
+  }
+ ],
  "plans": [],
  "ladder": {
-  "name": "BTC 기준 사다리 ($8k, VAR 받으면 $14k로)",
+  "name": "BTC 기준 사다리 ($8.4k, VAR 받으면 $14k로)",
   "_사용법": "BTC가 칸 가격에 오면 그 칸 비중만큼 바스켓 전 종목을 산다. 실행한 칸은 done에 가격을 넣고(예: [53000]), 체결 내역은 positions에 추가",
   "trigger": {
    "symbol": "BTC",
@@ -53,28 +127,28 @@
    {
     "symbol": "BTC",
     "instrument": "BTC-PERP",
-    "usd": 2280,
+    "usd": 2400,
     "group": "크립토",
     "how": "지정가 (칸 가격에 미리 걸어두기)"
    },
    {
     "symbol": "ZEC",
     "instrument": "ZEC-PERP",
-    "usd": 1144,
+    "usd": 1200,
     "group": "크립토",
     "how": "시장가"
    },
    {
     "symbol": "UNI",
     "instrument": "UNI-PERP",
-    "usd": 1144,
+    "usd": 1200,
     "group": "크립토",
     "how": "시장가"
    },
    {
     "symbol": "NVDA",
     "instrument": "NVDA-PERP",
-    "usd": 1144,
+    "usd": 1200,
     "group": "AI 주식",
     "stock": true,
     "how": "미국장 열려 있을 때 시장가"
@@ -82,7 +156,7 @@
    {
     "symbol": "CRWV",
     "instrument": "CRWV-PERP",
-    "usd": 1144,
+    "usd": 1200,
     "group": "AI 주식",
     "stock": true,
     "how": "미국장 열려 있을 때 시장가"
@@ -90,7 +164,7 @@
    {
     "symbol": "GOOGL",
     "instrument": "GOOGL-PERP",
-    "usd": 1144,
+    "usd": 1200,
     "group": "AI 주식",
     "stock": true,
     "how": "미국장 열려 있을 때 시장가"
@@ -101,6 +175,8 @@
   "hard_stop_pct": 0.2,
   "hard_stop_note": "종목별 비상 손절: 각 종목 평균 단가 −20% (BTC는 40,000)",
   "near_pct": 0.01,
-  "done": []
+  "done": [
+   58000
+  ]
  }
 }
