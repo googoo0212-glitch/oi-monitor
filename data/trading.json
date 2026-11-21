@@ -1,7 +1,7 @@
 {
  "_설명": "현구 계정 방향성 트레이딩. 포지션을 사고팔거나 손절가를 바꾸면 이 파일만 고치면 돼요 (GitHub 연필 아이콘 → 수정 → Commit). 지갑 주소는 넣지 않아요.",
  "account": "현구",
- "updated": "2026-11-21 15:40 KST",
+ "updated": "2026-11-21 15:50 KST",
  "snapshot": {
   "time": "2026-11-21 15:40 KST",
   "balance": 3721.74,
@@ -99,7 +99,7 @@
  ],
  "plans": [],
  "ladder": {
-  "name": "BTC 기준 사다리 ($8.4k, VAR 받으면 $14k로)",
+  "name": "BTC 기준 사다리 $14k (4분할 $3,500씩)",
   "_사용법": "BTC가 칸 가격에 오면 그 칸 비중만큼 바스켓 전 종목을 산다. 실행한 칸은 done에 가격을 넣고(예: [53000]), 체결 내역은 positions에 추가",
   "trigger": {
    "symbol": "BTC",
@@ -127,28 +127,28 @@
    {
     "symbol": "BTC",
     "instrument": "BTC-PERP",
-    "usd": 2400,
+    "usd": 4000,
     "group": "크립토",
     "how": "지정가 (칸 가격에 미리 걸어두기)"
    },
    {
     "symbol": "ZEC",
     "instrument": "ZEC-PERP",
-    "usd": 1200,
+    "usd": 2000,
     "group": "크립토",
     "how": "시장가"
    },
    {
     "symbol": "UNI",
     "instrument": "UNI-PERP",
-    "usd": 1200,
+    "usd": 2000,
     "group": "크립토",
     "how": "시장가"
    },
    {
     "symbol": "NVDA",
     "instrument": "NVDA-PERP",
-    "usd": 1200,
+    "usd": 2000,
     "group": "AI 주식",
     "stock": true,
     "how": "미국장 열려 있을 때 시장가"
@@ -156,7 +156,7 @@
    {
     "symbol": "CRWV",
     "instrument": "CRWV-PERP",
-    "usd": 1200,
+    "usd": 2000,
     "group": "AI 주식",
     "stock": true,
     "how": "미국장 열려 있을 때 시장가"
@@ -164,7 +164,7 @@
    {
     "symbol": "GOOGL",
     "instrument": "GOOGL-PERP",
-    "usd": 1200,
+    "usd": 2000,
     "group": "AI 주식",
     "stock": true,
     "how": "미국장 열려 있을 때 시장가"
@@ -177,6 +177,7 @@
   "near_pct": 0.01,
   "done": [
    58000
-  ]
+  ],
+  "_1칸": "1칸은 $2,100 산 뒤 $1,400 추가 (BTC $400 + 나머지 $200씩) 예정 — 추가 체결 후 positions 갱신"
  }
 }
