@@ -1,7 +1,7 @@
 {
  "_설명": "현구 계정 방향성 트레이딩. 포지션을 사고팔거나 손절가를 바꾸면 이 파일만 고치면 돼요 (GitHub 연필 아이콘 → 수정 → Commit). 지갑 주소는 넣지 않아요.",
  "account": "현구",
- "updated": "2026-11-21 12:30 KST",
+ "updated": "2026-11-21 13:35 KST",
  "snapshot": {
   "time": "2026-11-21 12:30 KST",
   "balance": 3719.46,
@@ -16,12 +16,91 @@
   "reserve_usd": 1800,
   "reserve_note": "12월 중순 차값 (predict.fun 에어드랍이 늦으면 트레이딩 돈에서 출금)",
   "gap_buffer_usd": 300,
-  "floor_usd": 2400,
-  "floor_note": "자산이 이 아래면 남은 포지션 전부 정리",
+  "floor_usd": 2100,
+  "floor_note": "자산이 이 아래면 남은 포지션 전부 정리 (차값 $1,800 + 갭 여유 $300)",
   "stop_near_pct": 0.03,
   "check_date": "2026-12-10",
   "check_note": "predict.fun 안 들어왔으면: 남은 포지션 총액 ≤ (자산 − $1,800) × 3.5 로 줄이고 $1,800 출금"
  },
  "positions": [],
- "plans": []
+ "plans": [],
+ "ladder": {
+  "name": "BTC 기준 사다리 ($14k)",
+  "_사용법": "BTC가 칸 가격에 오면 그 칸 비중만큼 바스켓 전 종목을 산다. 실행한 칸은 done에 가격을 넣고(예: [53000]), 체결 내역은 positions에 추가",
+  "trigger": {
+   "symbol": "BTC",
+   "instrument": "BTC-PERP"
+  },
+  "levels": [
+   {
+    "price": 53000,
+    "weight": 0.2
+   },
+   {
+    "price": 51300,
+    "weight": 0.2
+   },
+   {
+    "price": 49700,
+    "weight": 0.3
+   },
+   {
+    "price": 48000,
+    "weight": 0.3
+   }
+  ],
+  "basket": [
+   {
+    "symbol": "BTC",
+    "instrument": "BTC-PERP",
+    "usd": 4000,
+    "group": "크립토",
+    "how": "지정가 (칸 가격에 미리 걸어두기)"
+   },
+   {
+    "symbol": "ZEC",
+    "instrument": "ZEC-PERP",
+    "usd": 2000,
+    "group": "크립토",
+    "how": "시장가"
+   },
+   {
+    "symbol": "UNI",
+    "instrument": "UNI-PERP",
+    "usd": 2000,
+    "group": "크립토",
+    "how": "시장가"
+   },
+   {
+    "symbol": "NVDA",
+    "instrument": "NVDA-PERP",
+    "usd": 2000,
+    "group": "AI 주식",
+    "stock": true,
+    "how": "미국장 열려 있을 때 시장가"
+   },
+   {
+    "symbol": "CRWV",
+    "instrument": "CRWV-PERP",
+    "usd": 2000,
+    "group": "AI 주식",
+    "stock": true,
+    "how": "미국장 열려 있을 때 시장가"
+   },
+   {
+    "symbol": "GOOGL",
+    "instrument": "GOOGL-PERP",
+    "usd": 2000,
+    "group": "AI 주식",
+    "stock": true,
+    "how": "미국장 열려 있을 때 시장가"
+   }
+  ],
+  "basket_stop": 45500,
+  "basket_stop_note": "BTC 45,500(피보 0.618 46,487 아래) 깨지면 전부 정리 — 시나리오 무효",
+  "hard_stop_pct": 0.12,
+  "hard_stop_note": "종목별 비상 손절: 각 종목 평균 단가 −12% (BTC는 45,500)",
+  "near_pct": 0.01,
+  "done": []
+ }
 }

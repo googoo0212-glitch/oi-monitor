@@ -12,11 +12,15 @@
 """
 import time
 from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 
 import common
 from common import _post, load_json, save_json, telegram, variational_marks, xyz_mids
 
 KST = timezone(timedelta(hours=9))
+NY = ZoneInfo("America/New_York")
+US_HOLIDAYS = {"2026-11-26", "2026-12-25", "2027-01-01", "2027-01-18", "2027-02-15"}
+US_EARLY_CLOSE = {"2026-11-27": (13, 0), "2026-12-24": (13, 0)}
 RANK = {"ok": 0, "am": 1, "or": 2, "dn": 3}
 ICON = {"am": "🟡", "or": "🟠", "dn": "🔴"}
 usd = lambda v: f"{'−' if v < 0 else ''}${abs(v):,.0f}"
@@ -52,6 +56,43 @@ def last_close(p, now):
     return lc, lc + timedelta(days=1)
 
 
+def us_open(now):
+    """미국 정규장(9:30~16:00 ET, 평일, 휴장일 제외)이 열려 있는지."""
+    t = now.astimezone(NY)
+    d = t.strftime("%Y-%m-%d")
+    if t.weekday() >= 5 or d in US_HOLIDAYS:
+        return False
+    close = US_EARLY_CLOSE.get(d, (16, 0))
+    return (9, 30) <= (t.hour, t.minute) < close
+
+
+def next_us_open(now):
+    t = now.astimezone(NY).replace(second=0, microsecond=0)
+    day = t if (t.hour, t.minute) < (9, 30) else t + timedelta(days=1)
+    day = day.replace(hour=9, minute=30)
+    while day.weekday() >= 5 or day.strftime("%Y-%m-%d") in US_HOLIDAYS:
+        day += timedelta(days=1)
+    return day.astimezone(KST)
+
+
+def ladder_rungs(L):
+    """칸별 금액·손실. BTC 몫은 바스켓 손절(45,500)까지, 나머지는 hard_stop_pct."""
+    out, trig = [], L["trigger"]["symbol"]
+    for i, lv in enumerate(L["levels"]):
+        buys = [(b, b["usd"] * lv["weight"]) for b in L["basket"]]
+        loss = sum(a * (1 - L["basket_stop"] / lv["price"]) if b["symbol"] == trig else a * L.get("hard_stop_pct", 0.12) for b, a in buys)
+        out.append({"i": i + 1, "price": lv["price"], "w": lv["weight"], "buys": buys, "usd": sum(a for _, a in buys),
+                    "loss": loss, "done": lv["price"] in L.get("done", [])})
+    return out
+
+
+def buy_text(r, now):
+    cr = " · ".join(f"{b['symbol']} ${a:,.0f}" for b, a in r["buys"] if not b.get("stock"))
+    st = " · ".join(f"{b['symbol']} ${a:,.0f}" for b, a in r["buys"] if b.get("stock"))
+    when = "지금 (미국장 열림)" if us_open(now) else f"다음 개장 {next_us_open(now):%m/%d %H:%M} KST 후 30분 안"
+    return f"크립토 {cr} / 주식 {st} → {when}"
+
+
 def evaluate(T, px, now):
     R = T["rules"]
     cash = T["snapshot"]["balance"] - T["snapshot"]["upnl"]
@@ -83,18 +124,36 @@ def evaluate(T, px, now):
                 alerts[f"close:{sym}"] = ("or", f"{sym} {prc(cur)} — {prc(cs)} 아래. {tf}이 {nxt.astimezone(KST):%m/%d %H:%M} KST에 이 아래로 마감하면 정리")
         if p.get("stop") is None:
             alerts[f"nostop:{sym}"] = ("am", f"{sym} 손절가 미정 (지금은 {prc(p.get('assumed_stop'))} 가정)")
+    L = T.get("ladder")
+    ladder = None
+    plan_loss = sum(q.get("max_loss", 0) for q in T.get("plans", []))
+    if L:
+        rungs = ladder_rungs(L)
+        btc = px.get(L["trigger"]["instrument"])
+        plan_loss += sum(r["loss"] for r in rungs if not r["done"])
+        nxt = next((r for r in rungs if not r["done"]), None)
+        ladder = {"rungs": rungs, "btc": btc, "next": nxt}
+        if btc is not None:
+            for r in rungs:
+                if r["done"]:
+                    continue
+                if btc <= r["price"]:
+                    alerts[f"ladder:{r['price']}"] = ("dn", f"BTC {prc(btc)} — {r['i']}칸 {prc(r['price'])} 도달 → {r['i']}칸 실행 (${r['usd']:,.0f}): {buy_text(r, now)}. 실행하면 캡처 보내기")
+                elif btc <= r["price"] * (1 + L.get("near_pct", 0.01)):
+                    alerts[f"ladder:{r['price']}"] = ("or", f"BTC {prc(btc)} — {r['i']}칸 {prc(r['price'])}까지 {(btc - r['price']) / btc:.1%}. 오면: {buy_text(r, now)}")
+            if T["positions"] and btc <= L["basket_stop"]:
+                alerts["basket_stop"] = ("dn", f"BTC {prc(btc)} — {prc(L['basket_stop'])} 깨짐 → 전부 정리 (시나리오 무효)")
     equity = cash + sum(r["pnl"] for r in rows)
     worst = equity - sum(r["loss"] for r in rows)
-    plan_loss = sum(q.get("max_loss", 0) for q in T.get("plans", []))
     spare = worst - R["reserve_usd"]
     if equity <= R["floor_usd"]:
         alerts["floor"] = ("dn", f"자산 {usd(equity)} — 바닥선 {usd(R['floor_usd'])} 아래 → 남은 포지션 전부 정리")
-    if spare < R.get("gap_buffer_usd", 300):
-        alerts["spare"] = ("am", f"손절 다 맞으면 차값 여유 {usd(spare)} (갭 여유 ${R.get('gap_buffer_usd', 300)} 미만) → 신규 진입 중지")
+    if worst - plan_loss - R["reserve_usd"] < R.get("gap_buffer_usd", 300):
+        alerts["spare"] = ("am", f"계획까지 손절 다 맞으면 차값 여유 {usd(worst - plan_loss - R['reserve_usd'])} (갭 여유 ${R.get('gap_buffer_usd', 300)} 미만) → 신규 진입 중지")
     check = datetime.fromisoformat(R["check_date"]).replace(tzinfo=KST)
     if now >= check.astimezone(timezone.utc):
         alerts["check"] = ("am", f"12/10 점검: {R.get('check_note', '')}")
-    summary = {"equity": equity, "cash": cash, "worst": worst, "worst_plan": worst - plan_loss, "spare": spare,
+    summary = {"equity": equity, "cash": cash, "worst": worst, "worst_plan": worst - plan_loss, "spare": spare, "ladder": ladder,
                "oi": sum(r["p"]["qty"] * r["cur"] for r in rows), "rows": rows,
                "dday": (check.date() - now.astimezone(KST).date()).days}
     return alerts, summary
@@ -103,14 +162,19 @@ def evaluate(T, px, now):
 def daily(T, S, alerts):
     ts = datetime.now(KST).strftime("%m/%d %H:%M")
     lines = [f"📈 현구 트레이딩 요약 ({ts} KST)", "",
-             f"💰 자산 {usd(S['equity'])} · 미실현 {usdS(S['equity'] - S['cash'])} · {S['oi'] / S['equity']:.1f}배",
-             f"🧯 손절 다 맞으면 {usd(S['worst'])} → 차값 빼고 여유 {usd(S['spare'])}" + (f" (계획 포함 {usd(S['worst_plan'] - T['rules']['reserve_usd'])})" if T.get("plans") else ""),
+             f"💰 자산 {usd(S['equity'])} · 미실현 {usdS(S['equity'] - S['cash'])} · {S['oi'] / S['equity']:.1f}배" + ("" if S["rows"] else " (포지션 없음)"),
+             f"🧯 손절 다 맞으면 {usd(S['worst'])} → 차값 빼고 여유 {usd(S['spare'])}" + (f" (계획 포함 {usd(S['worst_plan'] - T['rules']['reserve_usd'])})" if S['worst_plan'] != S['worst'] else ""),
              f"📅 12/10 점검 D-{S['dday']}" if S["dday"] > 0 else "📅 12/10 점검일", ""]
     for r in sorted(S["rows"], key=lambda r: r["to_stop"] if r["to_stop"] is not None else 9):
         p = r["p"]
         ts_ = f"손절까지 {r['to_stop']:.1%}" if r["to_stop"] is not None else "손절 없음"
         lines.append(f" {p['symbol']} {prc(r['cur'])} {usdS(r['pnl'])} · {ts_}{'(가정)' if p.get('stop') is None else ''}")
-    lines += ["", "📝 할 일: " + (" / ".join(t for _, t in sorted(alerts.values(), key=lambda x: -RANK[x[0]])) if alerts else "없음")]
+    Ld = S.get("ladder")
+    if Ld and Ld["btc"] is not None:
+        done = sum(r["done"] for r in Ld["rungs"])
+        nx = Ld["next"]
+        lines += [f"🪜 BTC 사다리 {done}/{len(Ld['rungs'])}칸 실행 · BTC {prc(Ld['btc'])}" + (f" → 다음 {nx['i']}칸 {prc(nx['price'])}까지 {(Ld['btc'] - nx['price']) / Ld['btc']:.1%}" if nx else " · 전부 실행"), ""]
+    lines += ["📝 할 일: " + (" / ".join(t for _, t in sorted(alerts.values(), key=lambda x: -RANK[x[0]])) if alerts else "없음")]
     return "\n".join(lines)
 
 
@@ -121,7 +185,7 @@ def hl_name(p):
 
 def get_prices(T, now):
     """Variational mark가 기본, 빠진 종목은 하이퍼리퀴드 중간가. 페이지용으로 data/trading_marks.json에 기록."""
-    items = T["positions"] + T.get("plans", [])
+    items = T["positions"] + T.get("plans", []) + (T["ladder"]["basket"] if T.get("ladder") else [])
     want = {p["instrument"] for p in items}
     px, src, fund = {}, {}, {}
     try:
@@ -159,8 +223,8 @@ def get_prices(T, now):
 
 def main():
     T = load_json("trading.json")
-    if not T or not T.get("positions"):
-        print("trading.json 없음/포지션 없음")
+    if not T or not (T.get("positions") or T.get("ladder")):
+        print("trading.json 없음/포지션·사다리 없음")
         return
     if not T.get("rules", {}).get("telegram", True):
         print("현구 알림 꺼짐 (rules.telegram=false)")
@@ -177,6 +241,8 @@ def main():
     for k, (lv, text) in alerts.items():
         prev = state.get(k, {"lv": "ok", "t": 0})
         rep = repeat if lv in ("or", "dn") else 24 * 3600   # 🟡는 하루 한 번만 다시
+        if k.startswith("ladder:"):
+            rep = 4 * 3600   # 사다리 칸 알림은 실행(done)할 때까지 4시간마다
         if RANK[lv] > RANK.get(prev["lv"], 0) or t - prev["t"] >= rep:
             out.append(f"{ICON[lv]} {text}")
             state[k] = {"lv": lv, "t": t, "text": text}
@@ -185,7 +251,7 @@ def main():
             state[k] = {"lv": lv, "t": prev["t"], "text": text}
             changed = True
     for k in [k for k in state if not k.startswith("_") and k not in alerts]:
-        if state[k]["lv"] in ("dn", "or") and not k.startswith("nostop"):
+        if state[k]["lv"] in ("dn", "or") and not k.startswith(("nostop", "ladder:")):
             out.append(f"✅ 해제 — {state[k].get('text', k)}")
         del state[k]
         changed = True
