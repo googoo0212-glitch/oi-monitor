@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>현구 트레이딩</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<style>
+:root{--bg:#071113;--pn:#0c1b1e;--pn2:#10252a;--ln:#1b3439;--fg:#e6f4f1;--fg2:#b9cfcb;--mu:#86a6a3;--mint:#5eead4;--up:#4ade80;--dn:#f87171;--am:#fbbf24;--or:#fb923c}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:Pretendard,"Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;font-variant-numeric:tabular-nums;font-size:15px;-webkit-text-size-adjust:100%}
+a{color:var(--mint)}
+.wrap{max-width:900px;margin:0 auto;padding:16px;display:flex;flex-direction:column;gap:14px}
+.pn{background:var(--pn);border:1px solid var(--ln);border-radius:16px;padding:16px 18px;min-width:0}
+.k{font-size:13px;color:var(--mu)}
+.top{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.title{font-size:20px;font-weight:700}
+.nav{display:inline-block;border:1px solid var(--ln);background:var(--pn2);border-radius:999px;padding:7px 14px;font-size:14px;text-decoration:none;color:var(--fg)}
+.live{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--mu)}
+.live i{width:9px;height:9px;border-radius:50%;background:var(--up)}
+.live.off i{background:var(--dn)}
+.todo{border-left:6px solid var(--up);padding:18px 20px}
+.todo.s-am{border-left-color:var(--am)}.todo.s-or{border-left-color:var(--or)}.todo.s-dn{border-left-color:var(--dn)}
+.todo h2{margin:0;font-size:22px;line-height:1.35}
+.todo .do{margin-top:12px;display:flex;flex-direction:column;gap:8px}
+.todo .do div{font-size:16px;font-weight:600;background:var(--pn2);border-radius:10px;padding:10px 14px;line-height:1.45}
+.todo .why{margin-top:10px;font-size:14px;color:var(--fg2);line-height:1.5}
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+@media (max-width:600px){.tiles{grid-template-columns:1fr 1fr}}
+.tile{background:var(--pn);border:1px solid var(--ln);border-radius:16px;padding:14px 16px;min-width:0}
+.tile .v{font-size:24px;font-weight:700;margin-top:4px;white-space:nowrap}
+.tile.sm .v{font-size:19px}
+.ph{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.ph .n{font-size:18px;font-weight:700}
+.chip{font-size:13px;font-weight:700;border-radius:999px;padding:3px 11px;margin-left:auto}
+.chip.up{background:rgba(74,222,128,.13);color:var(--up)}.chip.am{background:rgba(251,191,36,.15);color:var(--am)}.chip.or{background:rgba(251,146,60,.16);color:var(--or)}.chip.dn{background:rgba(248,113,113,.16);color:var(--dn)}.chip.mu{background:rgba(134,166,163,.15);color:var(--mu)}
+.pos{display:flex;flex-direction:column;gap:8px;border-left:6px solid var(--up)}
+.pos.s-am{border-left-color:var(--am)}.pos.s-or{border-left-color:var(--or)}.pos.s-dn{border-left-color:var(--dn)}.pos.s-mu{border-left-color:var(--mu)}
+.big{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+.big .now{font-size:26px;font-weight:700}
+.big .mv{font-size:17px;font-weight:600}
+.row{display:flex;gap:16px;flex-wrap:wrap;font-size:14px;color:var(--fg2)}
+.row b{color:var(--fg)}
+.gauge svg{display:block;width:100%;height:auto}
+.bar{display:flex;height:12px;border-radius:6px;overflow:hidden;background:#0a1416;margin:8px 0 6px}
+.bar i{display:block;height:100%}
+.up{color:var(--up)}.dn{color:var(--dn)}.am{color:var(--am)}.or{color:var(--or)}.mu{color:var(--mu)}
+table{width:100%;border-collapse:collapse;font-size:14px}
+td,th{padding:7px 6px;border-bottom:1px solid var(--ln);text-align:right;white-space:nowrap}
+td:first-child,th:first-child{text-align:left}
+th{color:var(--mu);font-weight:500;font-size:13px}
+.scroll{overflow-x:auto}
+.foot{font-size:13px;color:var(--mu);line-height:1.6}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <section class="top">
+    <div>
+      <div class="title">현구 트레이딩</div>
+      <span class="live" id="live"><i></i><span id="live-t">가격 불러오는 중…</span></span>
+    </div>
+    <a class="nav" href="./">OI 파밍 →</a>
+  </section>
+
+  <section class="pn todo" id="todo"><h2>불러오는 중…</h2></section>
+
+  <section class="tiles" id="tiles"></section>
+  <section class="tiles" id="tiles2"></section>
+
+  <section class="pn">
+    <div class="ph"><span class="n">손절 다 맞으면</span><span class="k" id="worst-k"></span></div>
+    <div class="bar" id="worst-bar"></div>
+    <div class="k" id="worst-legend"></div>
+    <div class="scroll" style="margin-top:10px"><table id="worst-tbl"></table></div>
+  </section>
+
+  <section class="pn">
+    <div class="ph"><span class="n">노출</span><span class="k" id="exp-k"></span></div>
+    <div class="bar" id="exp-bar"></div>
+    <div class="k" id="exp-legend"></div>
+  </section>
+
+  <div id="positions" style="display:flex;flex-direction:column;gap:14px"></div>
+
+  <section class="pn" id="plans-box">
+    <div class="ph"><span class="n">진입 계획</span></div>
+    <div id="plans" style="margin-top:8px;display:flex;flex-direction:column;gap:8px"></div>
+  </section>
+
+  <section class="foot" id="foot"></section>
+</div>
+
+<script>
+const VAR_URL = 'https://omni-client-api.prod.ap-northeast-1.variational.io/metadata/v2/stats';
+const C = {up: '#4ade80', am: '#fbbf24', or: '#fb923c', dn: '#f87171', mu: '#86a6a3', mint: '#5eead4', fg: '#e6f4f1', fg2: '#b9cfcb'};
+const GROUP_C = {'크립토': '#5eead4', 'AI 주식': '#a78bfa'};
+const usd = v => v == null || isNaN(v) ? '—' : (v < 0 ? '−$' : '$') + d3.format(',.0f')(Math.abs(v));
+const usdS = v => v == null || isNaN(v) ? '—' : (v >= 0 ? '+' : '−') + '$' + d3.format(',.0f')(Math.abs(v));
+const pct = v => v == null || isNaN(v) ? '—' : d3.format('+.1%')(v);
+const prc = v => v == null || isNaN(v) ? '—' : v >= 1000 ? d3.format(',.0f')(v) : v >= 100 ? d3.format(',.2f')(v) : v >= 10 ? d3.format('.3f')(v) : d3.format('.4f')(v);
+const el = (t, c, x) => { const e = document.createElement(t); if (c) e.className = c; if (x != null) e.textContent = x; return e; };
+
+let T = null, px = {}, fund = {}, src = '', pxAt = null;
+
+async function getJSON(u) { const r = await fetch(u); if (!r.ok) throw new Error(r.status); return r.json(); }
+async function loadData() { try { T = await getJSON('data/trading.json?' + Date.now()); } catch (e) { T = null; } }
+async function loadPrices() {
+  if (!T) return;
+  const want = new Set([...T.positions, ...(T.plans || [])].map(p => p.instrument));
+  try {
+    const d = await getJSON(VAR_URL), o = {}, f = {};
+    (d.listings || []).forEach(l => { if (want.has(l.ticker)) { o[l.ticker] = +l.mark_price; f[l.ticker] = +(((l.funding || {}).last || {}).annualized_rate || 0); } });
+    if (Object.keys(o).length) { px = o; fund = f; src = 'Variational 실시간'; pxAt = new Date(); return; }
+  } catch (e) {}
+  src = '';
+}
+
+// 포지션 하나 계산
+function pos(p) {
+  const s = p.side === 'long' ? 1 : -1;
+  const live = px[p.instrument] != null, cur = live ? px[p.instrument] : p.entry;
+  const stop = p.stop ?? p.assumed_stop ?? null;
+  const pnl = s * p.qty * (cur - p.entry), value = p.qty * cur;
+  const toStop = stop != null ? (s > 0 ? (cur - stop) / cur : (stop - cur) / cur) : null;   // 손절까지 남은 % (음수면 넘음)
+  const lossFromNow = stop != null ? Math.max(0, s * p.qty * (cur - stop)) : null;        // 지금부터 손절까지 추가 손실
+  const atStop = stop != null ? s * p.qty * (stop - p.entry) : null;                        // 진입 대비 손절 시 손익
+  const closeBroken = p.close_stop != null && (s > 0 ? cur < p.close_stop : cur > p.close_stop);
+  const near = T.rules.stop_near_pct || 0.03;
+  let lv = 'up', lt = '정상';
+  if (p.stop == null) { lv = 'am'; lt = '손절 미정'; }
+  if (closeBroken) { lv = 'or'; lt = `${p.close_tf} 마감 확인`; }
+  if (toStop != null && toStop < near && p.stop != null) { lv = 'or'; lt = '손절 근접'; }
+  if (toStop != null && toStop <= 0 && p.stop != null) { lv = 'dn'; lt = '손절선 넘음'; }
+  const fr = fund[p.instrument] || 0, fundWeek = -s * value * fr * 7 / 365.25;   // 양수 펀딩이면 롱이 냄 (받으면 +)
+  return {...p, s, live, cur, stop, hasStop: p.stop != null, pnl, ret: s * (cur - p.entry) / p.entry, value, toStop, lossFromNow, atStop, closeBroken, lv, lt, fr, fundWeek, mm: value * p.mm_rate, im: value * p.mm_rate * 2};
+}
+
+function render() {
+  if (!T) { document.getElementById('todo').innerHTML = '<h2>data/trading.json을 못 불러왔어요</h2>'; return; }
+  const live = document.getElementById('live');
+  live.className = 'live' + (src ? '' : ' off');
+  document.getElementById('live-t').textContent = src ? `${src} · ${d3.timeFormat('%H:%M:%S')(pxAt)}` : '가격을 못 불러왔어요 (진입가로 표시)';
+
+  const R = T.rules, cash = T.snapshot.balance - T.snapshot.upnl;
+  const P = T.positions.map(pos);
+  const equity = cash + d3.sum(P, p => p.pnl);
+  const oi = d3.sum(P, p => p.value), mm = d3.sum(P, p => p.mm), im = d3.sum(P, p => p.im);
+  const lossNow = d3.sum(P, p => p.lossFromNow || 0);
+  const planLoss = d3.sum(T.plans || [], q => q.max_loss || 0);
+  const worst = equity - lossNow, worstPlan = worst - planLoss;
+  const spare = worst - R.reserve_usd, sparePlan = worstPlan - R.reserve_usd;
+  const fundWeek = d3.sum(P, p => p.fundWeek);
+  const today = new Date(), check = new Date(R.check_date + 'T00:00:00+09:00');
+  const dday = Math.ceil((check - today) / 86400000);
+
+  // 지금 할 일
+  const items = [];   // [level, text]
+  if (equity <= R.floor_usd) items.push(['dn', `자산 ${usd(equity)} — 바닥선 ${usd(R.floor_usd)} 아래. 남은 포지션 전부 정리`]);
+  P.filter(p => p.lv === 'dn').forEach(p => items.push(['dn', `${p.symbol} ${prc(p.cur)} — 손절 ${prc(p.stop)} 넘음. 정리`]));
+  P.filter(p => p.lt === '손절 근접').forEach(p => items.push(['or', `${p.symbol} 손절까지 ${d3.format('.1%')(p.toStop)} (${prc(p.cur)} → ${prc(p.stop)})`]));
+  P.filter(p => p.closeBroken && p.lv !== 'dn').forEach(p => items.push(['or', `${p.symbol} ${prc(p.close_stop)} 아래 — ${p.close_tf}이 이 아래에서 마감하면 정리`]));
+  if (spare < R.gap_buffer_usd) items.push(['am', `손절 다 맞으면 차값 여유 ${usd(spare)} — $${R.gap_buffer_usd} 미만. 신규 진입 중지`]);
+  P.filter(p => !p.hasStop).forEach(p => items.push(['am', `${p.symbol} 손절가 정하기 (지금은 ${prc(p.assumed_stop)} 가정으로 계산)`]));
+  if (dday <= 0) items.push(['am', `12/10 점검: ${R.check_note}`]);
+  const rank = {dn: 3, or: 2, am: 1, up: 0};
+  const top = items.reduce((m, [l]) => rank[l] > rank[m] ? l : m, 'up');
+  const todo = document.getElementById('todo'); todo.className = 'pn todo s-' + top; todo.textContent = '';
+  todo.appendChild(el('h2', null, top === 'dn' ? '🔴 지금 정리할 게 있어요' : top === 'or' ? '🟠 손절선 가까이 왔어요' : top === 'am' ? '🟡 확인할 게 있어요' : '✅ 지금은 할 일 없어요'));
+  if (items.length) { const d = el('div', 'do'); items.forEach(([l, t]) => { const x = el('div', null, t); x.style.borderLeft = `4px solid ${C[l]}`; d.appendChild(x); }); todo.appendChild(d); }
+  const nearest = P.filter(p => p.toStop != null).sort((a, b) => a.toStop - b.toStop)[0];
+  if (nearest) todo.appendChild(el('div', 'why', `가장 가까운 손절: ${nearest.symbol} ${d3.format('.1%')(nearest.toStop)} 남음 (${prc(nearest.cur)} → ${prc(nearest.stop)}${nearest.stop === nearest.assumed_stop ? ', 가정' : ''})`));
+
+  // 타일
+  const t1 = document.getElementById('tiles'); t1.textContent = '';
+  [['자산 (실시간)', usd(equity), '', `시작 ${usd(T.snapshot.balance)} 대비 ${usdS(equity - T.snapshot.balance)}`],
+   ['미실현 손익', usdS(equity - cash), equity - cash >= 0 ? 'up' : 'dn', `${P.length}개 포지션`],
+   ['손절 다 맞으면 자산', usd(worst), worst <= R.floor_usd ? 'dn' : '', `NVDA 계획 포함 ${usd(worstPlan)}`],
+   ['차값 $1.8k 빼고 여유', usd(spare), spare < R.gap_buffer_usd ? 'am' : 'up', `계획 포함 ${usd(sparePlan)}`]]
+    .forEach(([k, v, c, sub]) => { const t = el('div', 'tile'); t.append(el('div', 'k', k), el('div', 'v ' + c, v), el('div', 'k', sub)); t1.appendChild(t); });
+  const t2 = document.getElementById('tiles2'); t2.textContent = '';
+  [['총 포지션 · 배율', `${usd(oi)} · ${(oi / equity).toFixed(1)}배`, ''],
+   ['증거금 비율 · 유지증거금', `${d3.format('.1%')(im / equity)} · ${d3.format('.1%')(mm / equity)}`, im / equity > 0.5 ? 'am' : ''],
+   ['펀딩 (주당 추정)', usdS(fundWeek), fundWeek >= 0 ? 'up' : 'dn'],
+   [`12/10 점검`, dday > 0 ? `D-${dday}` : '오늘/지남', dday <= 3 ? 'am' : '']]
+    .forEach(([k, v, c]) => { const t = el('div', 'tile sm'); t.append(el('div', 'k', k), el('div', 'v ' + c, v)); t2.appendChild(t); });
+
+  // 손절 다 맞으면: 자산 막대 (차값 / 여유 / 손실)
+  document.getElementById('worst-k').textContent = `전 종목이 손절가까지 가면 (지금 가격 기준)`;
+  const wb = document.getElementById('worst-bar'); wb.textContent = '';
+  const segs = [[R.reserve_usd, '#334155', '차값'], [Math.max(0, worstPlan - R.reserve_usd), C.up, '여유'], [planLoss, '#a78bfa', 'NVDA 계획'], [lossNow, C.dn, '손절 손실']];
+  const tot = d3.sum(segs, s => s[0]);
+  segs.forEach(([v, col]) => { const i = el('i'); i.style.width = (100 * v / tot) + '%'; i.style.background = col; wb.appendChild(i); });
+  document.getElementById('worst-legend').innerHTML = segs.map(([v, col, lab]) => `<span style="color:${col}">■</span> ${lab} ${usd(v)}`).join(' &nbsp; ');
+  const tb = document.getElementById('worst-tbl');
+  tb.innerHTML = '<tr><th>종목</th><th>지금</th><th>손절</th><th>남은 %</th><th>지금부터 손실</th><th>진입 대비</th></tr>' +
+    P.map(p => `<tr><td>${p.symbol}${p.stop === p.assumed_stop && p.assumed_stop != null ? ' <span class="am">(가정)</span>' : ''}</td><td>${prc(p.cur)}</td><td>${prc(p.stop)}</td><td class="${p.lv === 'up' ? '' : p.lv}">${p.toStop != null ? d3.format('.1%')(p.toStop) : '—'}</td><td class="dn">${usdS(-(p.lossFromNow || 0))}</td><td>${usdS(p.atStop)}</td></tr>`).join('') +
+    (T.plans || []).map(q => `<tr><td>${q.symbol} <span class="mu">(계획)</span></td><td colspan="3" class="mu" style="text-align:left">${q.when} · $${q.usd}</td><td class="dn">${usdS(-(q.max_loss || 0))}</td><td></td></tr>`).join('') +
+    `<tr><td><b>합계</b></td><td></td><td></td><td></td><td class="dn"><b>${usdS(-(lossNow + planLoss))}</b></td><td></td></tr>`;
+
+  // 노출
+  const groups = d3.rollups(P, v => d3.sum(v, p => p.value), p => p.group);
+  const eb = document.getElementById('exp-bar'); eb.textContent = '';
+  groups.forEach(([g, v]) => { const i = el('i'); i.style.width = (100 * v / oi) + '%'; i.style.background = GROUP_C[g] || C.mu; eb.appendChild(i); });
+  document.getElementById('exp-k').textContent = '전부 롱';
+  document.getElementById('exp-legend').innerHTML = groups.map(([g, v]) => `<span style="color:${GROUP_C[g] || C.mu}">■</span> ${g} ${usd(v)} (${d3.format('.0%')(v / oi)}) · ${P.filter(p => p.group === g).map(p => p.symbol).join(', ')}`).join(' &nbsp; ') +
+    '<br>같은 그룹은 같이 움직여요 (11/20: AI 주식 셋이 같은 날 −3~−14%).';
+
+  // 포지션 카드
+  const box = document.getElementById('positions'); box.textContent = '';
+  P.slice().sort((a, b) => (a.toStop ?? 9) - (b.toStop ?? 9)).forEach(p => {
+    const c = el('section', 'pn pos s-' + p.lv);
+    const h = el('div', 'ph'); h.append(el('span', 'n', `${p.symbol} ${p.side === 'long' ? '롱' : '숏'}`), el('span', 'k', `${p.qty} · ${(0.5 / p.mm_rate).toFixed(0)}x 설정 · ${p.group}`), el('span', 'chip ' + p.lv, p.lt)); c.appendChild(h);
+    const big = el('div', 'big');
+    big.append(el('span', 'now', prc(p.cur)), el('span', 'mv ' + (p.pnl >= 0 ? 'up' : 'dn'), `${usdS(p.pnl)} (${pct(p.ret)})`), el('span', 'k', `진입 ${prc(p.entry)}${p.live ? '' : ' · 가격 없음'}`));
+    c.appendChild(big);
+    c.appendChild(gauge(p));
+    const row = el('div', 'row');
+    row.innerHTML = `<span>손절까지 <b>${p.toStop != null ? d3.format('.1%')(p.toStop) : '—'}</b></span><span>손절 시 지금부터 <b class="dn">${usdS(-(p.lossFromNow || 0))}</b></span><span>가치 <b>${usd(p.value)}</b></span><span>펀딩 주당 <b class="${p.fundWeek >= 0 ? 'up' : 'dn'}">${usdS(p.fundWeek)}</b> <span class="mu">(연 ${d3.format('.1%')(p.fr)})</span></span>`;
+    c.appendChild(row);
+    c.appendChild(el('div', 'k', '손절 규칙: ' + p.stop_rule));
+    box.appendChild(c);
+  });
+
+  // 계획
+  const pl = document.getElementById('plans'); pl.textContent = '';
+  document.getElementById('plans-box').style.display = (T.plans || []).length ? '' : 'none';
+  (T.plans || []).forEach(q => {
+    const d = el('div'); d.style.cssText = 'background:var(--pn2);border-radius:10px;padding:10px 14px';
+    d.innerHTML = `<b>${q.symbol}</b> $${q.usd} · ${q.when} · 지금 ${prc(px[q.instrument])} <span class="mu">· 최대 손실 ${usd(q.max_loss)}</span><div class="k" style="margin-top:4px">${q.note || ''}</div>`;
+    pl.appendChild(d);
+  });
+
+  document.getElementById('foot').innerHTML = `포지션 기준 ${T.updated} · 자산 = 기준 시점 잔고(미실현 제외 ${usd(cash)}) + 실시간 손익. 이후 펀딩·입출금은 반영 안 돼서 화면 잔고와 몇 달러 차이 날 수 있어요.<br>` +
+    `바닥선 ${usd(R.floor_usd)} 아래면 전부 정리 · 손절 ${d3.format('.0%')(R.stop_near_pct)} 이내면 '근접' · 손절 다 맞아도 차값 $${R.reserve_usd} + 갭 여유 $${R.gap_buffer_usd}가 남게.<br>` +
+    `주식 퍼프는 주말·장외에도 움직여서 개장 때 갭이 날 수 있고, 갭은 손절가를 건너뛸 수 있어요. 포지션을 바꾸면 data/trading.json만 고치면 돼요.`;
+}
+
+// 게이지: 왼쪽 손절, 진입·현재 표시. 빨강=손절 근처, 주황=종가 손절선 아래, 초록=정상
+function gauge(p) {
+  const W = Math.max(320, (document.getElementById('positions').clientWidth || 640) - 40), H = 74, m = 26;
+  if (p.stop == null) return el('div', 'k', '손절 없음');
+  const near = T.rules.stop_near_pct || 0.03;
+  const lo = Math.min(p.stop, p.cur) * 0.97, hi = Math.max(p.entry, p.cur) * 1.04;
+  const x = d3.scaleLinear().domain([lo, hi]).range([m, W - m]).clamp(true);
+  const svg = d3.create('svg').attr('viewBox', `0 0 ${W} ${H}`);
+  const nearLine = p.stop / (1 - near);
+  const seg = [[lo, p.stop, C.dn, .8], [p.stop, nearLine, C.dn, .45]];
+  if (p.close_stop != null) seg.push([nearLine, p.close_stop, C.or, .45], [p.close_stop, hi, C.up, .45]);
+  else seg.push([nearLine, hi, C.up, .45]);
+  seg.forEach(([a, b, col, op]) => { if (b > a) svg.append('rect').attr('x', x(a)).attr('y', 24).attr('width', Math.max(0, x(b) - x(a))).attr('height', 10).attr('fill', col).attr('opacity', op); });
+  const tick = (v, label, y, anchor, col) => { svg.append('line').attr('x1', x(v)).attr('x2', x(v)).attr('y1', 20).attr('y2', 38).attr('stroke', col || C.fg).attr('opacity', .6); svg.append('text').attr('x', x(v)).attr('y', y).attr('text-anchor', anchor || 'middle').attr('fill', col || C.fg2).attr('font-size', 12).text(label); };
+  tick(p.stop, '손절 ' + prc(p.stop) + (p.stop === p.assumed_stop ? '(가정)' : ''), 54, 'start', C.dn);
+  if (p.close_stop != null) tick(p.close_stop, `${p.close_tf} ${prc(p.close_stop)}`, 68, 'middle', C.or);
+  svg.append('line').attr('x1', x(p.entry)).attr('x2', x(p.entry)).attr('y1', 18).attr('y2', 40).attr('stroke', C.fg).attr('stroke-dasharray', '3 2');
+  tick(p.entry, '진입 ' + prc(p.entry), 54, 'end');
+  const cx = x(p.cur);
+  svg.append('path').attr('d', `M${cx - 8},2 L${cx + 8},2 L${cx},18 Z`).attr('fill', C.fg);
+  svg.append('circle').attr('cx', cx).attr('cy', 29).attr('r', 6).attr('fill', C.fg).attr('stroke', '#0c1b1e').attr('stroke-width', 2);
+  const g = el('div', 'gauge'); g.appendChild(svg.node()); return g;
+}
+
+async function tick() { await loadPrices(); render(); }
+(async () => {
+  await loadData();
+  await tick();
+  setInterval(tick, 20000);
+  setInterval(async () => { await loadData(); render(); }, 5 * 60000);
+})();
+</script>
+</body>
+</html>
