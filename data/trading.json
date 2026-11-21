@@ -9,6 +9,10 @@
   "_cash": "cash = balance − upnl (화면의 Balance는 미실현 손익 포함). 이후 손익은 실시간 가격으로 다시 계산"
  },
  "rules": {
+  "telegram": true,
+  "repeat_minutes": 60,
+  "daily_summary_hour_kst": 9,
+  "_알림": "telegram=false면 현구 알림 끔. 🔴🟠는 repeat_minutes마다, 🟡는 하루 한 번 다시 알림. 매일 9시 이후 첫 실행에 요약",
   "reserve_usd": 1800,
   "reserve_note": "12월 중순 차값 (predict.fun 에어드랍이 늦으면 트레이딩 돈에서 출금)",
   "gap_buffer_usd": 300,

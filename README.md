@@ -27,3 +27,7 @@
 - `data/trading.json` — 기준 잔고·포지션·손절가·규칙. **사고팔거나 손절가를 바꾸면 이 파일만 수정**
   - `snapshot.balance`·`upnl`은 화면의 Balance·Unrealized PNL을 그대로 (입출금하면 새로 적기)
   - `stop` = 비상 손절가, `close_stop` = 봉 마감 기준 손절선, 손절 미정이면 `stop: null` + `assumed_stop`
+- `scripts/trading_alerts.py` — 기존 5분 알림 작업(alerts.yml)에서 같이 실행. 같은 텔레그램 봇으로 `[현구]` 알림
+  - 🔴 바닥선($2,400) 아래 / 비상 손절가 넘음 / 봉 마감 손절선 아래 마감(추정) · 🟠 손절 3% 이내 / 봉 마감 손절선 아래로 내려옴 · 🟡 손절 미정 / 차값 여유 부족 / 12/10 점검
+  - 봉 마감은 캔들 데이터가 없어서 마감 직후 첫 실행 가격으로 추정 → 정리 전에 차트 확인
+  - 매일 9시(KST) 이후 첫 실행에 요약. 끄려면 `data/trading.json`의 `rules.telegram`을 false로
