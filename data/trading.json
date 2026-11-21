@@ -53,28 +53,28 @@
    {
     "symbol": "BTC",
     "instrument": "BTC-PERP",
-    "usd": 2285,
+    "usd": 2280,
     "group": "크립토",
     "how": "지정가 (칸 가격에 미리 걸어두기)"
    },
    {
     "symbol": "ZEC",
     "instrument": "ZEC-PERP",
-    "usd": 1143,
+    "usd": 1144,
     "group": "크립토",
     "how": "시장가"
    },
    {
     "symbol": "UNI",
     "instrument": "UNI-PERP",
-    "usd": 1143,
+    "usd": 1144,
     "group": "크립토",
     "how": "시장가"
    },
    {
     "symbol": "NVDA",
     "instrument": "NVDA-PERP",
-    "usd": 1143,
+    "usd": 1144,
     "group": "AI 주식",
     "stock": true,
     "how": "미국장 열려 있을 때 시장가"
@@ -82,7 +82,7 @@
    {
     "symbol": "CRWV",
     "instrument": "CRWV-PERP",
-    "usd": 1143,
+    "usd": 1144,
     "group": "AI 주식",
     "stock": true,
     "how": "미국장 열려 있을 때 시장가"
@@ -90,7 +90,7 @@
    {
     "symbol": "GOOGL",
     "instrument": "GOOGL-PERP",
-    "usd": 1143,
+    "usd": 1144,
     "group": "AI 주식",
     "stock": true,
     "how": "미국장 열려 있을 때 시장가"
