@@ -1,12 +1,13 @@
 {
- "time_utc": "2026-11-21T07:18:30Z",
+ "time_utc": "2026-11-21T15:26:21Z",
  "marks": {
-  "BTC-PERP": 58271.5,
-  "ZEC-PERP": 734.135,
-  "UNI-PERP": 4.4338,
-  "NVDA-PERP": 129.245,
-  "GOOGL-PERP": 268.97,
-  "CRWV-PERP": 40.292
+  "BTC-PERP": 60148.5,
+  "ZEC-PERP": 792.265,
+  "UNI-PERP": 4.70625,
+  "NVDA-PERP": 129.875,
+  "GOOGL-PERP": 272.13,
+  "CRWV-PERP": 40.813,
+  "HYPE-PERP": 60.9315
  },
  "src": {
   "BTC-PERP": "hyperliquid",
@@ -14,7 +15,8 @@
   "UNI-PERP": "hyperliquid",
   "NVDA-PERP": "hyperliquid",
   "GOOGL-PERP": "hyperliquid",
-  "CRWV-PERP": "hyperliquid"
+  "CRWV-PERP": "hyperliquid",
+  "HYPE-PERP": "hyperliquid"
  },
  "funding_apr": {},
  "note": "trading_alerts.py가 5분마다 기록. 페이지는 브라우저에서 Variational을 못 부를 때 이 값을 써요"
