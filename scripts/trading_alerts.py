@@ -6,7 +6,8 @@
   🟡 손절 다 맞으면 차값 여유가 갭 여유분 미만 / 손절 미정 / 12/10 점검일
 같은 알림은 repeat_minutes(기본 60분)마다 다시, 풀리면 '해제' 한 번. 매일 9시(KST) 이후 첫 실행에 요약 1회.
 
-봉 마감 판정: Variational은 캔들을 안 줘서, 마감 시각(4시간봉 KST 01·05·09·13·17·21시, 일봉 09시) 직후
+봉 마감 판정: Variational은 캔들을 안 줘서, 마감 시각(4시간봉 KST 01·05·09·13·17·21시, 크립토 일봉 09시,
+주식 일봉은 close_utc_hour — 미국장 21시 UTC = 06시 KST, 평일만) 직후
 첫 실행의 mark 가격으로 추정해요. 실제 손절 전에 차트에서 확인하라고 안내해요.
 """
 import time
@@ -27,10 +28,27 @@ def prc(v):
     return f"{v:,.0f}" if v >= 1000 else f"{v:,.2f}" if v >= 10 else f"{v:.4f}"
 
 
-def last_close(tf, now):
-    """가장 최근 봉 마감 시각 (UTC). 4시간봉은 UTC 0·4·8·12·16·20시, 일봉은 UTC 0시."""
-    step = 4 if tf.startswith("4") else 24
-    return now.replace(minute=0, second=0, microsecond=0, hour=(now.hour // step) * step if step == 4 else 0)
+def last_close(p, now):
+    """가장 최근 봉 마감 시각과 다음 마감 시각 (UTC).
+    4시간봉: UTC 0·4·8·12·16·20시 / 크립토 일봉: UTC 0시 /
+    주식 일봉(close_utc_hour 지정, 예: 미국장 21시 UTC = 06시 KST): 평일(월~금) 그 시각만."""
+    tf = p.get("close_tf", "4시간봉")
+    base = now.replace(minute=0, second=0, microsecond=0)
+    if tf.startswith("4"):
+        lc = base.replace(hour=(now.hour // 4) * 4)
+        return lc, lc + timedelta(hours=4)
+    h = p.get("close_utc_hour", 0)
+    lc = base.replace(hour=h)
+    if lc > now:
+        lc -= timedelta(days=1)
+    if "close_utc_hour" in p:   # 주식: 주말 마감 없음
+        while lc.weekday() >= 5:
+            lc -= timedelta(days=1)
+        nx = lc + timedelta(days=1)
+        while nx.weekday() >= 5:
+            nx += timedelta(days=1)
+        return lc, nx
+    return lc, lc + timedelta(days=1)
 
 
 def evaluate(T, px, now):
@@ -56,13 +74,12 @@ def evaluate(T, px, now):
         cs = p.get("close_stop")
         if cs is not None and s * (cur - cs) < 0:
             tf = p.get("close_tf", "4시간봉")
-            lc = last_close(tf, now)
+            lc, nxt = last_close(p, now)
             # 마감 직후 15분 안의 첫 실행이면 '마감 기준 이탈(추정)'
             if now - lc < timedelta(minutes=15):
                 alerts[f"close:{sym}"] = ("dn", f"{sym} {tf} 마감 {prc(cur)} — 손절선 {prc(cs)} 아래 마감(추정) → 차트 확인 후 정리")
             else:
-                nxt = lc + (timedelta(hours=4) if tf.startswith("4") else timedelta(days=1))
-                alerts[f"close:{sym}"] = ("or", f"{sym} {prc(cur)} — {prc(cs)} 아래. {tf}이 {nxt.astimezone(KST):%H:%M} KST에 이 아래로 마감하면 정리")
+                alerts[f"close:{sym}"] = ("or", f"{sym} {prc(cur)} — {prc(cs)} 아래. {tf}이 {nxt.astimezone(KST):%m/%d %H:%M} KST에 이 아래로 마감하면 정리")
         if p.get("stop") is None:
             alerts[f"nostop:{sym}"] = ("am", f"{sym} 손절가 미정 (지금은 {prc(p.get('assumed_stop'))} 가정)")
     equity = cash + sum(r["pnl"] for r in rows)

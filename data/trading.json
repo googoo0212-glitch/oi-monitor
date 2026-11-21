@@ -1,7 +1,7 @@
 {
  "_설명": "현구 계정 방향성 트레이딩. 포지션을 사고팔거나 손절가를 바꾸면 이 파일만 고치면 돼요 (GitHub 연필 아이콘 → 수정 → Commit). 지갑 주소는 넣지 않아요.",
  "account": "현구",
- "updated": "2026-11-21 09:09 KST",
+ "updated": "2026-11-21 09:15 KST",
  "snapshot": {
   "time": "2026-11-21 09:09 KST",
   "balance": 3801.14,
@@ -78,10 +78,12 @@
    "qty": 12.318,
    "entry": 40.5997,
    "mm_rate": 0.025,
-   "stop": null,
-   "assumed_stop": 30.45,
-   "stop_rule": "미정 — 계산은 −25%(30.45) 가정",
-   "group": "AI 주식"
+   "stop": 28.5,
+   "stop_rule": "일봉(미국장 마감 06:00 KST)이 30(전저점) 아래 마감 시 정리 · 비상 28.5",
+   "group": "AI 주식",
+   "close_stop": 30,
+   "close_tf": "일봉(미국장)",
+   "close_utc_hour": 21
   },
   {
    "symbol": "NVDA",
