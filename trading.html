@@ -104,17 +104,42 @@ const el = (t, c, x) => { const e = document.createElement(t); if (c) e.classNam
 
 let T = null, px = {}, fund = {}, src = '', pxAt = null;
 
-async function getJSON(u) { const r = await fetch(u); if (!r.ok) throw new Error(r.status); return r.json(); }
+async function getJSON(u, opt) { const r = await fetch(u, opt); if (!r.ok) throw new Error(r.status); return r.json(); }
 async function loadData() { try { T = await getJSON('data/trading.json?' + Date.now()); } catch (e) { T = null; } }
+const HL = 'https://api.hyperliquid.xyz/info';
+const hlName = p => p.hl || (p.group === '크립토' ? p.symbol : 'xyz:' + p.symbol);
+let pxSrc = {};
+// 가격: ① Variational 직접 → ② Actions가 5분마다 남긴 Variational 기록(20분 이내) → ③ 하이퍼리퀴드 실시간
 async function loadPrices() {
   if (!T) return;
-  const want = new Set([...T.positions, ...(T.plans || [])].map(p => p.instrument));
+  const items = [...T.positions, ...(T.plans || [])], want = new Set(items.map(p => p.instrument));
+  const o = {}, f = {}, sr = {};
+  let at = null, label = [];
   try {
-    const d = await getJSON(VAR_URL), o = {}, f = {};
-    (d.listings || []).forEach(l => { if (want.has(l.ticker)) { o[l.ticker] = +l.mark_price; f[l.ticker] = +(((l.funding || {}).last || {}).annualized_rate || 0); } });
-    if (Object.keys(o).length) { px = o; fund = f; src = 'Variational 실시간'; pxAt = new Date(); return; }
+    const d = await getJSON(VAR_URL);
+    (d.listings || []).forEach(l => { if (want.has(l.ticker)) { o[l.ticker] = +l.mark_price; sr[l.ticker] = 'V'; f[l.ticker] = +(((l.funding || {}).last || {}).annualized_rate || 0); } });
+    if (Object.keys(o).length) { label.push('Variational 실시간'); at = new Date(); }
   } catch (e) {}
-  src = '';
+  if (items.some(p => o[p.instrument] == null)) {
+    try {
+      const r = await getJSON('data/trading_marks.json?' + Date.now()), t = new Date(r.time_utc);
+      Object.assign(f, r.funding_apr || {}, f);
+      if (Date.now() - t < 20 * 60000) {
+        let n = 0; Object.entries(r.marks || {}).forEach(([k, v]) => { if (o[k] == null) { o[k] = +v; sr[k] = (r.src || {})[k] === 'variational' ? 'V기록' : 'HL기록'; n++; } });
+        if (n) { label.push(`Variational 5분 기록 ${d3.timeFormat('%H:%M')(t)}`); at = at || t; }
+      }
+    } catch (e) {}
+  }
+  const miss = items.filter(p => o[p.instrument] == null);
+  if (miss.length) {
+    const post = body => getJSON(HL, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)});
+    const mids = {};
+    try { Object.assign(mids, await post({type: 'allMids'})); } catch (e) {}
+    if (miss.some(p => hlName(p).startsWith('xyz:'))) { try { Object.assign(mids, await post({type: 'allMids', dex: 'xyz'})); } catch (e) {} }
+    let n = 0; miss.forEach(p => { const v = mids[hlName(p)]; if (v != null) { o[p.instrument] = +v; sr[p.instrument] = 'HL'; n++; } });
+    if (n) { label.push('하이퍼리퀴드 실시간 (Variational과 조금 차이)'); at = at || new Date(); }
+  }
+  px = o; fund = f; pxSrc = sr; src = label.join(' + '); pxAt = at;
 }
 
 // 포지션 하나 계산
@@ -141,7 +166,7 @@ function render() {
   if (!T) { document.getElementById('todo').innerHTML = '<h2>data/trading.json을 못 불러왔어요</h2>'; return; }
   const live = document.getElementById('live');
   live.className = 'live' + (src ? '' : ' off');
-  document.getElementById('live-t').textContent = src ? `${src} · ${d3.timeFormat('%H:%M:%S')(pxAt)}` : '가격을 못 불러왔어요 (진입가로 표시)';
+  document.getElementById('live-t').textContent = src ? `${src} · ${d3.timeFormat('%H:%M:%S')(new Date())} 확인` : '가격을 못 불러왔어요 (진입가로 표시)';
 
   const R = T.rules, cash = T.snapshot.balance - T.snapshot.upnl;
   const P = T.positions.map(pos);
@@ -176,8 +201,8 @@ function render() {
   const t1 = document.getElementById('tiles'); t1.textContent = '';
   [['자산 (실시간)', usd(equity), '', `시작 ${usd(T.snapshot.balance)} 대비 ${usdS(equity - T.snapshot.balance)}`],
    ['미실현 손익', usdS(equity - cash), equity - cash >= 0 ? 'up' : 'dn', `${P.length}개 포지션`],
-   ['손절 다 맞으면 자산', usd(worst), worst <= R.floor_usd ? 'dn' : '', `NVDA 계획 포함 ${usd(worstPlan)}`],
-   ['차값 $1.8k 빼고 여유', usd(spare), spare < R.gap_buffer_usd ? 'am' : 'up', `계획 포함 ${usd(sparePlan)}`]]
+   ['손절 다 맞으면 자산', usd(worst), worst <= R.floor_usd ? 'dn' : '', (T.plans || []).length ? `계획 포함 ${usd(worstPlan)}` : '6종목 손절가 기준'],
+   ['차값 $1.8k 빼고 여유', usd(spare), spare < R.gap_buffer_usd ? 'am' : 'up', (T.plans || []).length ? `계획 포함 ${usd(sparePlan)}` : `갭 여유 $${R.gap_buffer_usd} 빼면 ${usd(spare - R.gap_buffer_usd)}`]]
     .forEach(([k, v, c, sub]) => { const t = el('div', 'tile'); t.append(el('div', 'k', k), el('div', 'v ' + c, v), el('div', 'k', sub)); t1.appendChild(t); });
   const t2 = document.getElementById('tiles2'); t2.textContent = '';
   [['총 포지션 · 배율', `${usd(oi)} · ${(oi / equity).toFixed(1)}배`, ''],
@@ -189,7 +214,7 @@ function render() {
   // 손절 다 맞으면: 자산 막대 (차값 / 여유 / 손실)
   document.getElementById('worst-k').textContent = `전 종목이 손절가까지 가면 (지금 가격 기준)`;
   const wb = document.getElementById('worst-bar'); wb.textContent = '';
-  const segs = [[R.reserve_usd, '#334155', '차값'], [Math.max(0, worstPlan - R.reserve_usd), C.up, '여유'], [planLoss, '#a78bfa', 'NVDA 계획'], [lossNow, C.dn, '손절 손실']];
+  const segs = [[R.reserve_usd, '#334155', '차값'], [Math.max(0, worstPlan - R.reserve_usd), C.up, '여유'], [planLoss, '#a78bfa', '진입 계획'], [lossNow, C.dn, '손절 손실']];
   const tot = d3.sum(segs, s => s[0]);
   segs.forEach(([v, col]) => { const i = el('i'); i.style.width = (100 * v / tot) + '%'; i.style.background = col; wb.appendChild(i); });
   document.getElementById('worst-legend').innerHTML = segs.map(([v, col, lab]) => `<span style="color:${col}">■</span> ${lab} ${usd(v)}`).join(' &nbsp; ');
@@ -213,7 +238,7 @@ function render() {
     const c = el('section', 'pn pos s-' + p.lv);
     const h = el('div', 'ph'); h.append(el('span', 'n', `${p.symbol} ${p.side === 'long' ? '롱' : '숏'}`), el('span', 'k', `${p.qty} · ${(0.5 / p.mm_rate).toFixed(0)}x 설정 · ${p.group}`), el('span', 'chip ' + p.lv, p.lt)); c.appendChild(h);
     const big = el('div', 'big');
-    big.append(el('span', 'now', prc(p.cur)), el('span', 'mv ' + (p.pnl >= 0 ? 'up' : 'dn'), `${usdS(p.pnl)} (${pct(p.ret)})`), el('span', 'k', `진입 ${prc(p.entry)}${p.live ? '' : ' · 가격 없음'}`));
+    big.append(el('span', 'now', prc(p.cur)), el('span', 'mv ' + (p.pnl >= 0 ? 'up' : 'dn'), `${usdS(p.pnl)} (${pct(p.ret)})`), el('span', 'k', `진입 ${prc(p.entry)}${p.live ? ({V: '', 'V기록': ' · 5분 기록', 'HL기록': ' · 하이퍼리퀴드 기록', HL: ' · 하이퍼리퀴드'}[pxSrc[p.instrument]] || '') : ' · 가격 없음'}`));
     c.appendChild(big);
     c.appendChild(gauge(p));
     const row = el('div', 'row');

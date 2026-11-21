@@ -13,7 +13,8 @@
 import time
 from datetime import datetime, timedelta, timezone
 
-from common import load_json, save_json, telegram, variational_marks
+import common
+from common import _post, load_json, save_json, telegram, variational_marks, xyz_mids
 
 KST = timezone(timedelta(hours=9))
 RANK = {"ok": 0, "am": 1, "or": 2, "dn": 3}
@@ -113,6 +114,49 @@ def daily(T, S, alerts):
     return "\n".join(lines)
 
 
+def hl_name(p):
+    """하이퍼리퀴드 이름: 크립토는 기본 덱(BTC), 주식은 xyz 덱(xyz:NVDA). trading.json의 hl로 덮어쓰기 가능."""
+    return p.get("hl") or (p["symbol"] if p.get("group") == "크립토" else "xyz:" + p["symbol"])
+
+
+def get_prices(T, now):
+    """Variational mark가 기본, 빠진 종목은 하이퍼리퀴드 중간가. 페이지용으로 data/trading_marks.json에 기록."""
+    items = T["positions"] + T.get("plans", [])
+    want = {p["instrument"] for p in items}
+    px, src, fund = {}, {}, {}
+    try:
+        vm = variational_marks()
+        for k in want:
+            if k in vm:
+                px[k], src[k] = vm[k], "variational"
+        for l in common.LAST_STATS.get("listings", []):
+            if l.get("ticker") in want:
+                try:
+                    fund[l["ticker"]] = float(((l.get("funding") or {}).get("last") or {}).get("annualized_rate") or 0)
+                except (TypeError, ValueError):
+                    pass
+    except Exception as e:
+        print("Variational 가격 실패:", e)
+    miss = [p for p in items if p["instrument"] not in px]
+    if miss:
+        mids = {}
+        try:
+            mids.update({k: float(v) for k, v in _post({"type": "allMids"}).items()})
+        except Exception as e:
+            print("하이퍼리퀴드 기본 덱 실패:", e)
+        try:
+            mids.update(xyz_mids())
+        except Exception as e:
+            print("하이퍼리퀴드 xyz 실패:", e)
+        for p in miss:
+            if hl_name(p) in mids:
+                px[p["instrument"]], src[p["instrument"]] = mids[hl_name(p)], "hyperliquid"
+    if px:
+        save_json("trading_marks.json", {"time_utc": now.strftime("%Y-%m-%dT%H:%M:%SZ"), "marks": px, "src": src, "funding_apr": fund,
+                                          "note": "trading_alerts.py가 5분마다 기록. 페이지는 브라우저에서 Variational을 못 부를 때 이 값을 써요"})
+    return px, src
+
+
 def main():
     T = load_json("trading.json")
     if not T or not T.get("positions"):
@@ -121,14 +165,11 @@ def main():
     if not T.get("rules", {}).get("telegram", True):
         print("현구 알림 꺼짐 (rules.telegram=false)")
         return
-    want = {p["instrument"] for p in T["positions"]}
-    try:
-        vm = variational_marks()
-        px = {k: v for k, v in vm.items() if k in want}
-    except Exception as e:
-        print("Variational 가격 실패:", e)
-        return
     now = datetime.now(timezone.utc)
+    px, src = get_prices(T, now)
+    if not px:
+        print("가격 없음")
+        return
     alerts, S = evaluate(T, px, now)
     state = load_json("trading_alert_state.json", {})
     repeat = T["rules"].get("repeat_minutes", 60) * 60
