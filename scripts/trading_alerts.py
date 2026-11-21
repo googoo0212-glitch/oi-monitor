@@ -80,7 +80,9 @@ def ladder_rungs(L):
     out, trig = [], L["trigger"]["symbol"]
     for i, lv in enumerate(L["levels"]):
         buys = [(b, b["usd"] * lv["weight"]) for b in L["basket"]]
-        loss = sum(a * (1 - L["basket_stop"] / lv["price"]) if b["symbol"] == trig else a * L.get("hard_stop_pct", 0.12) for b, a in buys)
+        loss = sum(a * (1 - L["basket_stop"] / lv["price"]) if b["symbol"] == trig
+                   else (a * min(1.0, b.get("beta", 1.0) * (1 - L["basket_stop"] / lv["price"])) if L.get("linked") else a * L.get("hard_stop_pct", 0.12))
+                   for b, a in buys)
         out.append({"i": i + 1, "price": lv["price"], "w": lv["weight"], "buys": buys, "usd": sum(a for _, a in buys),
                     "loss": loss, "done": lv["price"] in L.get("done", [])})
     return out
@@ -102,12 +104,17 @@ def evaluate(T, px, now):
         s = 1 if p["side"] == "long" else -1
         cur = px.get(p["instrument"], p["entry"])
         stop = p.get("stop") if p.get("stop") is not None else p.get("assumed_stop")
+        linked = p.get("link") and px.get(p["link"])
+        if linked:   # BTC 손절에 연동: BTC가 link_stop까지 갈 때 이 종목 가격을 beta로 추정
+            lb = px[p["link"]]
+            d = max(0.0, (lb - p["link_stop"]) / lb)
+            stop = max(0.0, cur * (1 - p.get("beta", 1.0) * d))
         pnl = s * p["qty"] * (cur - p["entry"])
-        to_stop = (s * (cur - stop) / cur) if stop is not None else None
+        to_stop = (d if linked else (s * (cur - stop) / cur)) if stop is not None else None
         loss = max(0.0, s * p["qty"] * (cur - stop)) if stop is not None else 0.0
         rows.append({"p": p, "cur": cur, "pnl": pnl, "to_stop": to_stop, "loss": loss, "live": p["instrument"] in px})
         sym = p["symbol"]
-        if p["instrument"] not in px:
+        if p["instrument"] not in px or p.get("link"):
             continue
         if p.get("stop") is not None and to_stop <= 0:
             alerts[f"stop:{sym}"] = ("dn", f"{sym} {prc(cur)} — 비상 손절 {prc(stop)} 넘음 → 정리")
@@ -152,9 +159,9 @@ def evaluate(T, px, now):
     equity = cash + sum(r["pnl"] for r in rows)
     worst = equity - sum(r["loss"] for r in rows)
     spare = worst - R["reserve_usd"]
-    if equity <= R["floor_usd"]:
+    if R.get("floor_usd", 0) > 0 and equity <= R["floor_usd"]:
         alerts["floor"] = ("dn", f"자산 {usd(equity)} — 바닥선 {usd(R['floor_usd'])} 아래 → 남은 포지션 전부 정리")
-    if worst - plan_loss - R["reserve_usd"] < R.get("gap_buffer_usd", 300):
+    if R.get("reserve_usd", 0) > 0 and worst - plan_loss - R["reserve_usd"] < R.get("gap_buffer_usd", 300):
         alerts["spare"] = ("am", f"계획까지 손절 다 맞으면 차값 여유 {usd(worst - plan_loss - R['reserve_usd'])} (갭 여유 ${R.get('gap_buffer_usd', 300)} 미만) → 신규 진입 중지")
     check = datetime.fromisoformat(R["check_date"]).replace(tzinfo=KST)
     if now >= check.astimezone(timezone.utc):
@@ -169,12 +176,14 @@ def daily(T, S, alerts):
     ts = datetime.now(KST).strftime("%m/%d %H:%M")
     lines = [f"📈 현구 트레이딩 요약 ({ts} KST)", "",
              f"💰 자산 {usd(S['equity'])} · 미실현 {usdS(S['equity'] - S['cash'])} · {S['oi'] / S['equity']:.1f}배" + ("" if S["rows"] else " (포지션 없음)"),
-             f"🧯 손절 다 맞으면 {usd(S['worst'])} → 차값 빼고 여유 {usd(S['spare'])}" + (f" (계획 포함 {usd(S['worst_plan'] - T['rules']['reserve_usd'])})" if S['worst_plan'] != S['worst'] else ""),
+             (f"🧯 손절 다 맞으면 {usd(S['worst'])} → 차값 빼고 여유 {usd(S['spare'])}" + (f" (계획 포함 {usd(S['worst_plan'] - T['rules']['reserve_usd'])})" if S['worst_plan'] != S['worst'] else "")
+              if T['rules'].get('reserve_usd', 0) > 0 else
+              f"🧯 BTC 40k 손절 시 자산 {usd(S['worst'])}" + (f" (사다리까지 다 사면 {usd(S['worst_plan'])})" if S['worst_plan'] != S['worst'] else "")),
              f"📅 12/10 점검 D-{S['dday']}" if S["dday"] > 0 else "📅 12/10 점검일", ""]
     for r in sorted(S["rows"], key=lambda r: r["to_stop"] if r["to_stop"] is not None else 9):
         p = r["p"]
         ts_ = f"손절까지 {r['to_stop']:.1%}" if r["to_stop"] is not None else "손절 없음"
-        lines.append(f" {p['symbol']} {prc(r['cur'])} {usdS(r['pnl'])} · {ts_}{'(가정)' if p.get('stop') is None else ''}")
+        lines.append(f" {p['symbol']} {prc(r['cur'])} {usdS(r['pnl'])}" + (" · BTC 연동" if p.get("link") else f" · {ts_}{'(가정)' if p.get('stop') is None else ''}"))
     Ld = S.get("ladder")
     if Ld and Ld["btc"] is not None:
         done = sum(r["done"] for r in Ld["rungs"])

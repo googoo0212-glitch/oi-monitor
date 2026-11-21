@@ -148,20 +148,25 @@ async function loadPrices() {
 function pos(p) {
   const s = p.side === 'long' ? 1 : -1;
   const live = px[p.instrument] != null, cur = live ? px[p.instrument] : p.entry;
-  const stop = p.stop ?? p.assumed_stop ?? null;
+  let stop = p.stop ?? p.assumed_stop ?? null, linkD = null;
+  if (p.link && px[p.link] != null) {   // BTC 손절 연동: BTC가 link_stop에 갈 때 가격을 beta로 추정
+    const lb = px[p.link]; linkD = Math.max(0, (lb - p.link_stop) / lb);
+    stop = Math.max(0, cur * (1 - (p.beta || 1) * linkD));
+  }
   const pnl = s * p.qty * (cur - p.entry), value = p.qty * cur;
-  const toStop = stop != null ? (s > 0 ? (cur - stop) / cur : (stop - cur) / cur) : null;   // 손절까지 남은 % (음수면 넘음)
+  const toStop = linkD != null ? linkD : stop != null ? (s > 0 ? (cur - stop) / cur : (stop - cur) / cur) : null;   // 손절까지 남은 % (음수면 넘음)
   const lossFromNow = stop != null ? Math.max(0, s * p.qty * (cur - stop)) : null;        // 지금부터 손절까지 추가 손실
   const atStop = stop != null ? s * p.qty * (stop - p.entry) : null;                        // 진입 대비 손절 시 손익
   const closeBroken = p.close_stop != null && (s > 0 ? cur < p.close_stop : cur > p.close_stop);
   const near = T.rules.stop_near_pct || 0.03;
   let lv = 'up', lt = '정상';
-  if (p.stop == null) { lv = 'am'; lt = '손절 미정'; }
+  if (p.stop == null && !p.link) { lv = 'am'; lt = '손절 미정'; }
+  if (p.link) lt = 'BTC 연동';
   if (closeBroken) { lv = 'or'; lt = `${p.close_tf} 마감 확인`; }
   if (toStop != null && toStop < near && p.stop != null) { lv = 'or'; lt = '손절 근접'; }
   if (toStop != null && toStop <= 0 && p.stop != null) { lv = 'dn'; lt = '손절선 넘음'; }
   const fr = fund[p.instrument] || 0, fundWeek = -s * value * fr * 7 / 365.25;   // 양수 펀딩이면 롱이 냄 (받으면 +)
-  return {...p, s, live, cur, stop, hasStop: p.stop != null, pnl, ret: s * (cur - p.entry) / p.entry, value, toStop, lossFromNow, atStop, closeBroken, lv, lt, fr, fundWeek, mm: value * p.mm_rate, im: value * p.mm_rate * 2};
+  return {...p, s, live, cur, stop, hasStop: p.stop != null || !!p.link, pnl, ret: s * (cur - p.entry) / p.entry, value, toStop, lossFromNow, atStop, closeBroken, lv, lt, fr, fundWeek, mm: value * p.mm_rate, im: value * p.mm_rate * 2};
 }
 
 // 사다리: 칸별 금액·손실 (BTC 몫은 바스켓 손절까지, 나머지는 종목별 비상 손절 %)
@@ -169,7 +174,8 @@ function ladderRungs(L) {
   const trig = L.trigger.symbol;
   return L.levels.map((lv, i) => {
     const buys = L.basket.map(b => [b, b.usd * lv.weight]);
-    const loss = d3.sum(buys, ([b, a]) => b.symbol === trig ? a * (1 - L.basket_stop / lv.price) : a * (L.hard_stop_pct || 0.12));
+    const loss = d3.sum(buys, ([b, a]) => b.symbol === trig ? a * (1 - L.basket_stop / lv.price)
+      : L.linked ? a * Math.min(1, (b.beta || 1) * (1 - L.basket_stop / lv.price)) : a * (L.hard_stop_pct || 0.12));
     return {i: i + 1, price: lv.price, w: lv.weight, buys, usd: d3.sum(buys, x => x[1]), loss, done: (L.done || []).includes(lv.price)};
   });
 }
@@ -206,11 +212,11 @@ function render() {
 
   // 지금 할 일
   const items = [];   // [level, text]
-  if (equity <= R.floor_usd) items.push(['dn', `자산 ${usd(equity)} — 바닥선 ${usd(R.floor_usd)} 아래. 남은 포지션 전부 정리`]);
+  if (R.floor_usd > 0 && equity <= R.floor_usd) items.push(['dn', `자산 ${usd(equity)} — 바닥선 ${usd(R.floor_usd)} 아래. 남은 포지션 전부 정리`]);
   P.filter(p => p.lv === 'dn').forEach(p => items.push(['dn', `${p.symbol} ${prc(p.cur)} — 손절 ${prc(p.stop)} 넘음. 정리`]));
   P.filter(p => p.lt === '손절 근접').forEach(p => items.push(['or', `${p.symbol} 손절까지 ${d3.format('.1%')(p.toStop)} (${prc(p.cur)} → ${prc(p.stop)})`]));
   P.filter(p => p.closeBroken && p.lv !== 'dn').forEach(p => items.push(['or', `${p.symbol} ${prc(p.close_stop)} 아래 — ${p.close_tf}이 이 아래에서 마감하면 정리`]));
-  if (sparePlan < R.gap_buffer_usd) items.push(['am', `계획까지 손절 다 맞으면 차값 여유 ${usd(sparePlan)} — $${R.gap_buffer_usd} 미만. 신규 진입 중지`]);
+  if (R.reserve_usd > 0 && sparePlan < R.gap_buffer_usd) items.push(['am', `계획까지 손절 다 맞으면 차값 여유 ${usd(sparePlan)} — $${R.gap_buffer_usd} 미만. 신규 진입 중지`]);
   if (L && btc != null && hold && L.review_at && btc <= L.review_at) items.push(['or', `BTC ${prc(btc)} — ${prc(L.review_at)} 도달 → 매수 보류 중, 계획 다시 정하기`]);
   if (L && btc != null && !hold) {
     const stockNow = usOpen() ? '주식도 지금' : '주식은 다음 미국장 개장(23:30 KST) 후';
@@ -235,7 +241,8 @@ function render() {
   [['자산 (실시간)', usd(equity), '', `시작 ${usd(T.snapshot.balance)} 대비 ${usdS(equity - T.snapshot.balance)}`],
    ['미실현 손익', usdS(equity - cash), equity - cash >= 0 ? 'up' : 'dn', `${P.length}개 포지션`],
    ['손절 다 맞으면 자산', usd(worst), worst <= R.floor_usd ? 'dn' : '', hasPlan ? `사다리 다 체결 후 손절이면 ${usd(worstPlan)}` : '손절가 기준'],
-   ['차값 $1.8k 빼고 여유', usd(spare), spare < R.gap_buffer_usd ? 'am' : 'up', hasPlan ? `사다리 포함 ${usd(sparePlan)}` : `갭 여유 $${R.gap_buffer_usd} 빼면 ${usd(spare - R.gap_buffer_usd)}`]]
+   R.reserve_usd > 0 ? ['차값 $1.8k 빼고 여유', usd(spare), spare < R.gap_buffer_usd ? 'am' : 'up', hasPlan ? `사다리 포함 ${usd(sparePlan)}` : `갭 여유 $${R.gap_buffer_usd} 빼면 ${usd(spare - R.gap_buffer_usd)}`]
+     : ['BTC 40k 손절 시 손실', usdS(-(lossNow)), 'dn', hasPlan ? `사다리 포함 ${usdS(-(lossNow + planLoss))}` : '지금 보유분 기준 (추정)']]
     .forEach(([k, v, c, sub]) => { const t = el('div', 'tile'); t.append(el('div', 'k', k), el('div', 'v ' + c, v), el('div', 'k', sub)); t1.appendChild(t); });
   const t2 = document.getElementById('tiles2'); t2.textContent = '';
   [['총 포지션 · 배율', `${usd(oi)} · ${(oi / equity).toFixed(1)}배`, ''],
