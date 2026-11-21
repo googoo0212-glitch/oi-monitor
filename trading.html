@@ -195,7 +195,8 @@ function render() {
   const lossNow = d3.sum(P, p => p.lossFromNow || 0);
   const L = T.ladder, rungs = L ? ladderRungs(L) : [];
   const btc = L ? px[L.trigger.instrument] : null;
-  const planLoss = d3.sum(T.plans || [], q => q.max_loss || 0) + d3.sum(rungs.filter(r => !r.done), r => r.loss);
+  const hold = L && L.hold;
+  const planLoss = d3.sum(T.plans || [], q => q.max_loss || 0) + (hold ? 0 : d3.sum(rungs.filter(r => !r.done), r => r.loss));
   const hasPlan = planLoss > 0;
   const worst = equity - lossNow, worstPlan = worst - planLoss;
   const spare = worst - R.reserve_usd, sparePlan = worstPlan - R.reserve_usd;
@@ -210,7 +211,8 @@ function render() {
   P.filter(p => p.lt === '손절 근접').forEach(p => items.push(['or', `${p.symbol} 손절까지 ${d3.format('.1%')(p.toStop)} (${prc(p.cur)} → ${prc(p.stop)})`]));
   P.filter(p => p.closeBroken && p.lv !== 'dn').forEach(p => items.push(['or', `${p.symbol} ${prc(p.close_stop)} 아래 — ${p.close_tf}이 이 아래에서 마감하면 정리`]));
   if (sparePlan < R.gap_buffer_usd) items.push(['am', `계획까지 손절 다 맞으면 차값 여유 ${usd(sparePlan)} — $${R.gap_buffer_usd} 미만. 신규 진입 중지`]);
-  if (L && btc != null) {
+  if (L && btc != null && hold && L.review_at && btc <= L.review_at) items.push(['or', `BTC ${prc(btc)} — ${prc(L.review_at)} 도달 → 매수 보류 중, 계획 다시 정하기`]);
+  if (L && btc != null && !hold) {
     const stockNow = usOpen() ? '주식도 지금' : '주식은 다음 미국장 개장(23:30 KST) 후';
     rungs.filter(r => !r.done).forEach(r => {
       if (btc <= r.price) items.push(['dn', `BTC ${prc(btc)} — ${r.i}칸 ${prc(r.price)} 도달 → ${r.i}칸 실행 $${d3.format(',')(Math.round(r.usd))} (크립토 지금, ${stockNow}). 실행하면 캡처 보내기`]);
@@ -288,16 +290,16 @@ function render() {
   if (L) {
     const done = rungs.filter(r => r.done).length, nx = rungs.find(r => !r.done);
     document.getElementById('ladder-n').textContent = `진입 계획 — ${L.name}`;
-    document.getElementById('ladder-k').textContent = `${done}/${rungs.length}칸 실행 · BTC ${prc(btc)}` + (nx && btc ? ` · 다음 ${nx.i}칸까지 ${d3.format('.1%')((btc - nx.price) / btc)}` : '') + ` · 미국장 ${usOpen() ? '열림' : '닫힘'}`;
+    document.getElementById('ladder-k').textContent = `${done}/${rungs.length}칸 실행 · BTC ${prc(btc)}` + (hold && L.review_at && btc ? ` · 매수 보류, ${prc(L.review_at)}까지 ${d3.format('.1%')((btc - L.review_at) / btc)}` : nx && btc ? ` · 다음 ${nx.i}칸까지 ${d3.format('.1%')((btc - nx.price) / btc)}` : '') + ` · 미국장 ${usOpen() ? '열림' : '닫힘'}`;
     const syms = L.basket.map(b => b.symbol);
-    const st = r => r.done ? ['up', '실행'] : btc != null && btc <= r.price ? ['dn', '도달 → 실행'] : btc != null && btc <= r.price * (1 + (L.near_pct || 0.01)) ? ['or', '근접'] : ['mu', '대기'];
+    const st = r => r.done ? ['up', '실행'] : hold ? (L.review_at && r.price === L.review_at ? ['am', '여기서 다시 정하기'] : ['mu', '보류']) : btc != null && btc <= r.price ? ['dn', '도달 → 실행'] : btc != null && btc <= r.price * (1 + (L.near_pct || 0.01)) ? ['or', '근접'] : ['mu', '대기'];
     document.getElementById('ladder-tbl').innerHTML =
       `<tr><th>칸</th><th>BTC 가격</th><th>남은 %</th><th>상태</th>${syms.map(x => `<th>${x}</th>`).join('')}<th>합계</th><th>손절 시</th></tr>` +
       rungs.map(r => { const [c, t] = st(r); return `<tr><td>${r.i}칸 (${d3.format('.0%')(r.w)})</td><td>${prc(r.price)}</td><td>${btc != null ? d3.format('.1%')((btc - r.price) / btc) : '—'}</td><td class="${c}">${t}</td>${r.buys.map(([b, a]) => `<td>$${d3.format(',')(Math.round(a))}</td>`).join('')}<td><b>$${d3.format(',')(Math.round(r.usd))}</b></td><td class="dn">${usdS(-r.loss)}</td></tr>`; }).join('') +
       `<tr><td><b>합계</b></td><td></td><td></td><td></td>${L.basket.map(b => `<td>$${d3.format(',')(b.usd)}</td>`).join('')}<td><b>$${d3.format(',')(d3.sum(L.basket, b => b.usd))}</b></td><td class="dn"><b>${usdS(-d3.sum(rungs, r => r.loss))}</b></td></tr>`;
     document.getElementById('ladder-foot').innerHTML =
       `BTC는 칸 가격에 지정가로 미리 걸어두고, 체결되면 같은 칸 비중만큼 나머지를 사요: 크립토(${L.basket.filter(b => !b.stock).map(b => b.symbol).join('·')})는 바로 시장가, 주식(${L.basket.filter(b => b.stock).map(b => b.symbol).join('·')})은 미국장 열려 있을 때(23:30~06:00 KST, 평일).<br>` +
-      `손절: ${L.basket_stop_note} · ${L.hard_stop_note}<br>칸을 실행하면 캡처를 보내주세요 (done·positions 갱신).`;
+      `손절: ${L.basket_stop_note} · ${L.hard_stop_note}<br>` + (hold ? `<b>지금은 매수 보류:</b> ${L.hold_note}` : '칸을 실행하면 캡처를 보내주세요 (done·positions 갱신).');
   }
 
   document.getElementById('foot').innerHTML = `포지션 기준 ${T.updated} · 자산 = 기준 시점 잔고(미실현 제외 ${usd(cash)}) + 실시간 손익. 이후 펀딩·입출금은 반영 안 돼서 화면 잔고와 몇 달러 차이 날 수 있어요.<br>` +

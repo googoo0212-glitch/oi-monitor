@@ -1,12 +1,12 @@
 {
  "_설명": "현구 계정 방향성 트레이딩. 포지션을 사고팔거나 손절가를 바꾸면 이 파일만 고치면 돼요 (GitHub 연필 아이콘 → 수정 → Commit). 지갑 주소는 넣지 않아요.",
  "account": "현구",
- "updated": "2026-11-21 15:58 KST",
+ "updated": "2026-11-21 16:21 KST",
  "snapshot": {
-  "time": "2026-11-21 15:52 KST",
-  "balance": 3757.05,
-  "upnl": 34.74,
-  "_note": "1칸 $3,500 체결 후 화면 (수량·진입가는 펼친 화면 그대로)"
+  "time": "2026-11-21 16:21 KST",
+  "balance": 3755.93,
+  "upnl": 33.62,
+  "_note": "HYPE 추가 후. upnl은 15:52 값 + HYPE −0.52 근사"
  },
  "rules": {
   "telegram": true,
@@ -42,9 +42,9 @@
    "qty": 0.6928,
    "entry": 725.339,
    "mm_rate": 0.025,
-   "stop": 580.27,
+   "stop": 471.47,
    "group": "크립토",
-   "stop_rule": "진입가 −20% · BTC 40,000 깨지면 같이 정리"
+   "stop_rule": "BTC 40,000 깨지면 같이 정리 · 비상 손절 진입가 −35%"
   },
   {
    "symbol": "UNI",
@@ -53,9 +53,9 @@
    "qty": 114.66,
    "entry": 4.36117,
    "mm_rate": 0.01,
-   "stop": 3.4889,
+   "stop": 2.8348,
    "group": "크립토",
-   "stop_rule": "진입가 −20% · BTC 40,000 깨지면 같이 정리"
+   "stop_rule": "BTC 40,000 깨지면 같이 정리 · 비상 손절 진입가 −35%"
   },
   {
    "symbol": "NVDA",
@@ -64,9 +64,9 @@
    "qty": 3.8645,
    "entry": 129.411,
    "mm_rate": 0.025,
-   "stop": 103.53,
+   "stop": 84.12,
    "group": "AI 주식",
-   "stop_rule": "진입가 −20% · BTC 40,000 깨지면 같이 정리"
+   "stop_rule": "BTC 40,000 깨지면 같이 정리 · 비상 손절 진입가 −35%"
   },
   {
    "symbol": "GOOGL",
@@ -75,9 +75,9 @@
    "qty": 1.8593,
    "entry": 268.929,
    "mm_rate": 0.025,
-   "stop": 215.14,
+   "stop": 174.8,
    "group": "AI 주식",
-   "stop_rule": "진입가 −20% · BTC 40,000 깨지면 같이 정리"
+   "stop_rule": "BTC 40,000 깨지면 같이 정리 · 비상 손절 진입가 −35%"
   },
   {
    "symbol": "CRWV",
@@ -86,14 +86,25 @@
    "qty": 12.449,
    "entry": 40.1618,
    "mm_rate": 0.025,
-   "stop": 32.13,
+   "stop": 26.11,
    "group": "AI 주식",
-   "stop_rule": "진입가 −20% · BTC 40,000 깨지면 같이 정리"
+   "stop_rule": "BTC 40,000 깨지면 같이 정리 · 비상 손절 진입가 −35%"
+  },
+  {
+   "symbol": "HYPE",
+   "instrument": "HYPE-PERP",
+   "side": "long",
+   "qty": 8.511,
+   "entry": 58.7245,
+   "mm_rate": 0.01,
+   "stop": 38.17,
+   "group": "크립토",
+   "stop_rule": "BTC 40,000 깨지면 같이 정리 · 비상 손절 진입가 −35%"
   }
  ],
  "plans": [],
  "ladder": {
-  "name": "BTC 기준 사다리 $14k (4분할 $3,500씩)",
+  "name": "BTC 기준 사다리 (1칸 $4,000 보유, 2칸 이후 보류)",
   "_사용법": "BTC가 칸 가격에 오면 그 칸 비중만큼 바스켓 전 종목을 산다. 실행한 칸은 done에 가격을 넣고(예: [53000]), 체결 내역은 positions에 추가",
   "trigger": {
    "symbol": "BTC",
@@ -140,6 +151,13 @@
     "how": "시장가"
    },
    {
+    "symbol": "HYPE",
+    "instrument": "HYPE-PERP",
+    "usd": 2000,
+    "group": "크립토",
+    "how": "시장가"
+   },
+   {
     "symbol": "NVDA",
     "instrument": "NVDA-PERP",
     "usd": 2000,
@@ -166,11 +184,14 @@
   ],
   "basket_stop": 40000,
   "basket_stop_note": "BTC 40,000(앞자리 4 하단) 깨지면 전부 정리 — 평균 단가 대비 약 −20%",
-  "hard_stop_pct": 0.2,
-  "hard_stop_note": "종목별 비상 손절: 각 종목 평균 단가 −20% (BTC는 40,000)",
+  "hard_stop_pct": 0.35,
+  "hard_stop_note": "알트·주식은 BTC 40,000 깨질 때 같이 정리, 비상 손절만 진입가 −35%",
   "near_pct": 0.01,
   "done": [
    58000
-  ]
+  ],
+  "hold": true,
+  "hold_note": "지금 보유분(1칸 $4,000)으로 버티고, BTC가 3칸(48,000)에 오면 다시 정하기. 2칸(53k)은 사지 않음",
+  "review_at": 48000
  }
 }

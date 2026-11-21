@@ -130,10 +130,16 @@ def evaluate(T, px, now):
     if L:
         rungs = ladder_rungs(L)
         btc = px.get(L["trigger"]["instrument"])
-        plan_loss += sum(r["loss"] for r in rungs if not r["done"])
+        hold = L.get("hold")
+        if not hold:
+            plan_loss += sum(r["loss"] for r in rungs if not r["done"])
         nxt = next((r for r in rungs if not r["done"]), None)
         ladder = {"rungs": rungs, "btc": btc, "next": nxt}
-        if btc is not None:
+        if btc is not None and hold:
+            ra = L.get("review_at")
+            if ra and btc <= ra:
+                alerts["ladder:review"] = ("or", f"BTC {prc(btc)} — {prc(ra)} 도달 → 매수 보류 중. 계획 다시 정하기 ({L.get('hold_note', '')})")
+        if btc is not None and not hold:
             for r in rungs:
                 if r["done"]:
                     continue
@@ -173,7 +179,8 @@ def daily(T, S, alerts):
     if Ld and Ld["btc"] is not None:
         done = sum(r["done"] for r in Ld["rungs"])
         nx = Ld["next"]
-        lines += [f"🪜 BTC 사다리 {done}/{len(Ld['rungs'])}칸 실행 · BTC {prc(Ld['btc'])}" + (f" → 다음 {nx['i']}칸 {prc(nx['price'])}까지 {(Ld['btc'] - nx['price']) / Ld['btc']:.1%}" if nx else " · 전부 실행"), ""]
+        ra = T["ladder"].get("review_at") if T["ladder"].get("hold") else None
+        lines += [f"🪜 BTC 사다리 {done}/{len(Ld['rungs'])}칸 실행 · BTC {prc(Ld['btc'])}" + (f" · 매수 보류, {prc(ra)}({(Ld['btc'] - ra) / Ld['btc']:.1%})에서 다시 정하기" if ra else (f" → 다음 {nx['i']}칸 {prc(nx['price'])}까지 {(Ld['btc'] - nx['price']) / Ld['btc']:.1%}" if nx else " · 전부 실행")), ""]
     lines += ["📝 할 일: " + (" / ".join(t for _, t in sorted(alerts.values(), key=lambda x: -RANK[x[0]])) if alerts else "없음")]
     return "\n".join(lines)
 
