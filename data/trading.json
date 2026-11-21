@@ -1,12 +1,13 @@
 {
  "_설명": "현구 계정 방향성 트레이딩. 포지션을 사고팔거나 손절가를 바꾸면 이 파일만 고치면 돼요 (GitHub 연필 아이콘 → 수정 → Commit). 지갑 주소는 넣지 않아요.",
  "account": "현구",
- "updated": "2026-11-21 09:15 KST",
+ "updated": "2026-11-21 12:07 KST",
  "snapshot": {
-  "time": "2026-11-21 09:09 KST",
-  "balance": 3801.14,
-  "upnl": -298.53,
-  "_cash": "cash = balance − upnl (화면의 Balance는 미실현 손익 포함). 이후 손익은 실시간 가격으로 다시 계산"
+  "time": "2026-11-21 12:07 KST",
+  "balance": 3711.91,
+  "upnl": 0,
+  "_cash": "cash = balance − upnl (화면의 Balance는 미실현 손익 포함). 이후 손익은 실시간 가격으로 다시 계산",
+  "_note": "11/21 12:07 전부 정리 (정리 직전 화면 기준, 실제 잔고는 캡처로 갱신)"
  },
  "rules": {
   "telegram": true,
@@ -22,80 +23,6 @@
   "check_date": "2026-12-10",
   "check_note": "predict.fun 안 들어왔으면: 남은 포지션 총액 ≤ (자산 − $1,800) × 3.5 로 줄이고 $1,800 출금"
  },
- "positions": [
-  {
-   "symbol": "BTC",
-   "instrument": "BTC-PERP",
-   "side": "long",
-   "qty": 0.063764,
-   "entry": 62731.09,
-   "mm_rate": 0.01,
-   "stop": 49587.59,
-   "stop_rule": "−20% (11/20 기준가)",
-   "group": "크립토"
-  },
-  {
-   "symbol": "GOOGL",
-   "instrument": "GOOGL-PERP",
-   "side": "long",
-   "qty": 3.5106,
-   "entry": 284.857,
-   "mm_rate": 0.025,
-   "stop": 220.07,
-   "stop_rule": "−20% (11/20 기준가) · 주식이라 개장 갭 주의",
-   "group": "AI 주식"
-  },
-  {
-   "symbol": "ZEC",
-   "instrument": "ZEC-PERP",
-   "side": "long",
-   "qty": 0.6606,
-   "entry": 757.255,
-   "mm_rate": 0.025,
-   "stop": 650,
-   "close_stop": 678,
-   "close_tf": "4시간봉",
-   "stop_rule": "4시간봉 678(1.113) 아래 마감 시 정리 · 비상 650",
-   "group": "크립토"
-  },
-  {
-   "symbol": "UNI",
-   "instrument": "UNI-PERP",
-   "side": "long",
-   "qty": 112.04,
-   "entry": 4.46256,
-   "mm_rate": 0.01,
-   "stop": 3.8,
-   "close_stop": 4.0,
-   "close_tf": "일봉",
-   "stop_rule": "일봉 4.0 아래 마감 시 정리 · 비상 3.80",
-   "group": "크립토"
-  },
-  {
-   "symbol": "CRWV",
-   "instrument": "CRWV-PERP",
-   "side": "long",
-   "qty": 12.318,
-   "entry": 40.5997,
-   "mm_rate": 0.025,
-   "stop": 28.5,
-   "stop_rule": "일봉(미국장 마감 06:00 KST)이 30(전저점) 아래 마감 시 정리 · 비상 28.5",
-   "group": "AI 주식",
-   "close_stop": 30,
-   "close_tf": "일봉(미국장)",
-   "close_utc_hour": 21
-  },
-  {
-   "symbol": "NVDA",
-   "instrument": "NVDA-PERP",
-   "side": "long",
-   "qty": 3.8483,
-   "entry": 129.925,
-   "mm_rate": 0.025,
-   "stop": 90.95,
-   "stop_rule": "최대 손실 −$150 (−30%) · SEC 조사 뉴스 갭 주의",
-   "group": "AI 주식"
-  }
- ],
+ "positions": [],
  "plans": []
 }
