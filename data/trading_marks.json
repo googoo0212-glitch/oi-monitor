@@ -1,31 +1,31 @@
 {
- "time_utc": "2026-11-23T21:44:14Z",
+ "time_utc": "2026-11-24T05:33:32Z",
  "marks": {
-  "CRWV-PERP": 48.4495252935389,
-  "GOOGL-PERP": 283.0309295856245,
-  "ZEC-PERP": 788.751879098432,
-  "BTC-PERP": 61256.011866413,
-  "UNI-PERP": 4.82996968471101,
-  "HYPE-PERP": 64.3947679906507,
-  "NVDA-PERP": 164.9761023627946
+  "ZEC-PERP": 764.787557624401,
+  "CRWV-PERP": 48.1023279508938,
+  "GOOGL-PERP": 285.7720795728677,
+  "HYPE-PERP": 63.8965332960408,
+  "BTC-PERP": 60530.369245676,
+  "UNI-PERP": 4.9081256024653,
+  "NVDA-PERP": 163.5958625305291
  },
  "src": {
+  "ZEC-PERP": "variational",
   "CRWV-PERP": "variational",
   "GOOGL-PERP": "variational",
-  "ZEC-PERP": "variational",
+  "HYPE-PERP": "variational",
   "BTC-PERP": "variational",
   "UNI-PERP": "variational",
-  "HYPE-PERP": "variational",
   "NVDA-PERP": "variational"
  },
  "funding_apr": {
-  "HYPE-PERP": 0.1095,
   "GOOGL-PERP": 0.0,
-  "UNI-PERP": -0.1371,
+  "BTC-PERP": 0.09711,
   "ZEC-PERP": 0.1095,
-  "CRWV-PERP": 0.0,
   "NVDA-PERP": 0.0,
-  "BTC-PERP": 0.1095
+  "CRWV-PERP": 0.0,
+  "HYPE-PERP": 0.1095,
+  "UNI-PERP": -0.1233
  },
  "note": "trading_alerts.py가 5분마다 기록. 페이지는 브라우저에서 Variational을 못 부를 때 이 값을 써요"
 }
