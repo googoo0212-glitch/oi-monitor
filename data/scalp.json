@@ -3,12 +3,12 @@
  "account": "엄마",
  "title": "단타 (엄마 계정)",
  "tag": "[단타]",
- "updated": "2026-11-25 17:15 KST",
+ "updated": "2026-11-26 00:10 KST",
  "snapshot": {
-  "time": "2026-11-25 16:59 KST",
-  "balance": 257.55,
-  "upnl": 0,
-  "_note": "입금 직후 화면"
+  "time": "2026-11-26 00:10 KST",
+  "balance": 243.19,
+  "upnl": -14.36,
+  "_note": "BTC·ZEC 체결 후 화면"
  },
  "rules": {
   "telegram": true,
@@ -23,55 +23,53 @@
   "check_note": "여행(12/8~11) 전 단타 포지션 정리 여부 확인",
   "_규칙": "한 번 손절되면 그 주 단타 종료 · 진입할 때 TP/SL 같이 걸기 · 57,000 위로 가면 손절을 평단으로"
  },
- "positions": [],
+ "positions": [
+  {
+   "symbol": "BTC",
+   "instrument": "BTC-PERP",
+   "side": "long",
+   "qty": 0.017178,
+   "entry": 58264.27,
+   "mm_rate": 0.01,
+   "stop": 52900,
+   "group": "크립토",
+   "stop_rule": "BTC 손절 (52,900 임시 — 확정 필요)"
+  },
+  {
+   "symbol": "ZEC",
+   "instrument": "ZEC-PERP",
+   "side": "long",
+   "qty": 0.7175,
+   "entry": 697.764,
+   "mm_rate": 0.025,
+   "stop": null,
+   "group": "크립토",
+   "link": "BTC-PERP",
+   "link_stop": 52900,
+   "beta": 1.5,
+   "stop_rule": "개별 손절 없음 — BTC 손절 때 같이 정리 (BTC의 1.5배로 추정)"
+  }
+ ],
  "plans": [],
  "ladder": {
-  "name": "BTC 스탑헌팅 매수 ($2,500, 2분할)",
+  "name": "BTC 추가 매수 지정가 55,200",
   "trigger": {
    "symbol": "BTC",
    "instrument": "BTC-PERP"
   },
   "levels": [
    {
-    "price": 54000,
-    "weight": 0.5
-   },
-   {
-    "price": 53793,
-    "weight": 0.5
+    "price": 55200,
+    "weight": 1.0
    }
   ],
   "basket": [
    {
     "symbol": "BTC",
     "instrument": "BTC-PERP",
-    "usd": 1000,
+    "usd": 993,
     "group": "크립토",
-    "how": "지정가"
-   },
-   {
-    "symbol": "ZEC",
-    "instrument": "ZEC-PERP",
-    "usd": 500,
-    "group": "크립토",
-    "how": "시장가",
-    "beta": 1.5
-   },
-   {
-    "symbol": "HYPE",
-    "instrument": "HYPE-PERP",
-    "usd": 500,
-    "group": "크립토",
-    "how": "시장가",
-    "beta": 1.5
-   },
-   {
-    "symbol": "UNI",
-    "instrument": "UNI-PERP",
-    "usd": 500,
-    "group": "크립토",
-    "how": "시장가",
-    "beta": 1.5
+    "how": "지정가 0.017985 (걸려 있음)"
    }
   ],
   "basket_stop": 52900,
