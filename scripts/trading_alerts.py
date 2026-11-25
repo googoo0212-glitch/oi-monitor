@@ -92,7 +92,7 @@ def buy_text(r, now):
     cr = " · ".join(f"{b['symbol']} ${a:,.0f}" for b, a in r["buys"] if not b.get("stock"))
     st = " · ".join(f"{b['symbol']} ${a:,.0f}" for b, a in r["buys"] if b.get("stock"))
     when = "지금 (미국장 열림)" if us_open(now) else f"다음 개장 {next_us_open(now):%m/%d %H:%M} KST 후 30분 안"
-    return f"크립토 {cr} / 주식 {st} → {when}"
+    return f"크립토 {cr}" + (f" / 주식 {st} → {when}" if st else " → 지금 시장가 (BTC는 지정가)")
 
 
 def evaluate(T, px, now):
@@ -165,7 +165,7 @@ def evaluate(T, px, now):
         alerts["spare"] = ("am", f"계획까지 손절 다 맞으면 차값 여유 {usd(worst - plan_loss - R['reserve_usd'])} (갭 여유 ${R.get('gap_buffer_usd', 300)} 미만) → 신규 진입 중지")
     check = datetime.fromisoformat(R["check_date"]).replace(tzinfo=KST)
     if now >= check.astimezone(timezone.utc):
-        alerts["check"] = ("am", f"12/10 점검: {R.get('check_note', '')}")
+        alerts["check"] = ("am", f"{R['check_date'][5:].replace('-', '/')} 점검: {R.get('check_note', '')}")
     summary = {"equity": equity, "cash": cash, "worst": worst, "worst_plan": worst - plan_loss, "spare": spare, "ladder": ladder,
                "oi": sum(r["p"]["qty"] * r["cur"] for r in rows), "rows": rows,
                "dday": (check.date() - now.astimezone(KST).date()).days}
@@ -174,12 +174,12 @@ def evaluate(T, px, now):
 
 def daily(T, S, alerts):
     ts = datetime.now(KST).strftime("%m/%d %H:%M")
-    lines = [f"📈 현구 트레이딩 요약 ({ts} KST)", "",
+    lines = [f"📈 {T.get('title', '현구 트레이딩')} 요약 ({ts} KST)", "",
              f"💰 자산 {usd(S['equity'])} · 미실현 {usdS(S['equity'] - S['cash'])} · {S['oi'] / S['equity']:.1f}배" + ("" if S["rows"] else " (포지션 없음)"),
              (f"🧯 손절 다 맞으면 {usd(S['worst'])} → 차값 빼고 여유 {usd(S['spare'])}" + (f" (계획 포함 {usd(S['worst_plan'] - T['rules']['reserve_usd'])})" if S['worst_plan'] != S['worst'] else "")
               if T['rules'].get('reserve_usd', 0) > 0 else
-              f"🧯 BTC 40k 손절 시 자산 {usd(S['worst'])}" + (f" (사다리까지 다 사면 {usd(S['worst_plan'])})" if S['worst_plan'] != S['worst'] else "")),
-             f"📅 12/10 점검 D-{S['dday']}" if S["dday"] > 0 else "📅 12/10 점검일", ""]
+              f"🧯 BTC {prc(T['ladder']['basket_stop']) if T.get('ladder') else '손절'} 손절 시 자산 {usd(S['worst'])}" + (f" (사다리까지 다 사면 {usd(S['worst_plan'])})" if S['worst_plan'] != S['worst'] else "")),
+             (f"📅 {T['rules']['check_date'][5:].replace('-', '/')} 점검 D-{S['dday']}" if S["dday"] > 0 else f"📅 {T['rules']['check_date'][5:].replace('-', '/')} 점검일"), ""]
     for r in sorted(S["rows"], key=lambda r: r["to_stop"] if r["to_stop"] is not None else 9):
         p = r["p"]
         ts_ = f"손절까지 {r['to_stop']:.1%}" if r["to_stop"] is not None else "손절 없음"
@@ -199,9 +199,10 @@ def hl_name(p):
     return p.get("hl") or (p["symbol"] if p.get("group") == "크립토" else "xyz:" + p["symbol"])
 
 
-def get_prices(T, now):
+def get_prices(T, now, marks_file="trading_marks.json"):
     """Variational mark가 기본, 빠진 종목은 하이퍼리퀴드 중간가. 페이지용으로 data/trading_marks.json에 기록."""
-    items = T["positions"] + T.get("plans", []) + (T["ladder"]["basket"] if T.get("ladder") else [])
+    items = T["positions"] + T.get("plans", []) + (T["ladder"]["basket"] if T.get("ladder") else []) + \
+        ([{"symbol": "BTC", "instrument": "BTC-PERP", "group": "크립토"}] if T.get("levels") else [])
     want = {p["instrument"] for p in items}
     px, src, fund = {}, {}, {}
     try:
@@ -232,28 +233,56 @@ def get_prices(T, now):
             if hl_name(p) in mids:
                 px[p["instrument"]], src[p["instrument"]] = mids[hl_name(p)], "hyperliquid"
     if px:
-        save_json("trading_marks.json", {"time_utc": now.strftime("%Y-%m-%dT%H:%M:%SZ"), "marks": px, "src": src, "funding_apr": fund,
+        save_json(marks_file, {"time_utc": now.strftime("%Y-%m-%dT%H:%M:%SZ"), "marks": px, "src": src, "funding_apr": fund,
                                           "note": "trading_alerts.py가 5분마다 기록. 페이지는 브라우저에서 Variational을 못 부를 때 이 값을 써요"})
     return px, src
 
 
-def main():
-    T = load_json("trading.json")
-    if not T or not (T.get("positions") or T.get("ladder")):
-        print("trading.json 없음/포지션·사다리 없음")
+# 계정별: (데이터 파일, 알림 상태 파일, 가격 기록 파일)
+ACCOUNTS = [("trading.json", "trading_alert_state.json", "trading_marks.json"),
+            ("scalp.json", "scalp_alert_state.json", "scalp_marks.json")]
+
+
+def level_alerts(T, px, state):
+    """가격 레벨 돌파 알림 (data의 levels). 위/아래 쪽이 바뀔 때 한 번씩."""
+    out, changed = [], False
+    for lv in T.get("levels", []):
+        cur = px.get(lv.get("instrument", "BTC-PERP"))
+        if cur is None:
+            continue
+        key = f"_lv:{lv.get('instrument', 'BTC-PERP')}:{lv['price']}"
+        side = "above" if cur >= lv["price"] else "below"
+        prev = state.get(key)
+        if prev and prev != side:
+            arrow = "⬇️ 아래로" if side == "below" else "⬆️ 위로"
+            out.append(f"🔔 {lv.get('symbol', 'BTC')} {prc(cur)} — {prc(lv['price'])} {arrow} 통과" + (f" · {lv['note']}" if lv.get("note") else ""))
+        if prev != side:
+            state[key] = side
+            changed = True
+    return out, changed
+
+
+def run_account(data_file, state_file, marks_file):
+    T = load_json(data_file)
+    if not T or not (T.get("positions") or T.get("ladder") or T.get("levels")):
+        print(f"{data_file} 없음/비어 있음")
         return
     if not T.get("rules", {}).get("telegram", True):
-        print("현구 알림 꺼짐 (rules.telegram=false)")
+        print(f"{data_file} 알림 꺼짐 (rules.telegram=false)")
         return
+    tag = T.get("tag", "[현구]")
     now = datetime.now(timezone.utc)
-    px, src = get_prices(T, now)
+    px, src = get_prices(T, now, marks_file)
     if not px:
         print("가격 없음")
         return
     alerts, S = evaluate(T, px, now)
-    state = load_json("trading_alert_state.json", {})
+    state = load_json(state_file, {})
     repeat = T["rules"].get("repeat_minutes", 60) * 60
     t, out, changed = time.time(), [], False
+    lo, lc = level_alerts(T, px, state)
+    out += lo
+    changed |= lc
     for k, (lv, text) in alerts.items():
         prev = state.get(k, {"lv": "ok", "t": 0})
         rep = repeat if lv in ("or", "dn") else 24 * 3600   # 🟡는 하루 한 번만 다시
@@ -272,15 +301,23 @@ def main():
         del state[k]
         changed = True
     today = datetime.now(KST).strftime("%Y-%m-%d")
-    if datetime.now(KST).hour >= T["rules"].get("daily_summary_hour_kst", 9) and state.get("_daily") != today:
+    if T["rules"].get("daily_summary", True) and datetime.now(KST).hour >= T["rules"].get("daily_summary_hour_kst", 9) and state.get("_daily") != today:
         out.append(daily(T, S, alerts))
         state["_daily"] = today
         changed = True
     if out:
-        telegram("[현구]\n" + "\n".join(out) if len(out) > 1 or not out[0].startswith("📈") else out[0])
+        telegram(tag + "\n" + "\n".join(out) if len(out) > 1 or not out[0].startswith("📈") else out[0])
     if changed:
-        save_json("trading_alert_state.json", state)
-    print({"equity": round(S["equity"]), "worst": round(S["worst"]), "alerts": {k: v[0] for k, v in alerts.items()}})
+        save_json(state_file, state)
+    print(data_file, {"equity": round(S["equity"]), "worst": round(S["worst"]), "alerts": {k: v[0] for k, v in alerts.items()}, "levels": lo})
+
+
+def main():
+    for a in ACCOUNTS:
+        try:
+            run_account(*a)
+        except Exception as e:
+            print(a[0], "실패:", e)
 
 
 if __name__ == "__main__":

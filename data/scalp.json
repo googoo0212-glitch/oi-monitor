@@ -1,0 +1,118 @@
+{
+ "_설명": "단타 계정(엄마 계정). 장기 계정(trading.json)과 따로. 지갑 주소는 넣지 않아요.",
+ "account": "엄마",
+ "title": "단타 (엄마 계정)",
+ "tag": "[단타]",
+ "updated": "2026-11-25 17:15 KST",
+ "snapshot": {
+  "time": "2026-11-25 16:59 KST",
+  "balance": 257.55,
+  "upnl": 0,
+  "_note": "입금 직후 화면"
+ },
+ "rules": {
+  "telegram": true,
+  "repeat_minutes": 30,
+  "daily_summary": true,
+  "daily_summary_hour_kst": 9,
+  "reserve_usd": 0,
+  "gap_buffer_usd": 0,
+  "floor_usd": 0,
+  "stop_near_pct": 0.01,
+  "check_date": "2026-12-07",
+  "check_note": "여행(12/8~11) 전 단타 포지션 정리 여부 확인",
+  "_규칙": "한 번 손절되면 그 주 단타 종료 · 진입할 때 TP/SL 같이 걸기 · 57,000 위로 가면 손절을 평단으로"
+ },
+ "positions": [],
+ "plans": [],
+ "ladder": {
+  "name": "BTC 스탑헌팅 매수 ($2,500, 2분할)",
+  "trigger": {
+   "symbol": "BTC",
+   "instrument": "BTC-PERP"
+  },
+  "levels": [
+   {
+    "price": 54000,
+    "weight": 0.5
+   },
+   {
+    "price": 53793,
+    "weight": 0.5
+   }
+  ],
+  "basket": [
+   {
+    "symbol": "BTC",
+    "instrument": "BTC-PERP",
+    "usd": 1000,
+    "group": "크립토",
+    "how": "지정가"
+   },
+   {
+    "symbol": "ZEC",
+    "instrument": "ZEC-PERP",
+    "usd": 500,
+    "group": "크립토",
+    "how": "시장가",
+    "beta": 1.5
+   },
+   {
+    "symbol": "HYPE",
+    "instrument": "HYPE-PERP",
+    "usd": 500,
+    "group": "크립토",
+    "how": "시장가",
+    "beta": 1.5
+   },
+   {
+    "symbol": "UNI",
+    "instrument": "UNI-PERP",
+    "usd": 500,
+    "group": "크립토",
+    "how": "시장가",
+    "beta": 1.5
+   }
+  ],
+  "basket_stop": 52900,
+  "basket_stop_note": "BTC 52,900 깨지면 전부 정리 (스탑헌팅 53,793 아래 여유 — 확인 필요)",
+  "linked": true,
+  "hard_stop_note": "알트는 개별 손절 없이 BTC 손절 때 같이 정리 (알트 손실은 BTC의 1.5배로 추정)",
+  "near_pct": 0.005,
+  "done": []
+ },
+ "levels": [
+  {
+   "price": 64500,
+   "note": "월요일 고점 — 나머지 익절"
+  },
+  {
+   "price": 61600,
+   "note": "PDH — 절반 익절"
+  },
+  {
+   "price": 57000,
+   "note": "1차 저항 · 위로 넘으면 손절을 평단으로"
+  },
+  {
+   "price": 55300,
+   "note": "관심 구간 상단"
+  },
+  {
+   "price": 54000,
+   "note": "1차 매수: BTC $500 + ZEC·HYPE·UNI $250씩"
+  },
+  {
+   "price": 53793,
+   "note": "스탑헌팅 레벨 — 2차 매수: BTC $500 + ZEC·HYPE·UNI $250씩"
+  },
+  {
+   "price": 52900,
+   "note": "손절 — 전부 정리"
+  },
+  {
+   "price": 50000,
+   "note": "큰 레벨"
+  }
+ ]
+}
