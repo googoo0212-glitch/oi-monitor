@@ -1,1 +1,11 @@
-{}
+{
+ "_lv:BTC-PERP:64500": "below",
+ "_lv:BTC-PERP:61600": "below",
+ "_lv:BTC-PERP:57000": "above",
+ "_lv:BTC-PERP:55300": "above",
+ "_lv:BTC-PERP:54000": "above",
+ "_lv:BTC-PERP:53793": "above",
+ "_lv:BTC-PERP:52900": "above",
+ "_lv:BTC-PERP:50000": "above",
+ "_daily": "2026-11-25"
+}
