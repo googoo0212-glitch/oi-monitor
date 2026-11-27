@@ -1,16 +1,16 @@
 {
- "time_utc": "2026-11-27T11:26:19Z",
+ "time_utc": "2026-11-27T20:07:34Z",
  "marks": {
-  "ZEC-PERP": 756.923184490069,
-  "BTC-PERP": 61573.5168528664
+  "BTC-PERP": 59788.6391679447,
+  "ZEC-PERP": 743.619460582779
  },
  "src": {
-  "ZEC-PERP": "variational",
-  "BTC-PERP": "variational"
+  "BTC-PERP": "variational",
+  "ZEC-PERP": "variational"
  },
  "funding_apr": {
-  "ZEC-PERP": 0.1095,
-  "BTC-PERP": 0.01722
+  "BTC-PERP": 0.1043,
+  "ZEC-PERP": 0.1095
  },
  "note": "trading_alerts.py가 5분마다 기록. 페이지는 브라우저에서 Variational을 못 부를 때 이 값을 써요"
 }
